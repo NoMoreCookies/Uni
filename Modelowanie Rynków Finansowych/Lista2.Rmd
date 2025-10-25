@@ -1,0 +1,326 @@
+---
+title: "Lista zad2"
+output: html_document
+date: "2025-10-21"
+---
+
+
+#-----------------*************** Lista 2 MRF ***************-------------------
+
+#_______________________________________________________________________________
+#
+#------------------------------Zadanie 2.1--------------------------------------
+#
+#_______________________________________________________________________________
+# Dłużnik spłaca pierwsza ratę długu 
+# na koniec pierwszego roku w wysokości 8 000 PLN oraz 
+# drugą na koniec drugiego roku w wysokości 6 000$ PLN. 
+# Jaka jest obecna wartość długu przy założeniu oprocentowania R = 4% ?
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+```{r zad2.1}
+
+C1 = 8000
+
+C2 = 6000
+
+r = 0.04
+#Trzeba policzyc P value, wiemy, że r = 0.04
+
+P = C1/(1+r)**1+C2/(1+r)**2
+
+print(P)
+```
+odp : 13239.64
+
+
+
+#_______________________________________________________________________________
+#
+#------------------------------Zadanie 2.2--------------------------------------
+#
+#_______________________________________________________________________________
+# Wpłacamy na konto dzisiaj 5000 PLN oraz przez kolejne 11 miesiecy po 
+# 1 000 PLN. Jaką kwotę na koncie ujrzymy na koniec roku, jeśli oprocentowanie 
+# w skali roku to R = 11% ? Zakładamy kapitalizację miesięczną i wpłaty 
+# na początku każdego kolejnego miesiąca.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+```{r 2.2}
+
+savings_calc <- function(deposits,r,t){
+  
+  sum = 0
+  
+  for (depo in deposits){
+    sum = (sum + depo)*(1+r*t)
+  }
+  return (sum)
+}
+C1 = 5000
+
+t = 1/12 # 1 rok to t
+
+Ck = 1000 # Kolejne wpłaty
+
+r = 0.11 # Oprocentowanie 
+
+deposits = c(C1,rep(Ck,11))
+
+print(savings_calc(deposits,r,t))
+```
+
+odp :17202.47
+
+
+
+#_______________________________________________________________________________
+#
+#------------------------------Zadanie 2.3--------------------------------------
+#
+#_______________________________________________________________________________
+# Firma zainwestowała 5.0 mln PLN PLN w pewien projekt inwestycyjny, który 
+# przynosi następujące przepływy pieniezne: 1.0 mln PLN na koniec trzeciego 
+# roku, 2.0 mln PLN na koniec siódmego roku, 3.0 mln PLN na koniec 
+# dwunastego roku. Wyznacz IRR tej inwestycji.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+
+$\frac{-5}{(1+IRR)^0}+\frac{1}{(1+IRR)^3} + \frac{2}{(1+IRR)^7} + \frac{3}{(1+IRR)^{12}}  = 0$
+
+Rozwiązując to równanie przekształcamy do postaci
+
+$-5(1+IRR)^{12} + 1(1+IRR)^{9} + 2(1+IRR)^{7} + 3 = 0$
+
+Wiadomo , że IRR$\in<-1,0.2>$ z treści zadania
+
+
+```{r obliczanie przybliżenia}
+
+IRR_func <- function(IRR){
+  return (-5*(1+IRR)^12+(1+IRR)^9 + 2*(1+IRR)^5+3)
+}
+
+IRR = uniroot(IRR_func,lower = 0 , upper = 0.2)
+
+print(IRR$root)
+
+```
+odp: 2,12%
+
+
+#_______________________________________________________________________________
+#
+#------------------------------Zadanie 2.4--------------------------------------
+#
+#_______________________________________________________________________________
+# Efektywna roczna stopa procentowa wynosi $15\%$. Podaj nominalna równoważną 
+# stope procentową przy kapitalizacji 
+#
+# a) kwartalnej,
+# b) miesięcznej,
+# c) dziennej,
+# d) ciągłej.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# podpunkt (a)
+
+```{r 2.4a}
+
+f1 <- function(r){
+  return ((1+r/4)^4-1 - 0.15)
+}
+
+(uniroot(f1,lower =0,upper = 1))$root
+
+```
+odp : 14,22%
+
+# podpunkt (b)
+```{r 2.4b}
+
+f2 <- function(r){
+  return ((1+r/12)^12-1 - 0.15)
+}
+
+(uniroot(f2,lower = 0,upper = 1))$root
+```
+odp: 14,05%
+
+# podpunkt (c)
+```{r 2.4c}
+
+f3 <- function(r){
+  return ((1+r/365)^365-1 - 0.15)
+}
+
+(uniroot(f3,lower = 0, upper = 1))$root
+```
+
+odp: 13,9788%
+
+# podpunkt (d)
+```{r D}
+f4 <- function(r){
+  return (exp(r)-1-0.15)
+}
+
+(uniroot(f4,lower = 0 , upper = 1))$root
+```
+odp : 13,97%
+
+#_______________________________________________________________________________
+#
+#------------------------------Zadanie 2.5--------------------------------------
+#
+#_______________________________________________________________________________
+# Na rachunek (z kapitalizacja miesięczną) chcemy wpłacic 7000 PLN teraz oraz
+# co miesiac przez pół roku kwoty w wysokości 800 PLN. Jakie najniższe 
+# oprocentowanie w skali roku pozwoli nam zgromadzić po pół roku kwotę 
+# w wysokości 12000 PLN?
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+```{r 2.5}
+f5 <- function(r) 800*sum(r^(0:5)) + 7000*r^6 - 12000
+((uniroot(f5, lower = 1 + 1e-9, upper = 2)$root)-1)*12
+
+```
+odp: 4,408%
+
+#_______________________________________________________________________________
+#
+#------------------------------Zadanie 2.6--------------------------------------
+#
+#_______________________________________________________________________________
+# Każda z osób A,B,C,D zaciąga kredyt w wysokości K na n okresów. 
+# Spłaty rat kredytu następują na koniec każdego z okresów. 
+# Oprocentowanie kredytu w skali okresu wynosi r, przy czym
+#
+# - A spłaca kredyt w jednakowych ratach,
+#
+# - B spłaca kredyt metodą "jednakowych rat kapitałowych"
+#   tzn. każda rata spłaty jest równa K/n plus odsetki od kwoty pozostałej 
+#   do spłaty na początku okresu,
+#
+# - C w pierwszych n-1 ratach spłaca jedynie odsetki za kończący się okres,
+#   a w ostatniej spłaca cały kapitał K plus odsetki za n-ty okres,
+#
+# - D spłaca całość zobowiązań na koniec n-tego okresu, przy czym 
+#   odsetki są kapitalizowane na koniec każdego okresu.
+#
+#   Napisz funkcję KalkulatorRatalny(TypeFlag = c("A", "B", "C", "D"), K, n, r)}
+#   zwracającą wektor wszystkich rat spłaty kredytu dla każdej z osób A,B,C,D.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+```{r}
+kalkulatorRatalny <- function(TypeFlag = c("A", "B", "C", "D"), K, n, r){
+  for(type in TypeFlag){
+  if(type == "A"){
+    print (rep((K*r/(1-(1+r)^-n)),n))
+  }
+  else if (type == "B") {
+  result <- numeric(n)
+  loan <- K     
+  for (i in 1:n) {
+    payment <- K/n + loan*r   
+    result[i] <- payment
+    loan <- loan - K/n        
+  }
+  print(result)  
+  }
+  else if(type == "C"){
+    print(c(rep(K*r,n-1),K*(1+r)))
+  }
+  else if(type == "D"){
+    print((c(rep(0,n-1),K*(1+r)^n)))
+  }
+  }
+  return (0)
+}
+kalkulatorRatalny( K=1000, n=4, r=0.2)
+```
+odp:
+386.289 ,386.289 ,386.289 ,386.289 , 
+450,400,350,300,
+200,200,200,1200
+0,0,0,2073.6
+
+
+
+
+#_______________________________________________________________________________
+#
+#------------------------------Zadanie 2.7--------------------------------------
+#
+#_______________________________________________________________________________
+# Bank może nam udzielić kredytu w wysokości 16 000 PLN na okres 4 lat.
+# Możemy wybrac pomiędzy jednym z dwóch sposobów spłaty kredytu:
+#
+# - spłata kredytu w dwóch ratach po 10000 PLN każda 
+#   (na koniec drugiego i czwartego roku) 
+#
+# lub
+#
+# - spłata kredytu w czterech ratach po 5000 PLN każda.
+#
+# Ile wyniesie RRSO w obydwu propozycjach i która z propozycji spłaty 
+# jest dla nas korzystniejsza?
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+```{r}
+f1 <- function(RRSO){
+  return (10000/(1+RRSO)^2+10000/(1+RRSO)^4 - 16000)
+}
+
+f2 <- function(RRSO){
+  return (5000*(1/(1+RRSO)+1/(1+RRSO)^2+1/(1+RRSO)^3+1/(1+RRSO)^4)-16000)
+}
+print((uniroot(f1,lower = -1, upper = 1))$root)
+print((uniroot(f2,lower = -1, upper = 1))$root)
+
+```
+
+#_______________________________________________________________________________
+#
+#------------------------------Zadanie 2.8--------------------------------------
+#
+#_______________________________________________________________________________
+# Bank może nam udzielić kredytu w wysokości 200 000 PLN na okres 5 lat.
+# Kredyt będzie spłacany metodą równych rat kapitałowych tj. 
+# każda w wysokości 40 000 PLN, płatne na początku roku.
+#
+# Stopa procentowa wynosi 4%.
+#
+# W chwili t=0 pobierane są następujące opłaty
+#
+# - prowizja 6000 PLN,
+# - opłata przygotowawcza 2000 PLN,
+# - wycena zabezpiecenia 1000 PLN.
+# 
+# Ponadto na początku każdego okresu płacone jest również 
+# ubezpieczenie spłaty w wysokości 2% kwoty kredytu pozostałej do spłaty.
+#
+# Ile wynosi RRSO tego kredytu?
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+```{r }
+
+
+irr_func <- function(x)
+{
+  result <- c()
+r1 = 200 - (6+2+1 + 200*0.02)
+
+r2 =-( 40 + 200*0.04 + (200-40)*0.02)
+
+r3 =-( 40 + 160*0.04 + (200-80)*0.02)
+
+r4 = -(40 + 120*0.04 + (200-120)*0.02)
+r5 = -(40 + 80*0.04 + (200-160)*0.02)
+r6 = -(40 + 40*0.04)
+
+  return( r1+r2/(1+x)^1+r3/(1+x)^2+r4/(1+x)^3+r5/(1+x)^4+r6/(1+x)^5)
+}
+uniroot(irr_func,lower=0,upper = 5)$root
+
+```
+
+odp : 7,945%
