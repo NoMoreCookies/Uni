@@ -19,6 +19,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(xtable)
+set.seed(123)
 ```
 
 # Zadanie 1

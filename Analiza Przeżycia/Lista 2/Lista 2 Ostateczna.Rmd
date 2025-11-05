@@ -24,6 +24,7 @@ library(xtable)
 library(survival)
 library(survminer)
 library(survRM2)
+set.seed(123)
 ```
 
 # Zadanie 1
@@ -31,68 +32,39 @@ library(survRM2)
 Funckja została napisana zgodnie z wytycznymi zadania
 ```{r zad1}
 
-#--------------------------Potrzebne funkcje-------------------------------
-# gęstość
-dexpoexp <- function(x, alpha, lambda, log = FALSE) {
-  if (any(alpha <= 0) || any(lambda <= 0)) stop("alpha, lambda must be > 0")
-  x <- pmax(x, 0)  # gęstość poza [0,inf) = 0
-  logf <- log(alpha) + log(lambda) - lambda * x +
-          (alpha - 1) * log1p(-exp(-lambda * x))  # log(1 - e^{-λx}) stabilnie
-  if (log) logf else exp(logf)
+#--------------------------Generatory-------------------------------
+gen1 <- function(n, alpha, lambda, t0){
+  y <- runif(n)
+  x <- - (1/lambda)*log(1- y^(1/alpha))
+  
+  delta <- ifelse(x <= t0, 1, 0)
+  x_obs <- pmin(x, t0)
+  
+  return(data.frame(x = x_obs, delta = delta))
 }
 
-#dystrybuanta
-pexpoexp <- function(q, alpha, lambda, lower.tail = TRUE, log.p = FALSE) {
-  if (any(alpha <= 0) || any(lambda <= 0)) stop("alpha, lambda must be > 0")
-  q <- pmax(q, 0)
-  F <- (1 - exp(-lambda * q))^alpha
-  if (!lower.tail) F <- 1 - F
-  if (log.p) log(F) else F
-}
-#kwantyl
-qexpoexp <- function(p, alpha, lambda, lower.tail = TRUE, log.p = FALSE) {
-  if (any(alpha <= 0) || any(lambda <= 0)) stop("alpha, lambda must be > 0")
-  if (log.p) p <- exp(p)
-  if (!lower.tail) p <- 1 - p
-  if (any(p < 0 | p > 1)) stop("p must be in [0,1]")
-  -(1 / lambda) * log(1 - p^(1 / alpha))
-}
-#-------------------------------------------------------------------------
-```
-
-```{r generator_próbek,echo = TRUE}
-#--------------------------Generator Próbek-------------------------------
-
-#generator próbek
-rexpoexp <- function(n, alpha, lambda) {
-  if (length(n) != 1 || n < 0) stop("n>0!")
-  u <- runif(n)
-  qexpoexp(u, alpha, lambda)
+gen2 <- function(n, alpha, lambda, m) {
+  y <- runif(n)
+  x <- - (1/lambda)*log(1- y^(1/alpha))
+  
+  x <- sort(x)
+  x_cenz <- x[m]
+  
+  x <- c(x[1:m], rep(x_cenz, n-m))
+  delta <- c(rep(1,m), rep(0, n-m))
+  
+  return(data.frame(x, delta))
 }
 
-generator_zm_cenzurowanych <- function(n,alpha,lambda,type,t){
-  values <- rexpoexp(n,alpha,lambda)
-  sorted_values <- sort(values)
-  if(type == 1){
-    
-  censored <-sorted_values>t
-  sorted_values <- ifelse(censored, t, sorted_values)
-  return (data.frame(sorted_values,censored))
-  }
-  if(type == 2){
-    
-    censored <- (1:length(values) > (length(values)-t))
-    sorted_values <- ifelse(censored, max(((!censored)*sorted_values) 
-                                          [1:(length(values)-t)]), sorted_values)
-    return (data.frame(sorted_values,censored))
-  }
-  if(type == 3){
-    c <-rexp(1,1/t)
-    censored <- sorted_values > c
-    sorted_values <- ifelse(censored, c, sorted_values)
-    return (data.frame(sorted_values,censored))
-    
-  }
+
+gen3 <-  function(n, alpha, lambda, eta){
+  y <- runif(n)
+  x <- - (1/lambda)*log(1- y^(1/alpha))
+  c <- rexp(n, rate=1/eta)
+  x <- pmin(x, c)
+  delta <- ifelse(x==c, 0, 1)
+  
+  return(data.frame(x, delta))
 }
 #-------------------------------------------------------------------------
 ```
@@ -106,8 +78,8 @@ generator_zm_cenzurowanych <- function(n,alpha,lambda,type,t){
 wygeneruj_zm_opisowe <- function(values){
  
   
-  censored <- values$censored
-  values <- values$sorted_values
+  censored <- values$delta
+  values <- 1 - values$x
   
   results <- data.frame(
   Q1 = quantile(values,1/4),
@@ -120,9 +92,9 @@ wygeneruj_zm_opisowe <- function(values){
   return (results)
 }
 
-df1 <- wygeneruj_zm_opisowe(generator_zm_cenzurowanych(40,8,1,1,3))
-df2 <- wygeneruj_zm_opisowe(generator_zm_cenzurowanych(40,8,1,2,3))
-df3 <- wygeneruj_zm_opisowe(generator_zm_cenzurowanych(40,8,1,3,3))
+df1 <- wygeneruj_zm_opisowe(gen1(n=20, alpha = 1.2, lambda = 1, t0=7))
+df2 <- wygeneruj_zm_opisowe(gen2(n=20, alpha = 1.2, lambda = 1,m=12))
+df3 <- wygeneruj_zm_opisowe(gen3(n=20, alpha = 1.2, lambda = 1, eta = 1.8))
 
 df_all <- rbind(df1,df2,df3)
 rownames(df_all) <- c("Cenzura 1 typu","Cenzura 2 typu","Cenzura 3 typu")
@@ -162,7 +134,7 @@ df2 <- wygeneruj_zm_opisowe(times_B)
 df_all <- rbind(df1,df2)
 rownames(df_all) <- c("lek A","lek B")
 
-tab <- xtable(df_all,digits = 4,caption = "Statystyki opisowe dla danych dotyczących leków ") 
+tab <- xtable(df_all,digits = 4,caption = "Statystyki opisowe dla danych dotyczcych leków ") 
 print(tab,type = "latex",comment = FALSE,table.placement = "H",caption.placement = "top")
 
 ```
