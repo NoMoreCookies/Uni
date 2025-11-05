@@ -50,11 +50,10 @@ kurs = 0.969
 
 w_nominalna = 1000
 
-zysk_netto = w_nominalna
 
 koszt = w_nominalna * kurs * (1 + 0.0012)
 
-YTM = ((zysk_netto/koszt))^(365/834)
+YTM = (( w_nominalna/koszt))^(365/823)
 
 YTM
 

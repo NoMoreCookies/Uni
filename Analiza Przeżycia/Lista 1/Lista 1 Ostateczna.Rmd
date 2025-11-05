@@ -1,0 +1,264 @@
+---
+title: "Lista 1 - Ostateczna"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-11-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+```{r libraries_import}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(xtable)
+```
+
+# Zadanie 1
+
+Gęstość funkcji $$
+f(t,\alpha,\beta,\gamma)=
+\frac{\alpha\gamma}{\beta}
+\left(\frac{t}{\beta}\right)^{\alpha-1}
+\left[1-\exp\!\left(-\left(\frac{t}{\beta}\right)^{\alpha}\right)\right]^{\gamma-1}
+\exp\!\left(-\left(\frac{t}{\beta}\right)^{\alpha}\right)\,
+\mathbf{1}_{(0,\infty)}(t).
+$$
+
+```{r gęstość_f}
+
+density_weib <- function(x, alpha, beta, gamma) {
+  dens <- ifelse(
+    x > 0,
+    (alpha * gamma / beta) *
+      (x / beta)^(alpha - 1) *
+      (1 - exp(-(x / beta)^alpha))^(gamma - 1) *
+      exp(-(x / beta)^alpha),
+    0
+  )
+  return(dens)
+}
+
+```
+
+Dystrybuanta funkcji
+
+$$
+F(t,\alpha,\beta,\gamma)=
+\begin{cases}
+\left[1-\exp\!\left(-\left(\dfrac{t}{\beta}\right)^{\alpha}\right)\right]^{\gamma}, & t\ge 0,\\[6pt]
+0, & t<0~.
+\end{cases}
+$$
+
+```{r dyst_funkcji}
+
+distrib_weib <- function(x, alpha, beta, gamma){
+  dist <- (1-exp(-(x/beta)^alpha))^gamma
+  return(dist)
+}
+
+```
+
+Funkcja hazardu
+
+$$
+h(t,\alpha,\beta,\gamma)
+= \frac{f(t,\alpha,\beta,\gamma)}{1 - F(t,\alpha,\beta,\gamma)}
+= \frac{f(t,\alpha,\beta,\gamma)}{S(t)} ,
+$$
+
+```{r f_hazardu}
+
+haz_weib <- function(x, alpha, beta, gamma){
+  haz <- density_weib(x, alpha, beta, gamma) / (1 - distrib_weib(x, alpha, beta, gamma))
+  return(haz)
+}
+
+```
+
+Funkcja kwantylowa (odwrotnej dystrybuanty)
+
+$$
+Q(p;\alpha,\beta,\gamma)
+= \beta\left[-\ln\!\Big(1-p^{1/\gamma}\Big)\right]^{1/\alpha},
+\qquad 0<p<1,
+$$
+
+```{r f_kwantylowa}
+
+quant_weib <- function(p, alpha, beta, gamma){
+  quant <- beta * (-log(1 - p^(1 / gamma)))^(1 / alpha)
+  return(quant)
+}
+
+```
+
+Funkcje zostały napisane zgodnie z powyższymi definicjami
+
+# Zadanie 2
+
+```{r zadanie2}
+
+xvalue <- seq(0.3, 10, 0.05)
+yvalue1 <- haz_weib(xvalue, 1/2, 2, 3/4)
+yvalue2 <- haz_weib(xvalue, 1, 2, 1)
+yvalue3 <- haz_weib(xvalue, 3/2, 3, 3)
+yvalue4 <- haz_weib(xvalue, 3/2, 4, 1/8)
+yvalue5 <- haz_weib(xvalue, 3/4, 1, 2)
+
+data1 <- data.frame(xvalue, yvalue1) 
+data2 <- data.frame(xvalue, yvalue2) 
+data3 <- data.frame(xvalue, yvalue3) 
+data4 <- data.frame(xvalue, yvalue4) 
+data5 <- data.frame(xvalue, yvalue5) 
+
+labels <- c(
+  expression(gamma == 0.5 ~ "," ~ beta == 2 ~ "," ~ alpha == 3/4),
+  expression(gamma == 1 ~ "," ~ beta == 2 ~ "," ~ alpha == 1),
+  expression(gamma == 3/2 ~ "," ~ beta == 3 ~ "," ~ alpha == 3),
+  expression(gamma == 3/2 ~ "," ~ beta == 4 ~ "," ~ alpha == 1/8),
+  expression(gamma == 3/4 ~ "," ~ beta == 1 ~ "," ~ alpha == 2)
+)
+
+hazard_plot <- ggplot() + geom_line(data=data1, aes(x=xvalue, y=yvalue1, color='A')) + 
+  geom_line(data=data2, aes(x=xvalue, y=yvalue2, color='B')) + 
+  geom_line(data=data3, aes(x=xvalue, y=yvalue3, color='C')) + 
+  geom_line(data=data4, aes(x=xvalue, y=yvalue4, color='D')) + 
+  geom_line(data=data5, aes(x=xvalue, y=yvalue5, color='E')) +
+  scale_color_manual(values=c('A'='yellow', 'B'='blue', 'C'='magenta', 'D'='green', 'E'='red'),
+                     labels = labels) +
+  theme(legend.position = "right") + xlim(0,10) + ylim(0,1) + theme_minimal() + 
+  labs(y="hazard", x="x", title = "Wykresy funkcji hazardu z uogólnionego rozkłądu Weibulla")
+
+print(hazard_plot)
+
+```
+
+# Zadanie 3
+
+Dane są generowane przy użyciu metody odwrotnej dystrybuanty ( u nas funkcji kwatylowej)
+
+```{r generator, echo = TRUE}
+
+number_generator <- function(n, alpha, beta, gamma){
+  u <- runif(n)  # losujemy z U(0,1)
+  x <- quant_weib(u, alpha, beta, gamma)  
+  return(x)
+}
+
+```
+
+# Zadanie 4
+
+```{r zad 4}
+mala_p <- number_generator(50, 1, 2, 1)
+mala_d <- number_generator(50, 1/2, 2, 3/8)
+duza_p <- number_generator(100, 1, 2, 1)
+duza_d <- number_generator(100, 1/2, 2, 3/8)
+
+par(mfrow = c(2, 2))
+
+labels <- c(
+  expression(gamma == 0.5 ~ "," ~ beta == 2 ~ "," ~ alpha == 3/4),
+  expression(gamma == 1 ~ "," ~ beta == 2 ~ "," ~ alpha == 1),
+  expression(gamma == 3/2 ~ "," ~ beta == 3 ~ "," ~ alpha == 3),
+  expression(gamma == 3/2 ~ "," ~ beta == 4 ~ "," ~ alpha == 1/8),
+  expression(gamma == 3/4 ~ "," ~ beta == 1 ~ "," ~ alpha == 2)
+)
+
+
+# small_p
+hist(mala_p, probability = TRUE, col = "lightblue", main = labels[1])
+x_vals <- seq(min(mala_p), max(mala_p), length.out = 100)
+lines(x_vals, density_weib(x_vals, gamma = 1, beta = 2, alpha = 1), col = "deeppink", lwd = 2)
+
+# small_d
+hist(mala_d, probability = TRUE, col = "lightblue", main = labels[2])
+x_vals <- seq(min(mala_d), max(mala_d), length.out = 100)
+lines(x_vals, density_weib(x_vals, gamma = 1/2, beta = 2, alpha = 3/8), col = "deeppink", lwd = 2)
+
+# large_p
+hist(duza_p, probability = TRUE, col = "lightblue", main = labels[3])
+x_vals <- seq(min(duza_p), max(duza_p), length.out = 100)
+lines(x_vals, density_weib(x_vals, gamma = 1, beta = 2, alpha = 1), col = "deeppink", lwd = 2)
+
+# large_d
+hist(duza_d, probability = TRUE, col = "lightblue", main = labels[4])
+x_vals <- seq(min(duza_d), max(duza_d), length.out = 100)
+lines(x_vals, density_weib(x_vals, gamma = 1/2, beta = 2, alpha = 3/8), col = "deeppink", lwd = 2)
+
+```
+
+Wnioski : Dla n = 100 histogramy są lepiej dopasowane do wykresów gęstości rozkładów. Co jest zgodne z intuicją, biorąc pod uwagę fakt, że dane są generowane z tych rozkładów.
+
+# Zadanie 5
+
+```{r zadanie 5,results='asis'}
+
+statystyki_weib <- function(dane, alpha, beta, gamma, nazwa){
+  srednia <- mean(dane)
+  mediana_emp <- median(dane)
+  sd_emp <- sd(dane)
+  kw1_emp <- quantile(dane, 0.25)
+  kw3_emp <- quantile(dane, 0.75)
+  min_emp <- min(dane)
+  max_emp <- max(dane)
+  
+  mediana_teor <- quant_weib(0.5, alpha, beta, gamma)
+  kw1_teor <- quant_weib(0.25, alpha, beta, gamma)
+  kw3_teor <- quant_weib(0.75, alpha, beta, gamma)
+  
+  data.frame(
+    Args = nazwa,
+    Średnia = srednia,
+    Med_emp = mediana_emp,
+    Med = mediana_teor,
+    SD = sd_emp,
+    Q1_emp = kw1_emp,
+    Q1_teor = kw1_teor,
+    Q3_emp = kw3_emp,
+    Q3_teor = kw3_teor,
+    Min = min_emp,
+    Max = max_emp,
+    rozstęp = max_emp - min_emp,
+    stringsAsFactors = FALSE
+  )
+}
+
+tab_stat <- rbind(
+  statystyki_weib(mala_p, 1, 2, 1, "Zestaw 1"),
+  statystyki_weib(mala_d, 1/2, 2, 3/8,"Zestaw 2"),
+  statystyki_weib(duza_p, 1, 2, 1,"Zestaw 3"),
+  statystyki_weib(duza_d, 1/2, 2, 3/8,"Zestaw 4")
+)
+
+num_cols <- sapply(tab_stat, is.numeric)
+tab_stat[num_cols] <- lapply(tab_stat[num_cols], function(x) round(x, 4))
+
+tab_xtable <- xtable(tab_stat, caption = "Statystyki dla rozkładu Weibulla", label = "tab:weibull_stats")
+
+print(tab_xtable, include.rownames = FALSE, caption.placement = "top",comment = FALSE)
+
+
+```
+
+Zestaw 1 : $\alpha = 1$ $\beta = 2$ $\gamma = 1$ n = 50 | Zestaw 3 : $\alpha = 1$ $\beta = 2$ $\gamma = 1$ n = 100 
+
+Zestaw 2 : $\alpha = \frac{1}{2}$ $\beta = 2$ $\gamma = \frac{3}{8}$ n = 50 | Zestaw 4 : $\alpha = \frac{1}{2}$ $\beta = 2$ $\gamma = \frac{3}{8}$ n = 100
+
+
+Wnioski : Dane są generowane losowo, ale dla częściej dla n = 100 kwartyle oraz mediany były bardziej zbliżone do swoich teoretycznych wartości .
+
+
+
+
+
+

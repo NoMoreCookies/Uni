@@ -4,25 +4,22 @@ output: html_document
 date: "2025-10-25"
 ---
 
-```{r libraries}
+```{r libraries_import}
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-
-
 ```
 
 Zadanie 1
 
-Gęstość funkcji
-\[
+Gęstość funkcji $$
 f(t,\alpha,\beta,\gamma)=
 \frac{\alpha\gamma}{\beta}
 \left(\frac{t}{\beta}\right)^{\alpha-1}
 \left[1-\exp\!\left(-\left(\frac{t}{\beta}\right)^{\alpha}\right)\right]^{\gamma-1}
 \exp\!\left(-\left(\frac{t}{\beta}\right)^{\alpha}\right)\,
 \mathbf{1}_{(0,\infty)}(t).
-\]
+$$
 
 ```{r gęstość_f}
 
@@ -42,13 +39,13 @@ dexpwei <- function(t, alpha, beta, gamma) {
 
 Dystrybuanta funkcji
 
-\[
+$$
 F(t,\alpha,\beta,\gamma)=
 \begin{cases}
 \left[1-\exp\!\left(-\left(\dfrac{t}{\beta}\right)^{\alpha}\right)\right]^{\gamma}, & t\ge 0,\\[6pt]
 0, & t<0~.
 \end{cases}
-\]
+$$
 
 ```{r dyst_funkcji}
 
@@ -64,11 +61,11 @@ pexpwei <- function(t, alpha, beta, gamma) {
 
 Odwrotna dystrybuanta
 
-\[
+$$
 Q(p;\alpha,\beta,\gamma)
 = \beta \left[-\ln\!\big(1 - p^{1/\gamma}\big)\right]^{1/\alpha},
 \qquad 0 < p < 1.
-\]
+$$
 
 ```{r odw_dyst}
 
@@ -86,11 +83,11 @@ qexpwei <- function(p, alpha, beta, gamma) {
 
 Funkcja hazardu
 
-\[
+$$
 h(t,\alpha,\beta,\gamma)
 = \frac{f(t,\alpha,\beta,\gamma)}{1 - F(t,\alpha,\beta,\gamma)}
 = \frac{f(t,\alpha,\beta,\gamma)}{S(t)} ,
-\]
+$$
 
 ```{r f_hazardu}
 
@@ -106,13 +103,14 @@ hexpwei <- function(t, alpha, beta, gamma) {
 }
 
 ```
+
 Funkcja kwantylowa
 
-\[
+$$
 Q(p;\alpha,\beta,\gamma)
 = \beta\left[-\ln\!\Big(1-p^{1/\gamma}\Big)\right]^{1/\alpha},
 \qquad 0<p<1,
-\]
+$$
 
 ```{r f_kwantylowa}
 
@@ -127,7 +125,9 @@ qexpwei <- function(p, alpha, beta, gamma) {
 
 ```
 
+
 Zadanie 2
+
 
 ```{r zadanie2}
 
@@ -146,27 +146,31 @@ for( args in args_list ){
   y_values = dexpwei(x_values,args[1],args[2],args[3])/(1-pexpwei(x_values,args[1],args[2],args[3]))
   df = cbind(df,y_values)
 }
+
 colnames(df) = c("x","y1","y2","y3","y4","y5")
 
-# ---- reshape data into long format ----
+
 df_long <- df %>%
   pivot_longer(cols = starts_with("y"),
-               names_to = "curve",
+               names_to = "Argumenty",
                values_to = "hazard")
 
-# ---- plot all curves in one ggplot ----
-ggplot(df_long, aes(x = x, y = hazard, color = curve)) +
-  geom_line(size = 1) +
-  labs(
-    title = "Hazard functions for different parameter sets",
-    x = "t",
-    y = "h(t)",
-    color = "Curve"
-  ) +
-  theme_minimal(base_size = 14)
+labels <- c(
+  expression(gamma == 0.5 ~ "," ~ beta == 2 ~ "," ~ alpha == 3/4),
+  expression(gamma == 1 ~ "," ~ beta == 2 ~ "," ~ alpha == 1),
+  expression(gamma == 3/2 ~ "," ~ beta == 3 ~ "," ~ alpha == 3),
+  expression(gamma == 3/2 ~ "," ~ beta == 4 ~ "," ~ alpha == 1/8),
+  expression(gamma == 3/4 ~ "," ~ beta == 1 ~ "," ~ alpha == 2)
+)
+
+ggplot(df_long, aes(x = x, y = hazard, color = Argumenty)) +
+  geom_line() +
+  scale_color_manual(values = c("red", "blue", "green", "purple", "orange"),
+                     labels = labels) +
+  theme_minimal()
 ```
 
-Zadanie 3 
+Zadanie 3
 
 ```{r generator}
 
@@ -175,57 +179,67 @@ generate_n_numbers <-function(n,alpha,beta,gamma){
 }
 
 numbers <- generate_n_numbers(1000,1,1,1) 
-print(numbers)
+
 ```
 
 zadanie 4
 
 ```{r zad 4}
-
-n = c(50,100)
+n <- c(50, 100)
 
 args_list <- list(
   c(0.5, 2, 3/4),
   c(3/2, 3, 3)
 )
 
-plot_hist_with_pdf <- function(x, a, b, c,my_pdf) {
-  hist(x, breaks = "FD", freq = FALSE, col = "grey90",
-       border = "white", main = sprintf("n=%d | (%.3g, %.3g, %.3g)", n, a, b, c),
-       xlab = "x")
+generate_n_numbers <- function(n, a, b, c) rexp(n, rate = 1/a)
+dexpwei <- function(x, a, b, c) dweibull(x, shape = b, scale = a)
+
+plot_hist_with_pdf <- function(x, a, b, c, my_pdf, n, add_ylabel = FALSE) {
+  hist(
+    x, breaks = "FD", freq = FALSE, col = "grey90", border = "white",
+    main = bquote(n == .(n)), xlab = "x", ylab = if (add_ylabel) "Density" else "",
+    cex.main = 1.2, cex.lab = 1.1
+  )
   rng <- range(x)
-  curve(my_pdf(x, a, b, c), from = rng[1], to = rng[2], add = TRUE, lwd = 2)
+  curve(my_pdf(x, a, b, c), from = rng[1], to = rng[2], add = TRUE, lwd = 2, col = "blue")
 }
 
-graph_generator <- function(n,args_list){
+graph_generator_grid <- function(n_vec, args_list) {
+  par(mfrow = c(length(n_vec), length(args_list)),
+      oma = c(3, 4, 4, 1), # outer margins (bottom, left, top, right)
+      mar = c(4, 2, 3, 1)) # inner margins for each plot
   
-  lst <- list()
-  
-  for (i in n ){
-    
-    df = data.frame(matrix(nrow = i, ncol = 0))
-    
-    for (j in args_list){
-    df[[paste0("series_",i,"_",j[1])]] = generate_n_numbers(i,j[1],j[2],j[3])
+  for (i in seq_along(n_vec)) {
+    for (j in seq_along(args_list)) {
+      a <- args_list[[j]][1]
+      b <- args_list[[j]][2]
+      c <- args_list[[j]][3]
+      x <- generate_n_numbers(n_vec[i], a, b, c)
       
-    print(plot_hist_with_pdf(df[[paste0("series_",i,"_",j[1])]],j[1],j[2],j[3],dexpwei))
-    
+      add_ylabel <- (j == 1) # only first column gets "Density" label
+      plot_hist_with_pdf(x, a, b, c, dexpwei, n_vec[i], add_ylabel)
+      
+      # Top labels only for the first row
+      if (i == 1) {
+        mtext(bquote(gamma == .(a) ~ "," ~ beta == .(b) ~ "," ~ alpha == .(c)),
+              side = 3, line = 1.5, cex = 1.1)
+      }
     }
-    lst <- append(lst,df)
-
   }
-  return(lst)
+  # Add shared axis titles
+  mtext("x", side = 1, outer = TRUE, line = 1.5)
+  mtext("Density", side = 2, outer = TRUE, line = 2.5)
 }
-lst = graph_generator(n,args_list )
+
+graph_generator_grid(n, args_list)
+
 ```
 
-
-
-zadanie 5 
-
+zadanie 5
 
 ```{r zadanie 5}
-
+#tutaj tabelę trzeba dodać
 
 for (col in lst) {
   x <- col
