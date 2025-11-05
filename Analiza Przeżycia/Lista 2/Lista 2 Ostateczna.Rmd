@@ -30,7 +30,7 @@ set.seed(123)
 # Zadanie 1
 
 Funckja została napisana zgodnie z wytycznymi zadania
-```{r zad1}
+```{r zad1,echo = TRUE}
 
 #--------------------------Generatory-------------------------------
 gen1 <- function(n, alpha, lambda, t0){
@@ -78,8 +78,8 @@ gen3 <-  function(n, alpha, lambda, eta){
 wygeneruj_zm_opisowe <- function(values){
  
   
-  censored <- values$delta
-  values <- 1 - values$x
+  censored <-1 - values$delta
+  values <-  values$x
   
   results <- data.frame(
   Q1 = quantile(values,1/4),
@@ -92,7 +92,7 @@ wygeneruj_zm_opisowe <- function(values){
   return (results)
 }
 
-df1 <- wygeneruj_zm_opisowe(gen1(n=20, alpha = 1.2, lambda = 1, t0=7))
+df1 <- wygeneruj_zm_opisowe(gen1(n=20, alpha = 1.2, lambda = 1, t0=5))
 df2 <- wygeneruj_zm_opisowe(gen2(n=20, alpha = 1.2, lambda = 1,m=12))
 df3 <- wygeneruj_zm_opisowe(gen3(n=20, alpha = 1.2, lambda = 1, eta = 1.8))
 
@@ -102,7 +102,7 @@ tab <- xtable(df_all,digits = 4, caption = "Statystyki opisowe dla wygenerowanyc
 print(tab,type = "latex",comment = FALSE,table.placement = "H",caption.placement = "top")
 ```
 
-Wnioski : 
+Wnioski : Dane cenzurowane typu 1 i 2 mają podobne Q1 i Q2, różnice dopiero widać w Q3, dla typu drugiego jest ono niższe, co jest zgodne z intuciją. W pierwszym typie wszystkie dane są pełne za to w drugim na końcu pojawia się jakaś ilość danych cenzurowanych. W cenzurze 3 typu, czas do którego danego są cenzurowane generowany jest z rozkładu wykładniczego, czyli dane n pierwszych obserwacji są cenzurowane. Powoduje to zmniejszenie IQR, ze względu na zastąpienie brakujących danych czasem od którego obserwacje zaczęły być całkowite.
 
 # Zadanie 3
 

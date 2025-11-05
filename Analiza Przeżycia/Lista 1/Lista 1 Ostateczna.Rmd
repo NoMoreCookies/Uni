@@ -19,7 +19,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(xtable)
-set.seed(123)
+set.seed(125)
 ```
 
 # Zadanie 1
@@ -256,7 +256,7 @@ Zestaw 1 : $\alpha = 1$ $\beta = 2$ $\gamma = 1$ n = 50 | Zestaw 3 : $\alpha = 1
 Zestaw 2 : $\alpha = \frac{1}{2}$ $\beta = 2$ $\gamma = \frac{3}{8}$ n = 50 | Zestaw 4 : $\alpha = \frac{1}{2}$ $\beta = 2$ $\gamma = \frac{3}{8}$ n = 100
 
 
-Wnioski : Dane są generowane losowo, ale dla częściej dla n = 100 kwartyle oraz mediany były bardziej zbliżone do swoich teoretycznych wartości .
+Wnioski : Dla większej próby widać dokładniejsze kwantyle bardziej zbliżone do ich teoretycznej wartości, niż dla próby mniejszej.Jedynie w zestawie pierwszym, Q3 jest bliższe teoretycznej wartości niż w zestawie 3, jest to zapewno spowodowane losowością danych oraz dość małą próbą (50 i 100).
 
 
 
