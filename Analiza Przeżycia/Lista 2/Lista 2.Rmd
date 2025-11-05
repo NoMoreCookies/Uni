@@ -6,6 +6,7 @@ date: "2025-10-26"
 
 Zadanie 1
 ```{r zad1}
+
 # gęstość
 dexpoexp <- function(x, alpha, lambda, log = FALSE) {
   if (any(alpha <= 0) || any(lambda <= 0)) stop("alpha, lambda must be > 0")
@@ -14,6 +15,7 @@ dexpoexp <- function(x, alpha, lambda, log = FALSE) {
           (alpha - 1) * log1p(-exp(-lambda * x))  # log(1 - e^{-λx}) stabilnie
   if (log) logf else exp(logf)
 }
+
 #dystrybuanta
 pexpoexp <- function(q, alpha, lambda, lower.tail = TRUE, log.p = FALSE) {
   if (any(alpha <= 0) || any(lambda <= 0)) stop("alpha, lambda must be > 0")
@@ -30,6 +32,7 @@ qexpoexp <- function(p, alpha, lambda, lower.tail = TRUE, log.p = FALSE) {
   if (any(p < 0 | p > 1)) stop("p must be in [0,1]")
   -(1 / lambda) * log(1 - p^(1 / alpha))
 }
+
 #generator próbek
 rexpoexp <- function(n, alpha, lambda) {
   if (length(n) != 1 || n < 0) stop("n must be a non-negative scalar")

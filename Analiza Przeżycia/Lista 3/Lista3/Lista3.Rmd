@@ -1,0 +1,77 @@
+---
+title: "Lista 3"
+output: html_document
+date: "2025-10-22"
+---
+
+# Zadanie 1
+
+Funkcja największej wiarygodności dla danych cenzurowanych prawostronnie 1-ego typu
+
+$$
+L(\vartheta; t^{*}) = \frac{n!}{(n - r)!} \prod_{i=1}^{r} f_{\vartheta}(x_{(i)}) \left[ 1 - F_{\vartheta}(t_{0}) \right]^{n - r},
+$$
+
+gdy $0 < x_{(1)} < x_{(2)} < \ldots < x_{(r)} < \infty$, gdzie $f_{\vartheta}$ oznacza gęstość rozkładu zmiennych $X_1, \ldots, X_n$, $F_{\vartheta}$ - dystrybuantę tego rozkładu, $r$ jest realizacją zmiennej losowej $R$ - losowej liczby obserwacji nieocenzurowanych (kompletnych) w przedziale $(0,t_0]$.
+
+Gęstość rozkładu wykładniczego z parametrem $\lambda > 0$: $$
+f_{\lambda}(x) = \lambda e^{-\lambda x}, \quad x \ge 0.
+$$
+
+Dystrybuanta (funkcja rozkładu) tego rozkładu: $$
+F_{\lambda}(x) = \mathbb{P}(T \le x)
+= 1 - e^{-\lambda x}, \quad x \ge 0.
+$$
+
+gdy $0 \le x < \infty$, gdzie $T$ oznacza zmienną losową o rozkładzie wykładniczym, $f_{\lambda}$ oznacza gęstość tego rozkładu, $F_{\lambda}$ dystrybuantę tego rozkładu, a $\lambda > 0$ jest parametrem intensywności (częstości zdarzeń).
+
+W\~tym przypadku funkcja wiarygodności jest postaci $$
+L(\vartheta; t^{*}) = \frac{n!}{(n-r)!} \, \vartheta^{r}
+\exp\left\{ -\vartheta \left[ \sum_{i=1}^{r} x_{(i)} + t_{0}(n-r) \right] \right\}.
+$$
+
+Łatwo sprawdzić, że statystyka $$
+\hat{\vartheta} = \frac{R}{T_1}
+$$ jest estymatorem NW parametru $\vartheta$, gdzie $$
+T_1 = \sum_{i=1}^{R} X_{(i)} + t_{0}(n-R).
+$$
+
+```{r f_pomocnicze}
+
+
+# gęstość
+dexpoexp <- function(x, alpha, lambda, log = FALSE) {
+  if (any(alpha <= 0) || any(lambda <= 0)) stop("alpha, lambda must be > 0")
+  x <- pmax(x, 0)  # gęstość poza [0,inf) = 0
+  logf <- log(alpha) + log(lambda) - lambda * x +
+          (alpha - 1) * log1p(-exp(-lambda * x))  # log(1 - e^{-λx}) stabilnie
+  if (log) logf else exp(logf)
+}
+
+#dystrybuanta
+pexpoexp <- function(q, alpha, lambda, lower.tail = TRUE, log.p = FALSE) {
+  if (any(alpha <= 0) || any(lambda <= 0)) stop("alpha, lambda must be > 0")
+  q <- pmax(q, 0)
+  F <- (1 - exp(-lambda * q))^alpha
+  if (!lower.tail) F <- 1 - F
+  if (log.p) log(F) else F
+}
+
+silnia <- function(number){
+  result = 1
+  for (i in 2:n){
+    result = result * i
+  }
+  return (result)
+}
+
+f_naj_wiar <- 
+  
+}
+
+
+```
+
+# Zadanie 2
+
+# Zadanie 3
