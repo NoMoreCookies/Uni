@@ -110,10 +110,10 @@ Wnioski : Dane cenzurowane typu 1 i 2 mają podobne Q1 i Q2, różnice dopiero w
 ```{r zad3,results='asis'}
 
 times_A <- c(0.03345514, 0.08656403, 0.08799947, 0.24385821, 0.27755032,
-             0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208)
+             0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208,rep(1,10))
 
 times_B <- c(0.03788958, 0.12207257, 0.20319983, 0.24474299, 0.30492413,
-             0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721)
+             0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721,rep(1,10))
 
 wygeneruj_zm_opisowe <- function(values){
  
@@ -138,4 +138,4 @@ tab <- xtable(df_all,digits = 4,caption = "Statystyki opisowe dla danych dotyczc
 print(tab,type = "latex",comment = FALSE,table.placement = "H",caption.placement = "top")
 
 ```
-Wnioski: W grupie pacjentów B wartość Q3 jest mniejsza niż w grupie pacjentów A, co oznacza, że czas remisji pacjenta znajdującego się w 75. centylu był krótszy dla grupy B. Informacja ta wskazuje na "szybsze" działanie leku B u wybranych grup pacjentów. Kolejnym pozytywnym aspektem jest mniejszy rozstęp międzykwartylowy czasów remisji w przypadku leku B, co sugeruje, że jego skuteczność w zwalczaniu choroby jest bardziej przewidywalna i w mniejszym stopniu zależy od indywidualnych predyspozycji biologicznych badanych pacjentów.
+Wnioski:Q2 i zakres (range) są niższe w grupie B, co może wskazywać na szybsze działanie leku oraz mniejsze zróżnicowanie wyników związane z indywidualnymi predyspozycjami biologicznymi badanych osób. W obu grupach wartość Q3 wynosi 1, co jest zrozumiałe, ponieważ połowa obserwacji została ocenzurowana.
