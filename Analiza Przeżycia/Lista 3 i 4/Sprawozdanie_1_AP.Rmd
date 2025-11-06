@@ -389,7 +389,7 @@ df2 <- wygeneruj_zm_opisowe(times_B)
 df_all <- rbind(df1,df2)
 rownames(df_all) <- c("lek A","lek B")
 
-tab <- xtable(df_all,digits = 4,caption = "Statystyki opisowe dla danych dotyczcych leków ") 
+tab <- xtable(df_all,digits = 4,caption = "Statystyki opisowe dla danych dotyczących leków ") 
 print(tab,type = "latex",comment = FALSE,table.placement = "H",caption.placement = "top")
 
 ```
