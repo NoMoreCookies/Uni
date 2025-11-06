@@ -127,7 +127,7 @@ quant_weib <- function(p, alpha, beta, gamma){
 
 ```
 
-Funkcje zostały napisane zgodnie z definicjami
+Funkcje zostały napisane zgodnie z definicjami.
 
 ## Zadanie 2
 
@@ -171,11 +171,11 @@ print(hazard_plot)
 
 ```
 
-[Wykresy](#wykres_weib) dla odpowiednich parametrów są zgodne z przedstawionymi na labolatoriach
+[Wykresy](#wykres_weib) dla odpowiednich parametrów są zgodne z przedstawionymi na labolatoriach.
 
 ## Zadanie 3
 
-Dane są generowane przy użyciu metody odwrotnej dystrybuanty ( u nas funkcji kwatylowej)
+Dane są generowane przy użyciu metody odwrotnej dystrybuanty ( u nas funkcji kwatylowej).
 
 ```{r generator, echo = TRUE}
 
@@ -294,7 +294,7 @@ Dla większej [próby](#podst_wsk_opis) widać dokładniejsze kwantyle bardziej 
 
 ## Zadanie 1
 
-Funckja została napisana zgodnie z wytycznymi zadania
+Funckja została napisana zgodnie z wytycznymi zadania.
 
 ```{r zad1,echo = TRUE}
 
@@ -507,7 +507,7 @@ upp_B_2 <- 1/T.L.B2
 low_B_2 <- 1/T.U.B2
 
 ```
-### Tabela przedziałów {#taela1}
+### Tabela przedziałów {#tabela1}
 ```{r tabela_przedzialy, results='asis', echo=FALSE}
 library(knitr)
 
@@ -549,6 +549,7 @@ fun <- function(X, m, n, alpha) {
 ```
 
 ### Tabela oszacowania {#tabela2}
+
 ```{r tabela_oszacowania, results='asis', echo=FALSE}
 library(knitr)
 
