@@ -33,26 +33,24 @@ knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
 ```{r, echo=FALSE}
 
 X_A <- c(0.03345514, 0.08656403, 0.08799947, 0.24385821, 0.27755032,
-         0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208)
+         0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208, rep(1,10))
 X_B <- c(0.03788958, 0.12207257, 0.20319983, 0.24474299, 0.30492413,
-         0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721)
+         0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721, rep(1, 10))
 t <- 1
 n <- 20
-R_A <- sum(X_A <= t)
-R_B <- sum(X_B <= t) 
-T_A <- sum(X_A) + t*(n-R_A)
-T_B <- sum(X_B) + t*(n-R_B)
+R_A <- sum(X_A < t)
+R_B <- sum(X_B < t) 
+T_A <- sum(X_A[1:10]) + t*(n-R_A)
+T_B <- sum(X_B[1:10]) + t*(n-R_B)
 
 theta_hat_A <- R_A / T_A
 theta_hat_B <- R_B / T_B
 
-theta_wave_A <- - log(1-R_A/n)/t
-theta_wave_B <- - log(1-R_B/n)/t
+theta_wave <- - log(1-R_A/n)/t
 
 mi_hat_A <- 1/theta_hat_A
-mi_wave_A <- 1/theta_wave_A
 mi_hat_B <- 1/theta_hat_B
-mi_wave_B <- 1/theta_wave_B
+mi_wave <- 1/theta_wave
 
 ```
 
@@ -78,15 +76,56 @@ library(binom)
 T.L.1.A <- binom.confint(R_A, n, methods = 'exact', conf.level = 1-0.05)$lower
 T.U.1.A <- binom.confint(R_A, n, methods = 'exact', conf.level = 1-0.05)$upper
 
+T.L.A1 <- - log(1-T.L.1.A)/t
+T.U.A1 <- - log(1-T.U.1.A)/t
+
+upp_A_1 <- 1/T.L.A1
+low_A_1 <- 1/T.U.A1
+
 T.L.2.A <- binom.confint(R_A, n, methods = 'exact', conf.level = 1-0.01)$lower
 T.U.2.A <- binom.confint(R_A, n, methods = 'exact', conf.level = 1-0.01)$upper
+
+T.L.A2 <- - log(1-T.L.2.A)/t
+T.U.A2 <- - log(1-T.U.2.A)/t
+
+upp_A_2 <- 1/T.L.A2
+low_A_2 <- 1/T.U.A2
 
 T.L.1.B <- binom.confint(R_B, n, methods = 'exact', conf.level = 1-0.05)$lower
 T.U.1.B <- binom.confint(R_B, n, methods = 'exact', conf.level = 1-0.05)$upper
 
+T.L.B1 <- - log(1-T.L.1.B)/t
+T.U.B1 <- - log(1-T.U.1.B)/t
+
+upp_B_1 <- 1/T.L.B1
+low_B_1 <- 1/T.U.B1
+
 T.L.2.B <- binom.confint(R_B, n, methods = 'exact', conf.level = 1-0.01)$lower
 T.U.2.B <- binom.confint(R_B, n, methods = 'exact', conf.level = 1-0.01)$upper
 
+T.L.B2 <- - log(1-T.L.2.B)/t
+T.U.B2 <- - log(1-T.U.2.B)/t
+
+upp_B_2 <- 1/T.L.B2
+low_B_2 <- 1/T.U.B2
+
+```
+
+```{r results='asis', echo=FALSE}
+library(knitr)
+
+tabela <- data.frame(
+  Lek = c("A", "A", "B", "B"),
+  Alpha = c(0.05, 0.01, 0.05, 0.01),     
+  `Realizacja przedziału ufności ` = c(
+    sprintf("[%.4f, %.4f]", low_A_1, upp_A_1),
+    sprintf("[%.4f, %.4f]", low_A_2, upp_A_2),
+    sprintf("[%.4f, %.4f]", low_B_1, upp_B_1),
+    sprintf("[%.4f, %.4f]", low_B_2, upp_B_2)
+  ) )
+
+kable(tabela, caption = "Realizacja Przedziału ufności dla średniego czasu do remisji choroby",
+      digits = 4, align = "c")
 ```
 
 ## Zadanie 2
@@ -163,7 +202,7 @@ symulacja <- function(n, t0, theta){
     R <- sum(X$delta)
     if (R < n) break  # akceptujemy tylko próby, gdzie jest cenzurowanie
   }
-  T1 <- sum(X$x) + t0*(n - R)
+  T1 <- sum(X$x[which(X$delta ==1)]) + t0*(n - R)
   
   theta.hat <- R/T1
   theta.wave <- - log(1 - R/n)/t0
@@ -305,10 +344,32 @@ for (k in seq_along(theta)){
   wyniki[[paste0("n=", n)]] <- data.frame(theta = theta, moc = moc)
 }
 
-wyniki[["n=20"]]
-wyniki[["n=50"]]
 
 ```
+
+```{r tabela_mocy, echo=FALSE}
+library(dplyr)
+tabela_mocy <- wyniki[["n=20"]] %>%
+  rename(moc_n20 = moc) %>%
+  left_join(
+    wyniki[["n=50"]] %>% rename(moc_n50 = moc),
+    by = "theta"
+  )
+
+tabela_mocy <- tabela_mocy %>%
+  mutate(
+    moc_n20 = round(moc_n20, 4),
+    moc_n50 = round(moc_n50, 4)
+  )
+
+kable(
+  tabela_mocy,
+  caption = "Porównanie mocy testu dla różnych wartości theta i liczebności prób (n = 20, 50)",
+  col.names = c("Theta", "Moc (n = 20)", "Moc (n = 50)"), align = "c")
+
+
+```
+
 
 ## Zadanie 3
 
