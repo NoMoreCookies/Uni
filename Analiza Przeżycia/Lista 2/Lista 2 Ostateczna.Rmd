@@ -138,4 +138,4 @@ tab <- xtable(df_all,digits = 4,caption = "Statystyki opisowe dla danych dotyczc
 print(tab,type = "latex",comment = FALSE,table.placement = "H",caption.placement = "top")
 
 ```
-Wnioski : 
+Wnioski: W grupie pacjentów B wartość Q3 jest mniejsza niż w grupie pacjentów A, co oznacza, że czas remisji pacjenta znajdującego się w 75. centylu był krótszy dla grupy B. Informacja ta wskazuje na "szybsze" działanie leku B u wybranych grup pacjentów. Kolejnym pozytywnym aspektem jest mniejszy rozstęp międzykwartylowy czasów remisji w przypadku leku B, co sugeruje, że jego skuteczność w zwalczaniu choroby jest bardziej przewidywalna i w mniejszym stopniu zależy od indywidualnych predyspozycji biologicznych badanych pacjentów.

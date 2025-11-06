@@ -33,7 +33,7 @@ f(t,\alpha,\beta,\gamma)=
 \mathbf{1}_{(0,\infty)}(t).
 $$
 
-```{r gęstość_f}
+```{r gęstość_f,echo = TRUE}
 
 density_weib <- function(x, alpha, beta, gamma) {
   dens <- ifelse(
@@ -59,7 +59,7 @@ F(t,\alpha,\beta,\gamma)=
 \end{cases}
 $$
 
-```{r dyst_funkcji}
+```{r dyst_funkcji,echo = TRUE}
 
 distrib_weib <- function(x, alpha, beta, gamma){
   dist <- (1-exp(-(x/beta)^alpha))^gamma
@@ -76,7 +76,7 @@ h(t,\alpha,\beta,\gamma)
 = \frac{f(t,\alpha,\beta,\gamma)}{S(t)} ,
 $$
 
-```{r f_hazardu}
+```{r f_hazardu,echo = TRUE}
 
 haz_weib <- function(x, alpha, beta, gamma){
   haz <- density_weib(x, alpha, beta, gamma) / (1 - distrib_weib(x, alpha, beta, gamma))
@@ -93,7 +93,7 @@ Q(p;\alpha,\beta,\gamma)
 \qquad 0<p<1,
 $$
 
-```{r f_kwantylowa}
+```{r f_kwantylowa,echo = TRUE}
 
 quant_weib <- function(p, alpha, beta, gamma){
   quant <- beta * (-log(1 - p^(1 / gamma)))^(1 / alpha)
@@ -102,7 +102,7 @@ quant_weib <- function(p, alpha, beta, gamma){
 
 ```
 
-Funkcje zostały napisane zgodnie z powyższymi definicjami
+Funkcje zostały napisane zgodnie z definicjami
 
 # Zadanie 2
 
@@ -142,6 +142,7 @@ hazard_plot <- ggplot() + geom_line(data=data1, aes(x=xvalue, y=yvalue1, color='
 print(hazard_plot)
 
 ```
+Wnioski : Wykresy dla odpowiednich parametrów są zgodne z oczekiwaniami
 
 # Zadanie 3
 
@@ -177,22 +178,22 @@ labels <- c(
 
 
 # small_p
-hist(mala_p, probability = TRUE, col = "lightblue", main = labels[1])
+hist(mala_p, probability = TRUE, col = "lightblue", main = labels[1],xlab = "n = 50",ylab = "density")
 x_vals <- seq(min(mala_p), max(mala_p), length.out = 100)
 lines(x_vals, density_weib(x_vals, gamma = 1, beta = 2, alpha = 1), col = "deeppink", lwd = 2)
 
 # small_d
-hist(mala_d, probability = TRUE, col = "lightblue", main = labels[2])
+hist(mala_d, probability = TRUE, col = "lightblue", main = labels[2],xlab = "n = 50",ylab = "density")
 x_vals <- seq(min(mala_d), max(mala_d), length.out = 100)
 lines(x_vals, density_weib(x_vals, gamma = 1/2, beta = 2, alpha = 3/8), col = "deeppink", lwd = 2)
 
 # large_p
-hist(duza_p, probability = TRUE, col = "lightblue", main = labels[3])
+hist(duza_p, probability = TRUE, col = "lightblue", main = labels[3],xlab = "n = 100",ylab = "density")
 x_vals <- seq(min(duza_p), max(duza_p), length.out = 100)
 lines(x_vals, density_weib(x_vals, gamma = 1, beta = 2, alpha = 1), col = "deeppink", lwd = 2)
 
 # large_d
-hist(duza_d, probability = TRUE, col = "lightblue", main = labels[4])
+hist(duza_d, probability = TRUE, col = "lightblue", main = labels[4],xlab = "n = 100",ylab = "density")
 x_vals <- seq(min(duza_d), max(duza_d), length.out = 100)
 lines(x_vals, density_weib(x_vals, gamma = 1/2, beta = 2, alpha = 3/8), col = "deeppink", lwd = 2)
 
