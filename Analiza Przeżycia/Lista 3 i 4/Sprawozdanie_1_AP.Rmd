@@ -127,7 +127,7 @@ Funkcje zostały napisane zgodnie z definicjami
 
 ## Zadanie 2
 
-```{r zadanie2}
+```{r zadanie2,fig.cap = "Wykresy Weibulla"}
 
 xvalue <- seq(0.3, 10, 0.05)
 yvalue1 <- haz_weib(xvalue, 1/2, 2, 3/4)
@@ -181,7 +181,7 @@ number_generator <- function(n, alpha, beta, gamma){
 
 ## Zadanie 4
 
-```{r zad 4}
+```{r zad 4,fig.cap = "Badanie rozkładu histogramów"}
 mala_p <- number_generator(50, 1, 2, 1)
 mala_d <- number_generator(50, 1/2, 2, 3/8)
 duza_p <- number_generator(100, 1, 2, 1)
