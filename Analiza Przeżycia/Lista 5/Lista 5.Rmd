@@ -1,0 +1,223 @@
+---
+title: "Sprawozdanie 1"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \ Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+
+```
+# Lista 1
+```{r requirements}
+library(survival)
+library(survminer)
+library(patchwork)
+```
+
+## Zadanie 1 
+
+Dane przedstawiają dwie grupy pacjentów, na których badano działanie leków A i B. \
+Przedstawione wyniki prezentują czas do remisji choroby.
+
+Dane opisane w zadaniu 3 z lsity 2 : \
+Lek A : 0.03345514, 0.08656403, 0.08799947, 0.24385821, 0.27755032, \
+0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208
+
+Lek B : 0.03788958, 0.12207257, 0.20319983, 0.24474299, 0.30492413, \
+0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721
+
+W każdej z tych grup było jeszcze 10 osób u których nie zaobserwowano remisji choroby.
+```{r zad1_dane}
+
+timeA <- c(0.03345514, 0.08656403, 0.08799947, 0.24385821, 0.27755032, 
+0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208,rep(1,10))
+
+statusA <- c(rep(1,10),rep(0,10))
+
+timeB <- c(0.03788958, 0.12207257, 0.20319983, 0.24474299, 0.30492413,
+0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721,rep(1,10))
+
+statusB <- c(rep(1,10),rep(0,10))
+
+```
+
+### Wykresy Kaplana-Meiera{#wykresy_KM}
+
+```{r zad1_kaplan,fig.cap="Wykres estymatorów Kaplana–Meiera dla leków A i B"}
+#------------------------------ Kaplan-Meier------------------------------------
+
+dane.A <- data.frame(time = timeA, status = statusA)
+
+KM.fit.A <- survfit((Surv(time,status)~1), data = dane.A)
+
+KM.df.A <- data.frame(time = KM.fit.A$time , surv = KM.fit.A$surv)
+
+dane.B <- data.frame(time = timeB, status = statusB)
+
+KM.fit.B <- survfit((Surv(time,status)~1), data = dane.B)
+
+KM.df.B <- data.frame(time = KM.fit.B$time , surv = KM.fit.B$surv)
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+KM.df.A$group <- "Lek A"
+KM.df.B$group <- "Lek B"
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+KM.df.A$group <- "Lek A"
+KM.df.B$group <- "Lek B"
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+ggplot(KM.all, aes(x = time, y = surv, color = group)) +
+  geom_step() +
+  labs(x = "Czas", y = "Prawdopodobieństwo braku remisji",
+       color = "Grupa") +
+          theme_minimal()+
+            ggtitle( "Wykres estymatorów Kaplana-Meiera dla leków A i B")
+```
+
+[Wykres](#wykresy_KM) estymatorów Kaplana–Meiera dla leków A oraz B wskazuje na szybsze osiąganie remisji w grupie leku B – prawdopodobieństwo pozostawania bez remisji spada do 0 wcześniej niż w grupie leku A.
+[Krzywa](#wykresy_KM) dla leku A jest mniej stroma i przebiega wyżej, co oznacza, że po czasie t = 0,75 około 60% pacjentów wciąż nie osiągnęło remisji, podczas gdy w grupie leku B prawdopodobieństwo braku remisji jest już bliskie 0
+
+### Wykresy Fleminga-Harringtona{#wykresy_FH}
+
+```{r zad1_harrington,fig.cap="Wykres estymatorów Fleminga-Harringtona dla leków A i B"}
+#------------------------------ Fleming-Harrington------------------------------
+
+statusB <- c(rep(1,10),rep(0,10))
+
+dane.A <- data.frame(time = timeA, status = statusA)
+
+KM.fit.A <- survfit((Surv(time,status)~1), data = dane.A,type = "fleming-harrington")
+
+KM.df.A <- data.frame(time = KM.fit.A$time , surv = KM.fit.A$surv)
+
+dane.B <- data.frame(time = timeB, status = statusB)
+
+KM.fit.B <- survfit((Surv(time,status)~1), data = dane.B,type = "fleming-harrington")
+
+KM.df.B <- data.frame(time = KM.fit.B$time , surv = KM.fit.B$surv)
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+KM.df.A$group <- "Lek A"
+KM.df.B$group <- "Lek B"
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+ggplot(KM.all, aes(x = time, y = surv, color = group)) +
+  geom_step() +
+  labs(x = "Czas", y = "Prawdopodobieństwo braku remisji",
+       color = "Grupa") +
+  theme_minimal()+
+    ggtitle("Wykres estymatorów Fleminga-Harringtona dla leków A i B")
+
+```
+
+Z [wykresu](#wykresy_FH) estymatorów Fleminga–Harringtona dla obu leków można wysnuć wnioski analogiczne jak na podstawie [krzywych](#wykresy_KM) Kaplana–Meiera. Przebieg  [krzywych](#wykresy_FH) dla leków A i B jest bardzo zbliżony, co potwierdza szybsze osiąganie remisji w grupie leku B oraz wskazuje, że wybór estymatora (Kaplana–Meiera vs Fleminga–Harringtona) nie wpływa istotnie na interpretację wyników w tym przykładzie.
+
+Na podstawie obu wykresów można przypuszczać, że leki A i B charakteryzują się zbliżonym profilem skuteczności, przy czym lek B wiąże się z szybszym uzyskaniem remisji. Krzywa przeżycia dla leku B spada szybciej i wcześniej osiąga niższe wartości prawdopodobieństwa braku remisji niż krzywa dla leku A, co sugeruje krótszy czas do remisji w tej grupie.
+
+## Zadanie 2 
+
+### Wykresy estymatorów Kaplana-Meiera dla leków A i B z ogonem{#ogon}
+ 
+```{r zad2,fig.cap="Wykresy estymatorów Kaplana-Meiera dla leków A i B z ogonem"}
+
+KM_z_ogonem <- function(times, status, name) {
+  
+  dane <- data.frame(time = times, status = status)
+  
+  KM.fit <- survfit(Surv(time, status) ~ 1, data = dane)
+  KM.df <- data.frame(time = KM.fit$time, surv = KM.fit$surv)
+  
+  last_index <- which(KM.df$surv > min(KM.df$surv))
+  
+  last_index <- c(last_index,length(last_index)+1) #muszę dodać jeszcze ten ostatni czas
+  
+  t_plus <- KM.df$time[max(last_index)]
+  S_t_plus <- KM.df$surv[max(last_index)]
+  
+  KM.df <- KM.df[c(last_index),]
+  
+  nu <- -log(S_t_plus) / t_plus
+  
+  t_tail <- seq(t_plus, 2, length.out = 100)
+  S_tail <- exp(-nu * t_tail)
+  tail_df <- data.frame(time = t_tail, surv = S_tail)
+  
+  
+  return(ggplot() +
+    geom_step(data = KM.df, aes(x = time, y = surv)) +
+    geom_line(data = tail_df, aes(x = time, y = surv)) + 
+    geom_hline(yintercept = S_t_plus, linetype = "dashed",color = "red") +
+    labs(
+      x = "Czas",
+      y = "Prawdopodobieństwo braku remisji"
+    ) +
+    theme_minimal()+
+    ggtitle(paste("Wykres estymatora \n Kaplana-Meiera \n wraz z ogonem \n dla danych ", name)))
+}
+p1 <- KM_z_ogonem(timeA,statusA,"A") + theme(plot.margin = margin(r = 30)) 
+p2 <- KM_z_ogonem(timeB,statusB,"B") + theme(plot.margin = margin(l = 30))
+p1 | p2
+
+```
+
+[Ogon](#ogon) jest zdefiniowany względem definicji zaproponowanej przez Browna, Hollandera i Kowara. Na skutek czego wzór funkcji  ogona 
+w przypadku leku A jak i leku B jest taki sam i wynoi $e^{\frac{{ln\hat{S}(t^{+}})}{t^{+}}*t}$ gdzie w obu przypadkach $t^{+}=\frac{1}{2}$.
+[Ogon](#ogon) lepszy sposób odwzorowuje prawdę, że im dłuzej pacjent jest chory tym szansa remisji jest coraz mniejsza
+
+## Zadanie 3
+
+```{r generator}
+#--------------------------Generator danych I typu-----------------------
+gen1 <- function(n, alpha, lambda, t0){
+  y <- runif(n)
+  x <- - (1/lambda)*log(1- y^(1/alpha))
+  
+  delta <- ifelse(x <= t0, 1, 0)
+  x_obs <- pmin(x, t0)
+  
+  return(data.frame(x = x_obs, delta = delta))
+}
+#-------------------------------------------------------------------------
+
+```
+
+Wybrane parametry to $\alpha=3,\lambda=5$
+
+Dla uogólnionego rozkłądu wykładniczego
+```{r zadanie3}
+
+# u nas
+
+M <- 1000
+n <- c(30,50,100)
+t0 <- 7/6
+
+
+```
