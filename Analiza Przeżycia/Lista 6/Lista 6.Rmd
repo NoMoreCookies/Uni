@@ -1,0 +1,144 @@
+---
+title: "Lista 6"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \ Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+
+```
+
+```{r requirements}
+library(survival)
+library(survminer)
+library(patchwork)
+library(knitr)
+```
+
+# Lista 6
+
+## Zadanie 1
+
+Program został przygotowany zgodnie z wytycznymi zadania. Implementacja obejmuje jedną funkcję, logicznie podzieloną na dwie części za pomocą parametru typ. Została ona opracowana na podstawie definicji wartości oczekiwanej (rozumianej potocznie jako pole pod wykresem) oraz materiałów z listy zadań nr 5. Całość pozostaje w pełnej zgodzie z wymaganiami zadania.
+```{r zad1,echo = TRUE}
+f <- function(dane,typ = 'k'){
+  
+  #Wybranie typu
+  if(typ == 'f'){
+    s <- survfit((Surv(time,status)~1),
+                 data = dane,
+                 type = 'fleming-harrington')
+  }else{
+    s <- survfit((Surv(time,status)~1),
+                 data = dane)
+  }
+  
+  # Znalezienie ostatniego indeksu surv i time
+  #( to jest moment tego ostatniego spadku, patrz wykres 5 lista)
+  last_index <- which(s$surv > min(s$surv))
+  last_index <- max(last_index) 
+  
+  
+  #moment w którym zaczyna się ogon
+  tplus <- s$time[last_index]
+  s_dash <- s$surv[last_index]
+  
+  #wzięcie wartości, do ogona, dlaczego last index+1? 
+  #bo zobacz , że to jest czas pojawienia się pierwszej cenzurowanej
+  #na wykresie to jest | to zejście w ostatnim schodku ,
+  #moment tego zejścia i chcemy mieć czasy do nieg
+  time <- s$time[1:(last_index+1)]
+  
+  # dlaczego surv juz nie do last_index + 1 ,
+  #bo zobacz że chcemy mieć wysokość tego ostatniego schodka,
+  #a w index+1 to już jest  
+  # po zejściu z tego schodka ta ostatnia   wartość, jej nie chcemy.
+  surv <- s$surv[1:last_index]
+  
+  # dodaje ten początkowy przypadek
+  time <- c(0,time)
+  surv <- c(1,surv)
+  
+  #obliczam szerokości tych kwadratów (patrz wykresy z poprzedniej listy)
+  time_diff <- diff(time)
+  
+  
+  # pole pod schodkami
+  result <- sum(time_diff*surv)
+  
+  # pole pod ogonem
+  summary <-  -exp((log(s_dash)/tplus) * tplus)/((log(s_dash)/tplus))
+
+  #suma pola pod schodkami i ogonem
+  result <- summary + result
+  
+  #zwrócenie wartości
+  return(result)
+}
+
+```
+
+## Zadanie 2
+
+Dane zostały przygotowane zgodnie z wytycznymi zawartymi w poleceniu 
+(źródło danych: zadanie 3 z listy 2).
+
+```{r zad2 inicjalizacja_danych,echo = TRUE}
+timeA <- c(0.03345514, 0.08656403, 0.08799947, 0.24385821, 0.27755032, 
+0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208,rep(1,10))
+
+statusA <- c(rep(1,10),rep(0,10))
+
+timeB <- c(0.03788958, 0.12207257, 0.20319983, 0.24474299, 0.30492413,
+0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721,rep(1,10))
+
+statusB <- c(rep(1,10),rep(0,10))
+
+dane.A <- data.frame(time = timeA, status = statusA)
+
+dane.B <- data.frame(time = timeB, status = statusB)
+
+
+```
+
+### Tabela porównująca oczekiwane czasy do remisji choroby {#czasy_do_remisji_T}
+
+```{r zad2 obliczanie,fig.cap="Tabela_oczekiwanych_czasów_remisji_względem_estymatorów"}
+
+f.A.K <- f(dane.A,'k') 
+f.B.K <- f(dane.B,'k')
+f.A.F <- f(dane.A,'f')
+f.B.F <- f(dane.B,'f')
+
+dfA1 <- data.frame(data = 'A',type = "Kaplan-Meier",ERT = f.A.K)
+dfA2 <- data.frame(data = 'A',type = "Fleming-Harrington",ERT = f.A.F)
+dfB1 <- data.frame(data = 'B',type = "Kaplan-Meier",ERT = f.B.K)
+dfB2 <- data.frame(data = 'B',type = "Fleming-Harrington",ERT = f.B.F)
+
+dfALL <- rbind(dfA1,dfA2,dfB1,dfB2)
+
+kable(dfALL, caption = "Porównanie średnich czasów do remisji dla leku A i B wzgędem \n estymatorów Kaplana-Meiera i Fleminga-Harringtona", digits = 4, align = "c")
+```
+
+Jak wynika z [tabeli](#czasy_do_remisji_T), nie występują istotne różnice pomiędzy wartościami uzyskanymi przy użyciu estymatora Kaplana-Meiera a metodą Fleminga-Harringtona. Warto jednak podkreślić, że lek B charakteryzuje się wyraźnie krótszym oczekiwanym czasem remisji — wynosi on jedynie około $\frac{2}{3}$ czasu obserwowanego u pacjentów stosujących lek A.

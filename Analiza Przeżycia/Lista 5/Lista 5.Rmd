@@ -1,5 +1,5 @@
 ---
-title: "Sprawozdanie 1"
+title: "Lista 5"
 subtitle: "Analiza przeżycia"
 author: "Marta Stankiewicz (282244) \ Kacper Szmigielski (282255)"
 header-includes:
