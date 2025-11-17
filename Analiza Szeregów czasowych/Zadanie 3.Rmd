@@ -1,0 +1,51 @@
+---
+title: "Analiza Szeregów Czasowych zadanie 3"
+output: html_document
+date: "2025-11-17"
+---
+
+# Zadanie 3
+
+## a)
+
+### Definicja białego szumu
+
+Biały szum to ciąg nieskorelowanych zmiennych losowych {$X_t$} , każda o średniej zero i wariancji ${\sigma}^2$
+$\textbf{Nieskorelowane ozn. że$ $\rho_{X,Y} = \frac{Cov(X,Y)}{\sigma_a \sigma_b} = 0$ gdzie $Cov(X,Y) = E[(X-E[X])(Y-E[Y])]$.
+Każda o średniej zero i wariancji $\sigma^2$
+
+### Funkcja autokorelacji (ACF)
+
+Niech {$X_t$} będzie stacjonarnym szeregiem czasowym. Funkcję autokorelacji szeregu czasowego {$X_t$} dla opóźnienia czasowego h definiujemy jako $\rho_X(h) = \frac{\gamma_X(h)}{\gamma_X(0)} = Cor(X_{t+h},X_t)$, gdzie $\gamma_X(h) = Cov(X_{t+h},X_t)$ oraz
+
+### Szereg stacjonrany
+
+Szereg {$X_t,t\in \mathbb{Z}$}, gdzie $\mathbb{Z} = 0,\pm1,\pm2,...$ bdziemy nazywali szeregiem stacjonarnym, jeśli dla dowolnych $t,r,s \in \mathbb{Z}$
+
+\begin{enumerate}
+  \item $EX_t^2< \infty$
+  \item $\mu_X(t) = EX_t = \mu = const $ (nie zależy od t)
+  \item $\gamma_X(r,s) = \gamma_X(r+t,s+t)$ funkcja kowariancji zależy tylko od odstępu czasowego r-s
+\end{enumerate}
+
+### Funkcja autokorelacji białego szumu 
+
+#### Własności funkcji autokorelacji białego szumu
+Z powyższych definicji wynika, że funkcja autokorelacji dla białego szumu jest stale równa 0, chyba, że h = 0 wtedy jest ona równa 1
+
+### Autokowariancja próbkowa
+
+Próbkową funkcję autokowariancji definiujemy jako
+$\hat{\gamma}(h) = \frac{1}{n} \sum_{t=1}^{n-|h|}(x_{t+|h|}-\overline{x})(x_t-\overline{x})$ -n<h<n
+.
+### Autokorelacja próbkowa
+
+Próbkową funkcję autokroelacji definiujemy, jako
+
+$\hat{\rho}(h) = \frac{\hat{\gamma}(h)}{\hat{\gamma}(0)}$, -n<h<n
+
+### Własności asymptotyczne estymatorów średniej autokowariancji i autokorelacji 
+
+
+
+### Rozkłąd asymptotyczny autokorelacji próbkowej.
