@@ -1,0 +1,87 @@
+---
+title: "Analiz Przeżycia"
+output: html_document
+date: "2025-11-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Napisać deklarację funkcji, której argumentami będą dane cenzurowane losowo, wartość poziomu
+ufności oraz wartość τ (zobacz wyjaśnienie nad wzorem (15) w wykładzie 6,7), a wartością dolna
+i górna granica przedziału ufności dla wartości średniej czasu życia na poziomie ufności 1−α (zobacz
+wzór (20) i (21) w notatkach do wykładu 6 i 7).
+
+```{r dane}
+
+library(survival)
+library(survminer)
+library(patchwork)
+library(knitr)
+'
+#28, 89, 175, 195, 309, 377+, 393+, 421+, 447+,
+#462, 709+, 744+, 770+, 1106+ ,1206+
+
+dane <- c(28, 89, 175, 195, 309, 377, 393, 421, 447,
+462, 709, 744, 770, 1106 ,1206)
+
+status <- c(rep(1,5),rep(0,4),1,rep(0,5))
+
+dane <- data.frame(time = dane,status =status)
+
+```
+```{r zadanie 1}
+f <- function(dane,tau,typ = 'k'){
+  
+  #Wybranie typu
+  if(typ == 'f'){
+    s <- survfit((Surv(time,status)~1),
+                 data = dane,
+                 type = 'fleming-harrington')
+  }else{
+    s <- survfit((Surv(time,status)~1),
+                 data = dane)
+  }
+  
+  # Znalezienie ostatniego indeksu surv i time
+  #( to jest moment tego ostatniego spadku, patrz wykres 5 lista)
+  last_index <- which(s$surv > min(s$surv))
+  last_index <- max(last_index) 
+  
+  time <- s$time[1:(last_index+1)]
+  time <- c(time,tau)
+
+  print(time)
+  # dlaczego surv juz nie do last_index + 1 ,
+  #bo zobacz że chcemy mieć wysokość tego ostatniego schodka,
+  #a w index+1 to już jest  
+  # po zejściu z tego schodka ta ostatnia   wartość, jej nie chcemy.
+  print(s$surv)
+  surv <- s$surv[1:(last_index+1)]
+
+  
+  # dodaje ten początkowy przypadek
+  time <- c(0,time)
+  surv <- c(1,surv)
+  
+  print(time)
+  #obliczam szerokości tych kwadratów (patrz wykresy z poprzedniej listy)
+  
+  time_diff <- diff(time)
+  print(time_diff)
+  print(surv)
+  # pole pod schodkami
+  result <- sum(time_diff*surv)
+  
+  #suma pola pod schodkami i ogonem
+  
+  #zwrócenie wartości
+  return(result)
+}
+
+```
+
+```{r f}
+f(dane,1500)
+```

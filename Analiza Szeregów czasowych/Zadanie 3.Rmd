@@ -1,51 +1,629 @@
+
 ---
-title: "Analiza Szeregów Czasowych zadanie 3"
-output: html_document
-date: "2025-11-17"
+title: "Lista 5"
+subtitle: "Analiza szeregów czasowych zadanie 3"
+author: "Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  
+  echo = FALSE,
+  cache = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.pos = "H",
+  out.extra = '',
+  fig.align = "center"
+  
+)
+
+```
+
+```{r libraries}
+
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+library(RColorBrewer)
+library(knitr)
+
+```
+
+```{r seed_setting}
+
+set.seed(123)
+
+```
+
+```{r colors_pallete}
+
+my_cols <- my_cols <- brewer.pal(5, "Set2")
+
+```
+
+\newpage
 
 # Zadanie 3
 
-## a)
+## a) 
 
-### Definicja białego szumu
+### Definicje teoretyczne potrzebne do tego zadania 
 
-Biały szum to ciąg nieskorelowanych zmiennych losowych {$X_t$} , każda o średniej zero i wariancji ${\sigma}^2$
-$\textbf{Nieskorelowane ozn. że$ $\rho_{X,Y} = \frac{Cov(X,Y)}{\sigma_a \sigma_b} = 0$ gdzie $Cov(X,Y) = E[(X-E[X])(Y-E[Y])]$.
-Każda o średniej zero i wariancji $\sigma^2$
-
-### Funkcja autokorelacji (ACF)
-
-Niech {$X_t$} będzie stacjonarnym szeregiem czasowym. Funkcję autokorelacji szeregu czasowego {$X_t$} dla opóźnienia czasowego h definiujemy jako $\rho_X(h) = \frac{\gamma_X(h)}{\gamma_X(0)} = Cor(X_{t+h},X_t)$, gdzie $\gamma_X(h) = Cov(X_{t+h},X_t)$ oraz
-
-### Szereg stacjonrany
-
-Szereg {$X_t,t\in \mathbb{Z}$}, gdzie $\mathbb{Z} = 0,\pm1,\pm2,...$ bdziemy nazywali szeregiem stacjonarnym, jeśli dla dowolnych $t,r,s \in \mathbb{Z}$
-
+\begin{definition}[Biały szum]
+Proces losowy $\{X_t\}_{t\in\mathbb{Z}}$ nazywamy \emph{białym szumem}, 
+jeśli spełnia następujące warunki:
 \begin{enumerate}
-  \item $EX_t^2< \infty$
-  \item $\mu_X(t) = EX_t = \mu = const $ (nie zależy od t)
-  \item $\gamma_X(r,s) = \gamma_X(r+t,s+t)$ funkcja kowariancji zależy tylko od odstępu czasowego r-s
+    \item $E[X_t] = \mu$ \quad (stała średnia, zwykle przyjmuje się 0, bo zawsze można dane wycentrować),
+    \item $\operatorname{Var}(X_t) = \sigma^2 < \infty$ \quad (stała wariancja),
+    \item $X_t$ i $X_s$ są nieskorelowane dla $t \neq s$, tzn.
+    \[
+        \operatorname{Cov}(X_t, X_s) = 0 \quad \text{dla wszystkich } t \neq s.
+    \]
 \end{enumerate}
-
-### Funkcja autokorelacji białego szumu 
-
-#### Własności funkcji autokorelacji białego szumu
-Z powyższych definicji wynika, że funkcja autokorelacji dla białego szumu jest stale równa 0, chyba, że h = 0 wtedy jest ona równa 1
-
-### Autokowariancja próbkowa
-
-Próbkową funkcję autokowariancji definiujemy jako
-$\hat{\gamma}(h) = \frac{1}{n} \sum_{t=1}^{n-|h|}(x_{t+|h|}-\overline{x})(x_t-\overline{x})$ -n<h<n
-.
-### Autokorelacja próbkowa
-
-Próbkową funkcję autokroelacji definiujemy, jako
-
-$\hat{\rho}(h) = \frac{\hat{\gamma}(h)}{\hat{\gamma}(0)}$, -n<h<n
-
-### Własności asymptotyczne estymatorów średniej autokowariancji i autokorelacji 
+Jeśli dodatkowo zmienne $X_t$ są wzajemnie niezależne i mają rozkład 
+normalny $\mathcal{N}(0,\sigma^2)$, to proces nazywamy 
+\emph{gaussowskim białym szumem}.
+\end{definition}
 
 
 
-### Rozkłąd asymptotyczny autokorelacji próbkowej.
+\begin{definition}[Szereg stacjonarny]
+Szereg czasowy $\{X_t : t \in \mathbb{Z}\}$ nazywamy (słabo) stacjonarnym, 
+jeśli dla dowolnych $t, r, s \in \mathbb{Z}$ spełnione są następujące warunki:
+\begin{enumerate}
+    \item $E[X_t^2] < \infty$,
+    \item średnia jest stała: 
+    \[
+        \mu_X(t) = E[X_t] = \mu = \text{const},
+    \]
+    \item kowariancja zależy wyłącznie od przesunięcia czasowego:
+    \[
+        \gamma_X(r,s) = \gamma_X(r+t, s+t),
+    \]
+    to znaczy zależy tylko od różnicy $r - s$.
+\end{enumerate}
+\end{definition}
+
+\newpage
+
+\begin{definition}[Estymator wartości średniej]
+Niech $x_1, x_2, \dots, x_n$ będzie realizacją szeregu czasowego $\{X_t\}$.
+Estymator wartości średniej $\mu_X$ definiujemy jako
+\[
+\bar{x} = \frac{1}{n} \sum_{t=1}^{n} x_t.
+\]
+\end{definition}
+
+```{r mean, echo = TRUE}
+mn <- function(data){
+  
+  return (mean(data))
+  
+}
+
+```
+
+\begin{definition}[Próbkowa funkcja autokowariancji]
+Niech $x_1, x_2, \dots, x_n$ będzie realizacją szeregu czasowego. 
+Próbkową funkcję autokowariancji dla opóźnienia $h$, gdzie $-n < h < n$, 
+definiujemy jako
+\[
+\hat{\gamma}(h) = \frac{1}{n} 
+\sum_{t=1}^{n-|h|} (x_{t+|h|} - \overline{x})(x_t - \overline{x}),
+\]
+gdzie $\overline{x} = \frac{1}{n}\sum_{t=1}^{n} x_t$ jest średnią próbkową.
+\end{definition}
+
+```{r ACVF, echo = TRUE}
+ACVF <- function(data, h){
+  
+  x_bar = mn(data)
+  
+  result = 0
+  
+  n = length(data)
+  
+  if( abs(h) > n){
+    stop("h must be greater than -n and lower than n")
+  }
+  
+  for (t in 1:(n-abs(h))){
+    result  = result + (data[t + abs(h)]-x_bar) * (data[t] - x_bar)
+  }
+  result = result / n
+  return (result)
+}
+
+```
+
+\newpage
+
+\begin{definition}[Próbkowa funkcja autokorelacji]
+Niech $x_1, x_2, \dots, x_n$ będzie realizacją szeregu czasowego, 
+a $\hat{\gamma}(h)$ niech oznacza prób-kową funkcję autokowariancji.  
+Próbkową funkcję autokorelacji dla opóźnienia $h$, gdzie $-n < h < n$, 
+definiujemy jako
+\[
+\hat{\rho}(h) = \frac{\hat{\gamma}(h)}{\hat{\gamma}(0)}.
+\]
+\end{definition}
+
+
+```{r ACF,echo = TRUE}
+
+ACF <- function(data,h){
+  
+  n = length(data)
+  
+  if( abs(h) > n){
+    stop("h must be greater than -n and lower than n")
+  }
+  
+  part1 = ACVF(data,h)
+  
+  part2 = ACVF(data,0)
+  
+  result = part1/part2
+  
+  return (result)
+  
+}
+
+```
+
+```{r wykres_ACF}
+
+ggplot_ACF <- function(data, max_lag = length(data)/4, ci = TRUE, alpha = 0.05){
+  
+  col = my_cols[3]
+  
+  n <- length(data)
+  lags <- 1:max_lag
+  
+  z <- qnorm(1 - alpha/2)      
+  ci_limit <- z / sqrt(n)      
+  
+  acf_vals <- sapply(lags, function(h) ACF(data, h))
+  
+  df2 <- data.frame(
+    lag = lags,
+    acf = acf_vals
+  )
+  
+  df1 = data.frame(
+    y = data,
+    t = 1:length(data)
+  )
+  
+  
+  result = 0 
+  
+  result = result + sum(acf_vals> ci_limit)
+  result = result + sum(acf_vals< -ci_limit)
+  
+  precent = ( (length(acf_vals) - result) / length(acf_vals) * 100)
+  
+  p1 <- ggplot(df1,aes(x = t, y = y)) +
+    geom_line(color = col)+
+    geom_point(alpha = 0.5, color = col,size = 0.5)+
+    theme_minimal()+
+    labs(y = expression(Y[t]),
+         x = expression(t),
+         title =  expression("Wykres liniowy danych"))
+  
+  
+  p2 <- ggplot(df2, aes(x = lag, y = acf)) +
+    geom_hline(yintercept = 0) +
+    geom_point(alpha = 0.5,color = col,size = 0.5)+
+    geom_segment(aes(xend = lag, y = 0, yend = acf), linewidth = 0.8,color = col) +
+    labs(x = "Lag", y = "ACF", title = bquote("Wykres ACF"~alpha == .(alpha)),
+         subtitle=bquote(.(precent)~"% danych jest w przedziale ufności")) +
+    theme_minimal()
+  
+  df3 = data.frame(
+    t_1 = data[1 : (length(data)-1)],
+    t = data[2: length(data)]
+  )
+  
+  p3 = ggplot(df3,aes(x = t_1,y = t))+
+                 geom_point(color = col,size = 0.5)+
+                  theme_minimal()+
+                   labs(y = expression(Y[t]), x = expression(Y[t-1]), title =  expression("Zależność" ~ Y[t] ~ " od " ~ Y[t-1]))
+  
+  if (ci) {
+    
+    p2 <- p2 +
+      geom_hline(yintercept = c(-ci_limit, ci_limit),
+                 linetype = "dashed",color = "red",lwd = 0.75)
+  }
+  
+  p1 / (p2 | p3)
+  
+}
+
+
+```
+
+```{r test_graficzny}
+
+
+graficzny_test <- function(data, max_lag = length(data)/4, alpha = 0.05) {
+  
+  
+  n <- length(data)
+  lags <- 1:max_lag
+  
+  z <- qnorm(1 - alpha/2)      
+  ci_limit <- z / sqrt(n)      
+  
+  acf_val <- sapply(lags, function(h) ACF(data, h))
+  
+  result = 0 
+  
+  result = result + sum(acf_val>ci_limit)
+  result = result + sum(acf_val<(-ci_limit))
+  
+  prop_result = result / length(acf_val)
+  
+  odst = 0 
+  odst = odst + sum(acf_val>(ci_limit*1.5))
+  odst = odst + sum(acf_val<(-ci_limit*1.5))
+  
+  limit  = qbinom(0.95, size = max_lag, prob = 0.05)
+  is_white_noise = (odst == 0 & prop_result <= limit)
+  
+  return (is_white_noise)
+ 
+   
+}
+
+
+```
+
+\begin{definition}[Własności asymptotyczne estymatorów średniej, autokowariancji i autokorelacji]
+Niech $\{X_t\}$ będzie procesem stacjonarnym. 
+Własności drugiego rzędu tego procesu są całkowicie określone przez średnią $\mu$ 
+oraz funkcję autokowariancji $\gamma(\cdot)$.
+
+Estymacja parametrów $\mu$, $\gamma(\cdot)$ oraz funkcji autokorelacji
+\[
+\theta(h) = \frac{\gamma(h)}{\gamma(0)},
+\]
+na podstawie obserwacji $X_1, X_2, \dots, X_n$ odgrywa zasadniczą rolę 
+w metodach wnioskowania statystycznego, w szczególności przy doborze modelu 
+oraz konstrukcji optymalnych prognoz.
+
+Dlatego też istotne jest, aby stosowane estymatory 
+$\hat{\mu}$, $\hat{\gamma}(h)$ oraz $\hat{\theta}(h)$ 
+posiadały odpowiednie własności asymptotyczne, takie jak zgodność, 
+asymptotyczna nieobciążoność oraz asymptotyczna normalność, 
+zapewniające wiarygodność wnioskowania przy rosnącej liczbie obserwacji.
+\end{definition}
+
+\newpage
+
+### Reguła graficznej identyfikacji białego szumu
+
+Szereg możemy uznać za realizację białego szumu jeżeli:
+
+1. Co najmniej 95% autokorelacji próbkowych $(ACF(h), h = 1,2,...,h_{max})$ znajduje się w przedziale ufności :
+$\frac{\pm{1,96}}{\sqrt{n}}$
+
+2. Nie powinno być autokorelacji "istotnie" wychodzących pzoa przedziały ufności $\frac{\pm{1,96}}{\sqrt{n}}$
+
+
+### Formalne testy białoszumowości oparte na ACF
+
+1. Podstawowe testy oparte na ACF 
+    a) text Boxa-Pierce'a
+    b) test Ljungi-Boxa
+2. Idea obu testów jest następująca: zamiast sprawdzać (tak jak w graficznym teście białoszumowości) dla każdego
+h = 1,2,3,... czy autokorelacja próbkowa ACF(h) znajduje się pomiędzy przedziałami istotności $\frac{\pm{1,96}}{\sqrt{n}}$,
+analizujemy pojedyczną wartość, tzn. statystykę testową opartą na ACF dla kilku/ kilkudziesięciu początkowych opóźnień
+
+#### Test Boxa-Pierce'a
+
+W jego przypadku postać statystyki testowej można wyrazić jako :
+$Q_{BP} = n \sum_{j = 1}^{h}{\hat{p}^2(j)}$
+gdzie h ozn. pewne maksymalne opóźnienie, a $\hat{p}(j)$ to próbkowa autokorelacja dla opóźnienia j.
+
+Duża wartość $Q_{BP}$ oznacza, że wartości ACF są zbyt duże, aby uznać dane za realizację ciągu nieskorelowanego (białego szumu)
+
+Wiadomo, że jeżeli $X_1,X_2,...,X_n$ jest realizacją ciągu iid o skończonej wariancji, wówczas Q_{BP} ma w przybliżeniu rozkład chi-kwadrat z h stopniami swobody
+
+Uzasadnienie : przy tych założeniach $\sqrt{n}\hat{\theta{j}}$, j = 1,...,h są w 
+przybliżeniu niezaleznymi zm.losowymi o rozkładzie N(0,1). 
+Statystyka Q_{BP} jest więc sumą kwadratów h niezależnych zm. losowych o rozkładzie N(0,1)
+
+W praktyce aby stwierdzić, czy wartość statystyki $Q_{BP}$ jest zbyt duża wykorzystujemy wkaźnik p-value dla ustalonego
+poziomu istotności (zazwyczaj: $\alpha = 0.05$)
+
+Zbyt mała p-wartość przemawia, przeciwko przypuszczeniu o losowości(jeżeli p-value <0.05 to odrzucamy hipotezę o niezależności)
+
+```{r Box_Pierce}
+BP <- function(dane,alpha){
+  
+  test = Box.test(dane)
+  
+  return ( !( test$p.value < alpha ) )
+  
+}
+
+```
+
+\newpage
+
+#### Test Ljungi-Boxa
+
+W przypadku Kjungi-Boxa (L-B) statystykę testową $Q_{BP}$ zastępujemy przez 
+
+$Q_{LB} = n(n+2)\sum_{j=1}^{h}{\frac{\hat{p}^2(j)}{n-j}}$
+
+Rozkład tego testu, jest lepiej przybliżony rozkładem granicznym od testu Boxa-Pierce'a i dlatego jest preferowany w praktyce
+
+
+Oba powyższe testy zaimplementowane są w bibliotece Box.test(), będziemy z niej korzystać w tym sprawozdaniu
+
+```{r Ljung-Box}
+
+LB <- function(dane,alpha){
+
+  test = Box.test(dane,type = "Ljung-Box")
+  
+  return ( !( test$p.value < alpha ))
+  
+}
+
+```
+
+#### Zilustrowanie działania testów dla danych (n = 200) typu biały szum  (rozkład $WN(0,\sigma^2)$)
+
+Prezentacja metody graficznej :
+
+```{r metoda_graficzna}
+set.seed(11)
+x_white <- rnorm(200)
+
+ggplot_ACF(x_white)
+
+```
+Test graficzny opiera się na wygenerowaniu wykresu funkcji ACF, oraz sprawdzenia, czy
+95% autokorelacji próbkowych znajduje się w przedziale ufności dla $\alpha$ = 0.05.
+
+Oraz nie ma obserwacji istotnie wychodzących poza przedziały ufności
+
+Na wykresie przedział ufności zaznaczony jest czerwonymi przerywanymi liniami
+
+98% autokorelacji leży w przedziale ufności, i nie ma żadnych przypadków znacznie odstających
+
+Teraz zastosujemy testy formalne dla wygenerowanych danych
+
+Test Boxa-Pierce'a dla przedstawionych danych zwraca wartość
+
+```{r test-boxa-piercea}
+BP(x_white,alpha = 0.05)
+```
+
+Według testu przedstawione dane są białym szumem
+
+Test Ljunga-Boxa dla danych testowych zwraca wartość
+
+```{r test_ljunga_boxa}
+LB(x_white, alpha = 0.05)
+```
+Według testu Ljunga-Boxa przedstawione dane są białym szumem
+
+#### Zilustrowanie działania testów dla danych (n = 200) typu (rozkład $Exp(2)$)
+
+```{r metoda_graficzna2}
+
+set.seed(1)
+dane <- rexp(200,rate = 2)
+
+ggplot_ACF(dane)
+
+```
+
+94% autokorelacji leży w przedziale ufności, plus pojawiają się informacje odstające, według testu graficznego nie jest to biały szum
+
+Pomimo faktu, że z definicji jest to biały szum o średniej $\frac{1}{2}$ i wariancji $\frac{1}{4}$
+
+Teraz zastosujemy testy formalne dla wygenerowanych danych
+
+Test Boxa-Pierce'a dla przedstawionych danych zwraca wartość
+
+```{r test-boxa-piercea1}
+BP(dane,alpha = 0.05)
+```
+
+Według testu przedstawione dane są białym szumem
+
+Test Ljunga-Boxa dla danych testowych zwraca wartość
+
+```{r test_ljunga_boxa2}
+LB(dane, alpha = 0.05)
+```
+
+
+Według testu przedstawione dane są białym szumem
+
+#### Zilustrowanie działania testów dla danych (n = 200) z autokorelacją (nie biały szum)
+
+```{r not_white}
+set.seed(123)
+
+n <- 200
+phi <- 1   
+eps <- rnorm(n)  
+
+x <- numeric(n)
+x[1] <- eps[1]
+
+for (t in 2:n) {
+  x[t] <- phi * x[t-1] + eps[t]
+}
+
+ggplot_ACF(x)
+
+
+```
+36% autokorelacji leży w przedziale ufności, więc według testu graficznego to nie jest biały szum
+
+Test Boxa-Pierce'a dla przedstawionych danych zwraca wartość
+
+```{r not_white_BP}
+BP(x, alpha = 0.05)
+```
+
+Według testu przedstawione dane nie są białym szumem
+
+Test Ljunga-Boxa dla danych testowych zwraca wartość
+
+```{r not_whiteLB}
+LB(x, alpha = 0.05)
+```
+
+Według testu przedstawione dane nie są białym szumem
+
+## b) 
+
+### Porównywanie testów graficznych oraz formalnych dla testowania białoszumowości
+
+W testach przyjujemy $\alpha = 0.05$
+
+```{r generator_danych_nieskorelowanych}
+
+#Więc tak, generator danych , musi mieć możliwość
+# wybrania : ilości generowanych danych, rozkładu , oraz parametrów do rozkładu
+
+gen_dan_nskr <- function(n, type) {
+  type <- tolower(type)  
+  
+  if (type == "norm") {
+    # Normal(0,1)
+    x <- rnorm(n, mean = 0, sd = 1)
+    
+  } else if (type == "exp") {
+    # Exponential with rate = 1
+    x <- rexp(n, rate = 1)
+    
+  } else if (type == "weibull") {
+    # Weibull with shape = 2, scale = 1
+    x <- rweibull(n, shape = 2, scale = 1)
+    
+  } else if (type == "beta") {
+    # Beta with shape1 = 2, shape2 = 5
+    x <- rbeta(n, shape1 = 2, shape2 = 5)
+    
+  } else {
+    stop("Unknown type. Use one of: 'norm', 'exp', 'weibull', 'beta'.")
+  }
+  
+  return(x)
+}
+
+
+```
+
+```{r generator danych skorelowanych}
+
+gen_dan_skr <- function(n, type) {
+  # oś czasu
+  t <- 1:n
+  
+  if (type == "wielom") {
+    # przykład: trend kwadratowy + szum normalny
+    # Y_t = 0.01 t^2 - 0.3 t + e_t
+    y <- 0.01 * t^2 - 0.3 * t + rnorm(n, mean = 0, sd = 1)
+    
+  } else if (type == "dryf") {
+    # random walk z dryfem
+    # X_t = X_{t-1} + mu + e_t
+    mu <- 0.5           # wielkość dryfu (do zmiany wg uznania)
+    e  <- rnorm(n, 0, 1)
+    y  <- cumsum(mu + e)
+    
+  } else {
+    stop("Nie mogę stworzyć danych o zadanym typie. Użyj: 'wielom' lub 'dryf'.")
+  }
+  
+  return (y)
+  
+}
+
+```
+
+```{r generator_tabelek}
+tabela_porównawcza <- function(df){
+  kable(
+    head(iris),                 
+    caption = "Wyniki procentowe kwalifikacji danych jako biały szum",
+    digits = 2,                 # number of decimal places
+    align  = "lccrr"            
+  )
+}
+```
+
+
+#### Porównanie pod względem liczby powtórzeń
+
+
+##### Dla $WN(0,\sigma^2)$
+
+```{r dane1}
+
+numbers <- c(500,200,50,25,5)
+
+graphic = c()
+pearson = c()
+ljung = c()
+for (t in numbers){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  for(i in 1:t){
+    
+    dane = gen_dan_nskr(200,"norm")
+    graphic_result = graphic_result + graficzny_test(dane)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05)
+  }
+  graphic_result = graphic_result/t
+  pearson_result = pearson_result/t
+  ljung_result = ljung_result/t
+  
+  graphic = c(graphic,graphic_result)
+  pearson = c(pearson,pearson_result)
+  ljung = c(ljung,ljung_result)
+}
+print(graphic)
+print(pearson)
+print(ljung)
+```
+
+
