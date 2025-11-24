@@ -1,0 +1,1840 @@
+
+---
+title: "Sprawozdanie 1"
+subtitle: "Analiza szeregów czasowych zadanie spr1"
+author: "Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  
+  echo = FALSE,
+  cache = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.pos = "H",
+  out.extra = '',
+  fig.align = "center"
+  
+)
+
+```
+
+```{r libraries}
+
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+library(RColorBrewer)
+library(knitr)
+library(forecast)
+library(fpp2)
+library(broom)
+
+```
+
+```{r seed_setting}
+
+set.seed(123)
+
+```
+
+```{r colors_pallete}
+
+my_cols <- my_cols <- brewer.pal(5, "Set2")
+
+```
+
+# Zadanie 3
+
+## Ilustracja działania testów białoszumowości
+
+```{r mean}
+mn <- function(data){
+  
+  return (mean(data))
+  
+}
+
+```
+
+```{r ACVF}
+ACVF <- function(data, h){
+  
+  x_bar = mn(data)
+  
+  result = 0
+  
+  n = length(data)
+  
+  if( abs(h) > n){
+    stop("h must be greater than -n and lower than n")
+  }
+  
+  for (t in 1:(n-abs(h))){
+    result  = result + (data[t + abs(h)]-x_bar) * (data[t] - x_bar)
+  }
+  result = result / n
+  return (result)
+}
+
+```
+
+```{r ACF}
+
+ACF <- function(data,h){
+  
+  n = length(data)
+  
+  if( abs(h) > n){
+    stop("h must be greater than -n and lower than n")
+  }
+  
+  part1 = ACVF(data,h)
+  
+  part2 = ACVF(data,0)
+  
+  result = part1/part2
+  
+  return (result)
+  
+}
+
+```
+
+```{r wykres_ACF}
+
+ggplot_ACF <- function(data, max_lag = length(data)/4, ci = TRUE, alpha = 0.05){
+  library(ggplot2)
+  
+  col <- my_cols[3]
+  
+  n    <- length(data)
+  lags <- 1:max_lag
+  
+  z        <- qnorm(1 - alpha/2)
+  ci_limit <- z / sqrt(n)
+  
+  acf_vals <- sapply(lags, function(h) ACF(data, h))
+  
+  df2 <- data.frame(
+    lag = lags,
+    acf = acf_vals
+  )
+  
+  df1 <- data.frame(
+    y = data,
+    t = 1:length(data)
+  )
+  
+  result  <- sum(acf_vals >  ci_limit | acf_vals < -ci_limit)
+  percent <- ( (length(acf_vals) - result) / length(acf_vals) * 100)
+  
+  df3 <- data.frame(
+    t_1 = data[1:(length(data)-1)],
+    t   = data[2:length(data)]
+  )
+  
+  # wspólny, „mały” theme
+  base_theme <- theme_minimal() +
+    theme(
+      plot.title   = element_text(size = 9),
+      plot.subtitle= element_text(size = 8),
+      axis.title   = element_text(size = 8),
+      axis.text    = element_text(size = 7)
+    )
+  
+  # wykres liniowy
+  p1 <- ggplot(df1, aes(x = t, y = y)) +
+    geom_line(color = col) +
+    geom_point(alpha = 0.5, color = col, size = 0.5) +
+    labs(
+      y = expression(Y[t]),
+      x = expression(t),
+      title = "Wykres liniowy danych"
+    ) +
+    base_theme
+  
+  # ACF
+  p2 <- ggplot(df2, aes(x = lag, y = acf)) +
+    geom_hline(yintercept = 0) +
+    geom_point(alpha = 0.5, color = col, size = 0.5) +
+    geom_segment(aes(xend = lag, y = 0, yend = acf),
+                 linewidth = 0.8, color = col) +
+    labs(
+      x = "Lag", y = "ACF",
+      title    = bquote("Wykres ACF," ~ alpha == .(alpha)),
+      subtitle = bquote(.(round(percent, 1)) ~ "% lagów w przedziale ufności")
+    ) +
+    base_theme
+  
+  if (ci) {
+    p2 <- p2 +
+      geom_hline(
+        yintercept = c(-ci_limit, ci_limit),
+        linetype = "dashed",
+        color = "red",
+        linewidth = 0.75
+      )
+  }
+  
+  # Y_t vs Y_{t-1}
+  p3 <- ggplot(df3, aes(x = t_1, y = t)) +
+    geom_point(color = col, size = 0.5) +
+    labs(
+      y = expression(Y[t]),
+      x = expression(Y[t-1]),
+      title = expression("Zależność" ~ Y[t] ~ " od " ~ Y[t-1])
+    ) +
+    base_theme
+  
+  p1 / (p2 | p3)
+}
+
+
+```
+
+```{r test_graficzny}
+
+
+graficzny_test <- function(data, max_lag = length(data)/4, alpha = 0.05) {
+  
+  
+  n <- length(data)
+  lags <- 1:max_lag
+  
+  z <- qnorm(1 - alpha/2)      
+  ci_limit <- z / sqrt(n)      
+  
+  acf_val <- sapply(lags, function(h) ACF(data, h))
+  
+  result = 0 
+  
+  result = result + sum(acf_val>ci_limit)
+  result = result + sum(acf_val<(-ci_limit))
+  
+  prop_result = result / length(acf_val)
+  
+  odst = 0 
+  odst = odst + sum(acf_val>(ci_limit*1.5))
+  odst = odst + sum(acf_val<(-ci_limit*1.5))
+  
+  is_white_noise = (odst == 0 & prop_result <= 0.05)
+  
+  return (is_white_noise)
+ 
+   
+}
+
+
+```
+
+```{r Box_Pierce}
+BP <- function(dane,alpha,lag = length(dane)/4){
+  
+  test = Box.test(dane,lag = lag)
+  
+  return ( !( test$p.value < alpha ) )
+  
+}
+
+```
+
+```{r Ljung-Box}
+
+LB <- function(dane,alpha,lag = length(dane)/4){
+
+  test = Box.test(dane,lag = lag,type = "Ljung-Box")
+  
+  return ( !( test$p.value < alpha ))
+  
+}
+
+```
+
+```{r tabelka_ljung_i_box}
+
+tabela_testow_bialy_szum <- function(x, alpha = 0.05, rozkl) {
+  bp_res <- BP(dane = x, alpha = alpha)
+  lb_res <- LB(dane = x, alpha = alpha)
+  
+   
+df <- data.frame(
+    Test = c("Box-Pierce", "Ljung-Box"),
+    White_noise = c(bp_res, lb_res),
+    stringsAsFactors = FALSE
+  )
+  
+  knitr::kable(
+    df,
+    caption = paste0("Porównanie wyników testów Box-Pierce'a i Ljunga-Boxa przy danych ",rozkl)
+  )
+}
+
+```
+### Zilustrowanie działania testów dla danych (n = 200) typu biały szum  (rozkład $WN(0,\sigma^2)$) {#test_wn}
+
+```{r metoda_graficzna, fig.cap="Wykres testu graficznego dla procesu białego szumu",fig.pos="H"}
+
+set.seed(11)
+
+x_white <- rnorm(200)
+ggplot_ACF(x_white)
+
+```
+
+Na [wykresie](#test_WN) przedziały ufności zaznaczono czerwonymi
+przerywanymi liniami.  Widzimy, że 100% autokorelacji próbkowych leży w nim
+i nie obserwujemy punktów wyraźnie wykraczających poza granice — jest to zachowanie
+zgodne z założeniem białego szumu.
+
+```{r testy_formalne_metoda_graficzna_wn}
+
+tabela_testow_bialy_szum(x_white,0.05,"WN(0,sigma^2)")
+
+```
+
+Wnioski: Każdy test poprawnie zidentyfikował przykładowe dane jako biały szum
+
+### Zilustrowanie działania testów dla danych (n = 200) typu (rozkład $Exp(2)$) {#test_exp}
+
+```{r metoda_graficzna2,fig.cap="Wykres testu graficznego dla Exp(2)",fig.pos="H"}
+
+set.seed(1)
+
+dane <- rexp(200,rate = 2)
+
+ggplot_ACF(dane)
+
+```
+
+Na [rysunku](#testZ_exp) przedstawiono wykres funkcji ACF
+dla danych z rozkładu wykładniczego \(\mathrm{Exp}(2)\).
+W tym przypadku jedynie ok. **94% autokorelacji próbkowych** znajduje się
+w przedziałach ufności dla \(\alpha = 0{,}05\), a ponadto widoczne są
+pojedyncze wartości wyraźnie wykraczające poza te granice.  
+Zgodnie z przyjętym kryterium oznacza to, że **test graficzny nie
+zaklasyfikowałby tego szeregu jako biały szum**, mimo że z konstrukcji
+wiemy, iż jest to ciąg niezależnych zmiennych losowych o średniej
+\(\frac{1}{2}\) i wariancji \(\frac{1}{4}\), czyli teoretycznie spełniających
+definicję białego szumu.
+
+```{r testy_formalne_metoda_graficzna_exp}
+
+tabela_testow_bialy_szum(dane,0.05,rozkl = "Exp(2)")
+
+```
+
+Wnioski: Dla danych testowych jedynie testy formalne poprawnie zidentyfikowały je jako biały szum
+
+### Zilustrowanie działania testów dla danych (n = 200) z autokorelacją (nie biały szum) {#test_skr}
+
+Dane zostały wygenerowane jako realizacja jednowymiarowego procesu autoregresyjnego rzędu 1 (AR(1))
+\(\{X_t\}_{t=1}^n\), zdefiniowanego rekurencyjnie przez
+\[
+X_1 = \varepsilon_1,\qquad
+X_t = \varphi X_{t-1} + \varepsilon_t,\quad t = 2,\dots,n,
+\]
+gdzie \(\varphi = 1\) oraz \(\{\varepsilon_t\}\) jest ciągiem niezależnych zmiennych
+losowych o rozkładzie \(\varepsilon_t \sim \mathcal{N}(0,1)\).
+
+```{r not_white,fig.cap="Wykres testu graficznego dla danych nieskorelowanych",fig.pos="H"}
+set.seed(123)
+
+n <- 200
+phi <- 1   
+eps <- rnorm(n)  
+
+x <- numeric(n)
+x[1] <- eps[1]
+
+for (t in 2:n) {
+  x[t] <- phi * x[t-1] + eps[t]
+}
+
+ggplot_ACF(x)
+
+
+```
+36% autokorelacji leży w przedziale ufności, więc według [testu graficznego](#test_skr) nie to jest biały szum
+
+```{r testy_formalne_dla_danych_skorelowanych}
+
+
+tabela_testow_bialy_szum(x,0.05,rozkl = "danych skorelowanych")
+
+```
+
+Wnioski: Wszystkie testy poprawnie zidentyfikowały dane jako **NIE** biały szum
+ 
+## Porównywanie testów graficznych oraz formalnych dla testowania białoszumowości
+
+ 
+W testach przyjmiemy **$\alpha = 0.05$**
+
+```{r generator_danych_nieskorelowanych}
+
+#Więc tak, generator danych , musi mieć możliwość
+# wybrania : ilości generowanych danych, rozkładu , oraz parametrów do rozkładu
+
+gen_dan_nskr <- function(n, type) {
+  type <- tolower(type)  
+  
+  if (type == "norm") {
+    # Normal(0,1)
+    x <- rnorm(n, mean = 0, sd = 1)
+    
+  } else if (type == "exp") {
+    # Exponential with rate = 1
+    x <- rexp(n, rate = 4)
+    
+  } else if (type == "weibull") {
+    # Weibull with shape = 2, scale = 1
+    x <- rweibull(n, shape = 2, scale = 1)
+    
+  } else if (type == "beta") {
+    # Beta with shape1 = 2, shape2 = 5
+    x <- rbeta(n, shape1 = 2, shape2 = 5)
+    
+  } else {
+    stop("Unknown type. Use one of: 'norm', 'exp', 'weibull', 'beta'.")
+  }
+  
+  return(x)
+}
+
+
+```
+
+```{r generator danych skorelowanych}
+
+gen_dan_skr <- function(n, type) {
+  # oś czasu
+  t <- 1:n
+  
+  if (type == "wielom") {
+    # przykład: trend kwadratowy + szum normalny
+    # Y_t = 0.01 t^2 - 0.3 t + e_t
+    y <- 0.01 * t^2 - 0.3 * t + rnorm(n, mean = 0, sd = 1)
+    
+  } else if (type == "dryf") {
+    # random walk z dryfem
+    # X_t = X_{t-1} + mu + e_t
+    mu <- 0.5           # wielkość dryfu (do zmiany wg uznania)
+    e  <- rnorm(n, 0, 1)
+    y  <- cumsum(mu + e)
+    
+  } else {
+    stop("Nie mogę stworzyć danych o zadanym typie. Użyj: 'wielom' lub 'dryf'.")
+  }
+  
+  return (y)
+  
+}
+
+```
+
+```{r generator_tabelek}
+tabela_porównawcza <- function(df,text= ""){
+  kable(
+    df,                 
+    caption = paste0("Wyniki procentowe kwalifikacji danych jako biały szum",text),
+    digits = 2,                 
+    align  = "lccrr"            
+  )
+}
+```
+
+### Porównanie testów pod względem liczby powtórzeń
+
+#### Dla $WN(0,\sigma^2)$ {#tab1}
+
+```{r wn_pod_wzgl_powtórzeń}
+
+numbers <- c(500,200,50,25,5)
+
+graphic = c()
+pearson = c()
+ljung = c()
+for (t in numbers){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  for(i in 1:t){
+    
+    dane = gen_dan_nskr(200,"norm")
+    graphic_result = graphic_result + graficzny_test(dane)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05)
+  }
+  graphic_result = graphic_result/t
+  pearson_result = pearson_result/t
+  ljung_result = ljung_result/t
+  
+  graphic = c(graphic,graphic_result)
+  pearson = c(pearson,pearson_result)
+  ljung = c(ljung,ljung_result)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+rownames(df) <- c(500, 200, 50, 25, 5)
+
+tab <- tabela_porównawcza(t(df))
+
+tab
+```
+Na podstawie wyników przedstawionych w [tabeli](#tab1) można zauważyć,
+że liczba powtórzeń symulacji ma istotny wpływ na szacowany odsetek prawidłowych klasyfikacji
+białego szumu. Dla większej liczby replik (500 lub 200) wyniki są znacznie stabilniejsze,
+natomiast przy małej liczbie powtórzeń (50, 25, 5) pojawia się duża zmienność, co utrudnia
+rzetelną ocenę poziomu testu.
+
+Największą zmiennością i najniższą zgodnością z teoretycznym poziomem istotności
+charakteryzuje się **test graficzny**, który często daje wyniki znacznie poniżej oczekiwanych
+95%. Wynika to z faktu, że test graficzny jest naturalnie zależny od oceny eksperta –
+jego największą zaletą jest właśnie **czynnik ludzki**, czyli możliwość wizualnej interpretacji
+wykresu ACF, identyfikacji nieoczywistych wzorców, sezonowości czy struktury zależności,
+których nie da się łatwo ująć poprzez automatyczne reguły decyzyjne.
+
+Testy formalne — Boxa–Pierce’a oraz Ljunga–Boxa — zachowują się znacznie stabilniej.
+Wyniki testu Boxa–Pierce’a są zwykle nieco zawyżone (częściej akceptuje \(H_0\)), co oznacza,
+że test ten jest *zachowawczy*.
+
+
+#### Dla Exp(4) {#tab2}
+
+```{r exp_pod_wzgl_powtórzeń}
+
+numbers <- c(1000,500,200,50,25,5)
+
+graphic = c()
+pearson = c()
+ljung = c()
+for (t in numbers){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  for(i in 1:t){
+    
+    dane = gen_dan_nskr(200,"exp")
+    graphic_result = graphic_result + graficzny_test(dane)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05)
+  }
+  graphic_result = graphic_result/t
+  pearson_result = pearson_result/t
+  ljung_result = ljung_result/t
+  
+  graphic = c(graphic,graphic_result)
+  pearson = c(pearson,pearson_result)
+  ljung = c(ljung,ljung_result)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+rownames(df) <- c(1000,500,200,50,25,5)
+
+tab <- tabela_porównawcza(t(df))
+
+tab
+
+```
+
+Dla [danych wygenerowanych](#tab2) z rozkładu wykładniczego \(\mathrm{Exp}(2)\) otrzymujemy
+analogiczne wnioski jak w przypadku szumu normalnego.
+
+##### Dla danych skorelowanych {#skorelowane}
+
+```{r skorelowane_pod_wzgl_powtórzeń}
+
+
+
+graphic = c()
+pearson = c()
+ljung = c()
+for (t in numbers){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  for(i in 1:t){
+    
+    dane = gen_dan_skr(200,"dryf")
+    graphic_result = graphic_result + graficzny_test(dane)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05)
+  }
+  graphic_result = graphic_result/t
+  pearson_result = pearson_result/t
+  ljung_result = ljung_result/t
+  
+  graphic = c(graphic,graphic_result)
+  pearson = c(pearson,pearson_result)
+  ljung = c(ljung,ljung_result)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+
+rownames(df) <- c(1000,500,200,50,25,5)
+
+tab <- tabela_porównawcza(t(df),)
+
+tab
+```
+
+W przypadku danych skorelowanych, generowanych zgodnie z podanym wcześniej
+modelem rekurencyjnym, wszystkie zastosowane testy — zarówno graficzny, jak i
+testy Boxa–Pierce’a oraz Ljunga–Boxa — poprawnie identyfikują je jako **niebędące
+białym szumem**, niezależnie od liczby przeprowadzonych powtórzeń symulacji.
+
+
+### Porównanie pod względem różnych długości testów
+
+#### Dla $WN(0,\sigma^2)$ {#tab5}
+
+Tutaj dla każdej długości zostało wykonanych 100 testów i policzona z nich średnia
+
+```{r wn_pod_wzgl_długości}
+lengths <- c(400,200,50,25,10,5)
+
+graphic = c()
+pearson = c()
+ljung = c()
+
+for (t in lengths){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  
+  for (j in 1:100){
+    dane = gen_dan_nskr(t,"norm")
+    graphic_result = graphic_result + graficzny_test(dane)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05)
+  }
+  graphic = c(graphic,graphic_result/100)
+  pearson = c(pearson,pearson_result/100)
+  ljung = c(ljung,ljung_result/100)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+
+rownames(df) <- c(400,200,50,25,10,5)
+
+tab <- tabela_porównawcza(t(df))
+
+tab
+```
+
+Analiza danych zestawionych w [tabeli](#tab5) prowadzi do wniosków zbieżnych z tymi uzyskanymi wcześniej dla różnych liczby powtórzeń symulacji.
+
+\newpage
+
+#### Dla Exp(4) {#tab6}
+
+```{r exp_pod_wzgl_długości}
+
+lengths <- c(400,200,50,25,10,5)
+graphic = c()
+pearson = c()
+ljung = c()
+
+for (t in lengths){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  
+  for (j in 1:100){
+    dane = gen_dan_nskr(t,"exp")
+    graphic_result = graphic_result + graficzny_test(dane)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05)
+  }
+  graphic = c(graphic,graphic_result/100)
+  pearson = c(pearson,pearson_result/100)
+  ljung = c(ljung,ljung_result/100)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+
+rownames(df) <- c(400,200,50,25,10,5)
+
+tab <- tabela_porównawcza(t(df))
+
+tab
+
+```
+
+Wnioski analogiczne, jak w poprzednim przykładzie
+
+#### Dla danych skorelowanych {#tab7}
+
+```{r skr_pod_wzgl_długości}
+
+lengths <- c(400,200,50,25,10,5)
+graphic = c()
+pearson = c()
+ljung = c()
+
+for (t in lengths){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  
+  for (j in 1:100){
+    dane = gen_dan_skr(t,"dryf")
+    graphic_result = graphic_result + graficzny_test(dane)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05)
+  }
+  graphic = c(graphic,graphic_result/100)
+  pearson = c(pearson,pearson_result/100)
+  ljung = c(ljung,ljung_result/100)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+
+rownames(df) <- c(400,200,50,25,10,5)
+
+tab <- tabela_porównawcza(t(df))
+
+tab
+```
+
+W tym przypadku wyraźnie widać, że mała liczba powtórzeń silnie zaburza jakość
+identyfikacji. Przy bardzo niskich długościach danych (5 lub 10) wszystkie testy mają
+tendencję do błędnego klasyfikowania danych skorelowanych jako biały szum.
+Zjawisko to jest zgodne z klasycznymi zaleceniami Boxa i Jenkinsa, według których
+wiarygodna ocena autokorelacji wymaga spełnienia warunku \(h \ge 50\) oraz ograniczenia
+maksymalnego opóźnienia do \(h \le \frac{n}{4}\)
+
+### Porównanie pod względem różnego maksymalnego opóźnienia h
+
+#### Dla $WN(0,\sigma^2)$ {#tab8}
+```{r wn_pod_wzgl_opóóźnienia}
+n <- 200
+lengths <- c((n-1),(n/2),(n/4),10,5)
+graphic = c()
+pearson = c()
+ljung = c()
+
+for (h in lengths){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  
+  for (j in 1:100){
+    dane = gen_dan_nskr(200,"norm")
+    graphic_result = graphic_result + graficzny_test(dane,max_lag = h)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05,lag = h)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05,lag = h)
+  }
+  graphic = c(graphic,graphic_result/100)
+  pearson = c(pearson,pearson_result/100)
+  ljung = c(ljung,ljung_result/100)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+
+rownames(df) <- lengths
+tab <- tabela_porównawcza(t(df))
+
+tab
+```
+
+Przeprowadzone analizy pokazują, że wyniki testu graficznego silnie zależą od wyboru
+maksymalnego opóźnienia \(h_{\max}\)\. Odsetek szeregów kwalifikowanych ajko biały szum rośnie dla niego wraz ze wzrostem \(h_{\max}\)\.. Test Box–Pierce’a daje wyniki
+mieszczące się w przedziale od 95% do 100% akceptacji \(H_0\), co oznacza, że jest
+nieco zachowawczy, a w miarę zmniejszania \(h_{\max}\) uzyskiwane wartości zbliżają się
+do teoretycznego poziomu 95%, przy czym test pozostaje stosunkowo stabilny względem
+wyboru liczby lagów. Z kolei test Ljunga–Boxa dla bardzo dużych opóźnień
+(np. \(h_{\max} = 199\)) staje się zbyt „ostry” i zbyt często odrzuca \(H_0\)
+
+
+#### Dla Exp(4) {#tab9}
+
+```{r dane12}
+
+n <- 200
+lengths <- c((n-1),(n/2),(n/4),10,5)
+graphic = c()
+pearson = c()
+ljung = c()
+
+for (h in lengths){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  
+  for (j in 1:100){
+    dane = gen_dan_nskr(200,"exp")
+    graphic_result = graphic_result + graficzny_test(dane,max_lag = h)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05,lag = h)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05,lag = h)
+  }
+  graphic = c(graphic,graphic_result/100)
+  pearson = c(pearson,pearson_result/100)
+  ljung = c(ljung,ljung_result/100)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+
+rownames(df) <- lengths
+
+tab <- tabela_porównawcza(t(df))
+
+tab
+```
+#### Dane z dryfem
+
+Tutaj analogiczne wnioski jak w **poprzednim** przykładzie
+
+```{r dane11}
+
+n <- 200
+lengths <- c((n-1),(n/2),(n/4),10,5)
+graphic = c()
+pearson = c()
+ljung = c()
+
+for (h in lengths){
+  
+  graphic_result = 0 
+  pearson_result = 0
+  ljung_result = 0
+    
+  
+  for (j in 1:100){
+    dane = gen_dan_skr(200,"dryf")
+    graphic_result = graphic_result + graficzny_test(dane,max_lag = h)
+    pearson_result = pearson_result + BP(dane,alpha = 0.05,lag = h)
+    ljung_result = ljung_result + LB(dane,alpha = 0.05,lag = h)
+  }
+  graphic = c(graphic,graphic_result/100)
+  pearson = c(pearson,pearson_result/100)
+  ljung = c(ljung,ljung_result/100)
+}
+df <- data.frame(
+  graficzny_test = graphic,
+  test_pearsona = pearson,
+  test_ljunga = ljung
+)
+
+rownames(df) <- lengths
+
+
+tab <- tabela_porównawcza(t(df))
+
+tab
+```
+
+Dla danych z dryfem, wszystkie testy działają poprawnie, niezależnie od maksymalnego lagu
+
+
+
+### Przykłady szeregów czasowych innych niż szum IID
+#### Model stacjonarny o niewielkiej korelacji (MA(1))
+
+Rozważamy szereg czasowy wygenerowany z modelu MA(1)
+\(X_t = Z_t + 0{,}3 Z_{t-1}\), gdzie \(Z_t \sim WN(0,1)\).
+
+
+```{r model_stacjonarny_z_niewielką_korelacją,fig.cap="Wykres testu graficznego dla modelu stacjonarnego z niewielką korelacją",fig.pos="H"}
+set.seed(123)
+
+n <- 200
+# MA(1) z niewielką dodatnią autokorelacją
+ts_MA1 <- arima.sim(model = list(ma = 1), n = n)
+
+ggplot_ACF(ts_MA1)
+
+```
+Około **94% wartości ACF** mieści się w przedziale ufności, natomiast **jeden lag wyraźnie go przekracza**. Może to sugerować niewielkie odstępstwo od białoszumowego charakteru danych, jednak **na podstawie samego testu graficznego jest to obserwacja na granicy istotności**.
+
+
+```{r testy_formalne_dla_danych_skorelowanych_MA(1)}
+
+tabela_testow_bialy_szum(ts_MA1,0.05,rozkl = "danych skorelowanych")
+
+```
+Co **jednoznacznie** wskazuje na niebiałoszumowy charakter szeregu czasowego
+
+\newpage
+
+#### Błądzenie losowe
+
+Rozważamy proces **błądzenia losowego** (random walk) zdefiniowany jako
+\[
+Y_0 = 0, \qquad
+Y_t = Y_{t-1} + e_t,\quad t = 1,\dots,n,
+\]
+gdzie \(\{e_t\}\) jest białym szumem \(e_t \sim \mathcal{N}(0,1)\).
+
+```{r błądzenie_losowe,fig.cap="Wykres testu graficznego dla modelu błądzenia losowego",fig.pos="H"}
+set.seed(123)
+
+n <- 200
+
+szum <- rnorm(n, mean = 0, sd = 1)
+ts_RW <- cumsum(szum)  # Y_t = Y_{t-1} + e_t
+
+ggplot_ACF(ts_RW)
+
+
+```
+Test graficzny jednoznacznie wskazuje na brak białoszumowego charakteru danych
+
+```{r testy_formalne_dla_danych_skorelowanych_innych}
+
+
+tabela_testow_bialy_szum(ts_RW,0.05,rozkl = "danych skorelowanych")
+
+```
+
+W tym przypadku oba testy jednoznacznie wskazują na brak charakteru białoszumowego danych
+
+\newpage
+
+#### szumm IID + trend deterministyczny + sezonowość
+
+Rozważamy szereg czasowy złożony z **i.i.d. szumu**, **liniowego trendu rosnącego** oraz **składowej sezonowej** o okresie 12:
+
+\[
+X_t = \varepsilon_t + 0{,}05\,t + 2 \sin\left(\frac{2\pi t}{12}\right), \quad t = 1,\dots,200,
+\]
+gdzie \(\varepsilon_t \sim \mathcal{N}(0,1)\) są niezależnymi zmiennymi losowymi o rozkładzie normalnym (szum i.i.d. o średniej 0 i odchyleniu standardowym 1).
+
+
+```{r szum_iid_trend_sezonowość,fig.cap="Wykres testu graficznego dla modelu szumu iid z dryfem i sezonowością",fig.pos="H"}
+set.seed(123)
+
+n <- 200
+
+t <- 1:n
+szum_iid <- rnorm(n, mean = 0, sd = 1)
+
+trend <- 0.05 * t                    
+sezon <- 2 * sin(2 * pi * t / 12)    
+
+ts_IID_trend_sezon <- szum_iid + trend + sezon
+
+ggplot_ACF(ts_IID_trend_sezon)
+
+
+```
+Test graficzny jednoznacznie wskazuje na brak białoszumowego charakteru danych
+
+
+```{r testy_formalne_dla_danych_skorelowanych_iid}
+
+
+tabela_testow_bialy_szum(ts_IID_trend_sezon,0.05,rozkl = "danych skorelowanych")
+
+```
+
+Co potwierdzają również test Boxa-Persea oraz Ljunga-Boxa zwracając FALSE.
+
+
+
+
+# Zadanie 4
+
+## Wybór danych 
+
+Do analizy wykorzystano dane z zestawu **ausbeer**, przedstawiające kwartalną
+produkcję piwa w Australii, wyrażoną w megalitrach (milionach litrów).
+Zbiór obejmuje kolejne kwartały od lat 50. do lat 90., dzięki czemu pozwala
+na obserwację zarówno sezonowości, jak i długookresowych trendów w produkcji.
+
+**okres: 1956 Q1 – 2008 Q2**
+
+```{r wybór danych}
+data("ausbeer")
+dane <- ausbeer
+```
+
+```{r nowa_f_do_rysowania}
+ggplot_ACF_extended <- function(data, max_lag = length(data)/4, ci = TRUE, alpha = 0.05){
+  library(ggplot2)
+  library(patchwork)
+  
+  col <- my_cols[3]
+  
+  n  <- length(data)
+  y  <- as.numeric(data)
+  tt <- if (inherits(data, "ts")) time(data) else 1:n
+  
+  lags <- 1:max_lag
+  
+  z        <- qnorm(1 - alpha/2)
+  ci_limit <- z / sqrt(n)
+  
+  acf_vals <- sapply(lags, function(h) ACF(y, h))
+  
+  pacf_obj  <- pacf(y, lag.max = max_lag, plot = FALSE)
+  pacf_vals <- as.numeric(pacf_obj$acf)[1:max_lag]
+  
+  df_ts <- data.frame(t = tt, y = y)
+  df_acf <- data.frame(lag = lags, acf = acf_vals)
+  df_pacf <- data.frame(lag = lags, pacf = pacf_vals)
+  df_scatter <- data.frame(t_1 = y[1:(n-1)], t = y[2:n])
+  
+  # % lagów w CI
+  result  <- sum(acf_vals > ci_limit) + sum(acf_vals < -ci_limit)
+  percent <- ( (length(acf_vals) - result) / length(acf_vals) * 100)
+  
+  # wspólny theme z małymi czcionkami
+  base_theme <- theme_minimal() +
+    theme(
+      plot.title   = element_text(size = 9),
+      plot.subtitle= element_text(size = 7),
+      axis.title   = element_text(size = 8),
+      axis.text    = element_text(size = 7)
+    )
+  
+  # 1) szereg czasowy
+  p1 <- ggplot(df_ts, aes(x = t, y = y)) +
+    geom_line(color = col) +
+    geom_point(alpha = 0.5, color = col, size = 0.5) +
+    labs(
+      y = expression(Y[t]),
+      x = if (inherits(data, "ts")) "Czas" else expression(t),
+      title = "Wykres liniowy danych"
+    ) +
+    base_theme
+  
+  # 2) ACF
+  p2 <- ggplot(df_acf, aes(x = lag, y = acf)) +
+    geom_hline(yintercept = 0) +
+    geom_point(alpha = 0.5, color = col, size = 0.5) +
+    geom_segment(aes(xend = lag, y = 0, yend = acf),
+                 linewidth = 0.7, color = col) +
+    labs(
+      x = "Lag", y = "ACF",
+      title    = bquote("Wykres ACF," ~ alpha == .(alpha)),
+      subtitle = bquote(.(round(percent, 1)) ~ "% lagów w przedziale ufności")
+    ) +
+    base_theme
+  
+  # 3) PACF
+  p3 <- ggplot(df_pacf, aes(x = lag, y = pacf)) +
+    geom_hline(yintercept = 0) +
+    geom_point(alpha = 0.5, color = col, size = 0.5) +
+    geom_segment(aes(xend = lag, y = 0, yend = pacf),
+                 linewidth = 0.7, color = col) +
+    labs(
+      x = "Lag", y = "PACF",
+      title = "Wykres PACF"
+    ) +
+    base_theme
+  
+  # 4) Y_t vs Y_{t-1}
+  p4 <- ggplot(df_scatter, aes(x = t_1, y = t)) +
+    geom_point(color = col, size = 0.5) +
+    labs(
+      y = expression(Y[t]),
+      x = expression(Y[t-1]),
+      title = expression("Zależność" ~ Y[t] ~ " od " ~ Y[t-1])
+    ) +
+    base_theme
+  
+  if (ci) {
+    p2 <- p2 +
+      geom_hline(yintercept = c(-ci_limit, ci_limit),
+                 linetype = "dashed", color = "red", linewidth = 0.6)
+    p3 <- p3 +
+      geom_hline(yintercept = c(-ci_limit, ci_limit),
+                 linetype = "dashed", color = "red", linewidth = 0.6)
+  }
+  
+  # trochę więcej miejsca na górę + dolny rząd niższy
+  p1 / (p2 | p3 | p4) +
+    plot_layout(heights = c(1.2, 1))
+}
+
+
+```
+
+
+
+
+## Zastosowanie poznanych metod graficznych, do podstawowej analizy wykresu
+
+### Wykres Liniowy {#wykres_liniowy}
+
+```{r wykres_zwykły,fig.cap="Liniowy wykres danych",fig.pos="H"}
+
+autoplot(dane, colour = my_cols[3], lwd = 0.8) +
+  geom_vline(xintercept = 1974, linetype = "dashed", colour = "red", linewidth = 0.8) +
+  theme_minimal() +
+  labs(
+    title = "Kwartalna produkcja piwa w Australii",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  )
+
+```
+
+Z [wykresu](#wykres_liniowy) można zauważyć wyraźną sezonowość w krótszych przedziałach czasowych.  
+Dane wykazują również dwa odmienne trendy:  
+
+- **trend rosnący** od około 1950 roku do około 1974,  
+- **trend malejący** od około 1974 do 2010 roku.  
+
+Ponadto wykres sugeruje **niejednorodność wariancji** – wartości w pierwszej części szeregu (lata 1950–1974) charakteryzują się wyraźnie mniejszą zmiennością niż obserwacje po 1974 roku.
+
+\newpage
+
+### Wykres sezonowy {#wykres_sezonowy}
+
+```{r wykres_sezonowy,fig.cap="Sezonowy wykres danych",fig.pos="H"}
+
+ggseasonplot(dane)+
+  theme_minimal() +
+  labs(
+    title = "Kwartalna produkcja piwa \n w Australii na przestrzeni lat",
+    x = "Kwartał",
+    y = "Produkcja [ML]"
+  )
+
+```
+ Na podstawie [wykresu](#wykres_sezonowy) seasonplot widać, że na przestrzeni lat produkcja rosła, aż do ustabilizowania się na poziomie pomiędzy 400 a 500 na przestrzeni lat 1974 i 2010
+ 
+\newpage
+
+### Wykres kwartalny {#wykres_kwartalny}
+
+```{r wykres_miesięczny,fig.cap="Kwartalny wykres danych",fig.pos="H"}
+
+p <- ggmonthplot(dane) +
+  theme_minimal() +
+  labs(
+    title = "Kwartalna produkcja piwa w Australii na przestrzeni lat",
+    x = "Kwartały na przestrzeni lat",
+    y = "Produkcja [ML]"
+  )
+
+p$layers[[1]] <- geom_line(size = 0.8, colour = my_cols[3])
+
+p
+```
+
+Na podstawie [wykresu](#wykres_kwartalny) można zauważyć:
+
+- **Trend długookresowy** w produkcji piwa na przestrzeni lat: początkowo rosnący, a następnie przechodzący w łagodny spadek (zgodnie z obserwacjami z poprzednich wykresów).
+- **Sezonowość** – najwyższa średnia produkcja przypada na **pierwszy** oraz **czwarty kwartał** roku.
+
+ \newpage
+ 
+### Wykres ACF {#wykres_ACF}
+
+```{r zwykł_ACF_PACf,fig.cap="ACF wykres danych",fig.pos="H"}
+
+ggplot_ACF_extended(dane)
+
+```
+
+
+Na podstawie [wykresu](#wykres_ACF) ACF można zauważyć:
+
+- **silną sezonowość kwartalną**, co widać jako duże piki na lagach 4, 8, 12, 16 itd.;
+- **wolny zanik autokorelacji**, wskazujący na obecność trendu i niestacjonarność szeregu;
+- **wiele istotnych wartości ACF**, co potwierdza zarówno trend, jak i stabilną sezonowość.
+
+\newpage
+
+### Wykres boxplot {#wykres_pudełkowy}
+
+```{r wykres_pudełkowy,fig.cap="Boxplot wykres danych",fig.pos="H"}
+
+df_box <- data.frame(
+  kwartal = factor(cycle(dane), labels = c("Q1", "Q2", "Q3", "Q4")),
+  produkcja = as.numeric(dane)
+)
+
+ggplot(df_box, aes(x = kwartal, y = produkcja)) +
+  geom_boxplot(
+    fill  = my_cols[3],   
+    color = "black"       
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Kwartalna produkcja piwa w Australii",
+    x = "Kwartał",
+    y = "Produkcja [ML]"
+  )
+
+```
+
+Na podstawie [wykresu](#wykres_pudełkowy) typu *boxplot* można zauważyć:
+
+- w kwartale **Q1**, **Q2** oraz **Q3** pojawiają się **wartości odstające**, co wskazuje na epizody produkcji znacząco odbiegające od typowego poziomu w tych okresach
+- kwartalny rozkład produkcji różni się między okresami — kwartalny **Q4** charakteryzuje się najwyższą medianą oraz największym rozrzutem wartości
+- rozkład w Q1–Q3 jest bardziej skupiony, natomiast Q4 wskazuje na większą zmienność sezonową
+
+\newpage
+
+### Wykresy rozrzutu {#wykres_rozrzutu}
+
+```{r wykres_rozrzutu,fig.cap="Wykres rozrzutu danych",fig.pos="H"}
+
+gglagplot(dane, lags = 12, do.lines = FALSE) +
+  theme_minimal() +
+  labs(
+    title = "Wykres rozrzutu dla h = 1, ..., 12",
+    x = "Y[t - h]",
+    y = "Y[t]"
+  ) +
+  scale_colour_manual(values = my_cols[1:4]) + 
+  theme(
+    axis.text.x  = element_text(size = 6),
+    axis.text.y  = element_text(size = 6),
+    strip.text   = element_text(size = 7),
+    legend.text  = element_text(size = 6),
+    legend.title = element_text(size = 7)
+  )
+
+
+```
+
+
+Wykres autokorelacji pokazuje, że:
+
+- **lag 4** wykazuje wyraźnie istotną korelację liniową, co jest zgodne z charakterem danych kwartalnych — obserwacje oddalone o cztery okresy reprezentują ten sam kwartał 
+- dla **lag 8** oraz **lag 12** również widoczne są istotne zależności, co wynika z faktu, że są to wielokrotności 4, a zatem odzwierciedlają strukturę kwartalną
+
+### Wstępne wnioski po analizie podstawowych wykresów
+
+Na podstawie wstępnej analizy szeregu czasowego można sformułować następujące obserwacje:
+
+- do około **1974 roku** widoczny jest **trend rosnący**, po czym pojawia się **łagodny trend malejący**
+- dane wykazują **wyraźną sezonowość** o okresie **4 miesięcy 
+- funkcja autokorelacji (ACF) **zanika powoli oraz wykazuje strukturę okresową**, co potwierdza obecność trendu i sezonowości
+- ACF **nie odpowiada charakterystyce białego szumu**, ponieważ wiele wartości przekracza granice przedziałów ufności
+- w danych występują **obserwacje odstające**, szczególnie w pierwszych trzech kwartałach
+- największą korelację obserwuje się dla **opóźnienia 4**, co jest zgodne z kwartalnym charakterem danych (na podstawie wykresu rozrzutu).
+
+## Dekompozycje
+
+### Dekompozycja addytywna
+
+```{r dekompozycja_addytywna,fig.cap="Dekompozycja addytywna danych",fig.pos="H"}
+
+
+dekomp.add <- decompose(dane, type="additive")
+
+dekomp.add.trend <- dekomp.add$trend
+dekomp.add.sezonowosc <- dekomp.add$seasonal
+dekomp.add.reszty <-dekomp.add$random
+
+autoplot(dekomp.add)
+ind.add.sezon <- tapply(dekomp.add.sezonowosc,
+                        cycle(dane),
+                        mean)
+
+
+```
+
+#### Wnioski z dekompozycji addytywnej
+
+
+Dekompozycja addytywna potwierdza wcześniejsze obserwacje dotyczące badanego szeregu czasowego:
+
+- występuje **silna sezonowość** danych, widoczna jako regularnie powtarzający się komponent sezonowy;
+- komponent trendu wykazuje **wyraźny podział na dwa segmenty**:
+  - **trend rosnący** w pierwszym okresie (do około 1974 roku),
+  - **trend malejący** po 1974 roku.
+
+#### Analiza reszt {#reszty}
+```{r dekompozycja_addytywna_wykres_reszt_losowych_i_ich_acf,fig.cap="Acf dla dekompozycji addytywnej danych",fig.pos="H"}
+
+ggplot_ACF_extended(na.omit(dekomp.add.reszty))
+```
+
+Na podstawie [wykresu](#reszty) reszt oraz odpowiadających im funkcji ACF, PACF i wykresu
+zależności \(Y_t\) od \(Y_{t-1}\) nie można jednoznacznie stwierdzić, że reszty mają
+charakter białego szumu. Co prawda nie obserwuje się wyraźnego trendu ani
+sezonowości, jednak jedynie ok. 60% wartości ACF mieści się w przedziałach ufności,
+a kilka lagów wyraźnie od nich odstaje. Wskazuje to na obecność istotnej
+autokorelacji, a więc na dodatkową strukturę w resztach.
+
+\newpage
+
+#### Wykres boxplot {#boxplot}
+
+```{r dekompozycja_addytywna_wykres_barplot,fig.cap="Boxplot dla dekompozycji addytywnej danych",fig.pos="H"}
+
+df_sezon <- data.frame(
+  kwartal = factor(c("Q1","Q2","Q3","Q4"), levels = c("Q1","Q2","Q3","Q4")),   # 
+  wartosc = as.numeric(ind.add.sezon)
+)
+
+ggplot(df_sezon, aes(x = kwartal, y = wartosc, fill = wartosc)) +
+  geom_col() +                             
+  geom_line(aes(group = 1), color = "black") +
+  geom_point(color = "black", size = 2) +
+  scale_fill_gradient(
+    low  = my_cols[3],    
+    high = my_cols[2]   
+  ) +
+  labs(
+    title = "Wskaźniki sezonowości",
+    x = "Kwartał",
+    y = "Wartość wskaźnika sezonowego",
+    fill = "Sezonowość"
+  ) +
+  theme_minimal()
+
+```
+#### Wnioski z analizy wskaźników sezonowości
+
+Na podstawie [wykresu](#boxplot) wskaźników sezonowości można stwierdzić, że:
+
+- **I kwartał (Q1)** charakteryzuje się produkcją nieznacznie wyższą od wartości przeciętnej,
+- **II kwartał (Q2)** wykazuje **najniższy poziom sezonowy** – produkcja jest wyraźnie poniżej średniej,
+- **III kwartał (Q3)** nadal pozostaje poniżej średniej, lecz wartości są wyższe niż w Q2,
+- **IV kwartał (Q4)** osiąga **najwyższy dodatni wskaźnik sezonowy**, co oznacza największą produkcję w skali roku.
+
+\newpage
+
+### Dekompozycja multiplikatywna
+
+#### Autoplot {#wykautoplot} 
+```{r multiplikatywna_dekompozycja,fig.cap="Autoplot dla dekompozycji multiplikatywnej danych",fig.pos="H"}
+
+dekomp.mul <- decompose(x=dane, type="multiplicative")
+
+dekomp.mul.trend <- dekomp.mul$trend
+dekomp.mul.sezonowosc <- dekomp.mul$seasonal
+dekomp.mul.reszty <-dekomp.mul$random
+
+autoplot(dekomp.mul)
+
+```
+[Wykres typu](#wykautoplot) autoplot daje **spójne** wnioski z poprzednim rodzajem dekompozycji. 
+
+\newpage
+
+#### Analiza reszt {#wyk_acf} 
+```{r multiplikatywna_dekompozycja_ACF,fig.cap="Acf dla dekompozycji multiplikatywnej danych",fig.pos="H"}
+ggplot_ACF_extended(na.omit(dekomp.mul.reszty))
+
+```
+
+Na podstawie [wykresu reszt](#wyk_acf) oraz odpowiadających im funkcji ACF, PACF i wykresu
+zależności \(Y_t\) od \(Y_{t-1}\) można stwierdzić, że dekompozycja multiplikatywna
+prowadzi do wyraźnie lepszych rezultatów niż dekompozycja addytywna.
+
+- reszty **nie wykazują żadnego trendu ani sezonowości**
+- około **75,5% wartości ACF** znajduje się w przedziałach ufności,pojawiają
+  pojedyncze odstające wartości, co oznacza, że reszty **nie mają jeszcze w pełni
+  białoszumowego charakteru**
+- także wykres PACF pokazuje wyraźną poprawę: liczba odstających lagów jest mniejsza
+- wykres zależności \(Y_t\) względem \(Y_{t-1}\) ma **bardziej losowy charakter**
+  niż w przypadku dekompozycji addytywnej
+
+#### Barplot {#barplotmult}
+```{r multiplikatywna_dekompozycja_bar}
+
+ind.mul.sezon <- dekomp.mul$figure
+
+df_mul_sezon <- data.frame(
+  kwartal = factor(c("Q1", "Q2", "Q3", "Q4"),
+                   levels = c("Q1", "Q2", "Q3", "Q4")),
+  wartosc = as.numeric(ind.mul.sezon)
+)
+
+ggplot(df_mul_sezon, aes(x = kwartal, y = wartosc, fill = wartosc)) +
+  geom_col() +                             
+  geom_line(aes(group = 1), color = "black") +
+  geom_point(color = "black", size = 2) +
+  scale_fill_gradient(
+    low  = my_cols[3],   
+    high = my_cols[2]    
+  ) +geom_hline(yintercept = 1, color = "red", linewidth = 1) + 
+  labs(
+    title = "Wskaźniki sezonowości",
+    x = "Kwartał",
+    y = "Wartość wskaźnika sezonowego",
+    fill = "Sezonowość"
+  ) +
+  theme_minimal()
+
+```
+Wnioski z [barplotu](#barplotmult) są **spójne z rezultatami dekompozycji addytywnej**.
+
+\newpage
+
+### Dekompozycja na podstawie modelu regresji
+
+#### Trend liniowy {#trendliniowy}
+
+```{r tslm_liniowa}
+
+tslm0 <- tslm(dane ~ trend)
+ggplot_ACF_extended(residuals(tslm0))
+```
+
+
+Na podstawie [wyników](#trendliniowy) estymacji modelu `tslm(dane ~ trend)` można stwierdzić, że:
+
+- współczynnik determinacji \(R^2 \approx 0{,}27\) wskazuje, że trend liniowy wyjaśnia jedynie około **27% zmienności** danych – znaczna część wariancji pozostaje w resztach
+
+Wnioski te wskazują, że sam trend liniowy nie wystarcza do pełnego opisu szeregu
+
+\newpage
+
+#### Trend liniowy plus sezonowośc {#trendliniowysezonowość}
+
+```{r tslm_liniowa_sezonowość}
+
+tslm1 <- tslm(dane ~ trend + season)
+ggplot_ACF_extended(residuals(tslm1))
+
+```
+#### Porównanie modeli: tylko trend liniowy vs trend liniowy + sezonowość
+
+- **jakość dopasowania nie poprawia się istotnie**:
+  - w modelu z trendem i sezonowością \(R^2\) pozostaje dalej ok 27%, nie widać, znaczącej poprawy
+  
+#### Trend kwadratowy plus sezonowośc {#trendkwadratowysezonowość}
+```{r tslm_kwadratowa_sezonowość}
+
+tslm2 <- tslm(dane ~ season + trend + I(trend^2))
+ggplot_ACF_extended(residuals(tslm2))
+
+```
+
+Model [`tslm(dane ~ season + trend + I(trend^2))`](#trendkwadratowysezonowość) prowadzi do następujących obserwacji:
+
+
+- współczynnik determinacji \(R^2 \approx 0.8909\), a skorygowany \(R^2 \approx 0.8883\), co oznacza,
+  że model z trendem kwadratowym wyjaśnia **~89% zmienności** szeregu — wyraźnie więcej niż poprzedni model (27%)
+  
+
+#### Trend piątego stopnia sezonowośc {#trend5sezonowość}
+```{r tslm_5stopnia_sezonowość}
+
+tslm5 <- tslm(dane ~ season + poly(trend, degree=5))
+ggplot_ACF_extended(residuals(tslm5))
+
+```
+
+Model [`tslm(dane ~ season + I(trend^5))`](#trend5sezonowość) charakteryzuje się bardzo dobrym dopasowaniem:
+
+- współczynnik determinacji wynosi \(R^2 \approx 0{,}96\), a skorygowany \(R^2 \approx 0{,}956\), co oznacza, że model wyjaśnia ponad 90% zmienności danych
+
+W porównaniu z modelem `trend + season + trend^2` model z trendem piątego stopnia wypada o wiele lepiej. Aż 60% ACF znajduje się w przedziale ufności co jest dużym przeskokiem z 26%, gdy uwzględnialiśmy trend drugiego stopnia.
+
+\newpage
+
+### Dekompozycja oparta na metodzie STL {#stlplot}
+
+```{r stl}
+
+
+stl.1 <- stl(dane, s.window="periodic")
+
+stl.1.trend <- trendcycle(stl.1)
+stl.1.sezonowosc <- seasonal(stl.1)
+stl.1.reszty <- remainder(stl.1)
+
+autoplot(cbind(stl.1.trend, stl.1.sezonowosc, stl.1.reszty))
+
+```
+
+Na podstawie [wykresu](#stlplot) STL można zauważyć:
+
+- **trend wygładzony metodą LOESS** wykazuje nieliniową strukturę: wyraźny wzrost do 1974, a następnie stopniowy spadek;
+- **sezonowość jest stabilna w czasie**, zgodnie z parametrem `s.window = "periodic"` — amplituda wahań sezonowych pozostaje stała, co potwierdza silny i powtarzalny charakter sezonowości kwartalnej;
+- **reszty nie wykazują ani trendu, ani sezonowości**, co oznacza, że model STL skutecznie oddzielił główne komponenty szeregu.
+
+\newpage
+
+## Porównanie zależności wyników od parametrów
+### Porównanie modeli decompose(addytywny i multiplikatywny)
+
+```{r porównanie_modeli_adytywne_vs_multiplikatywne}
+
+
+fit.dekomp.add <- dekomp.add.trend + dekomp.add.sezonowosc
+
+fit.dekomp.mul <- dekomp.mul.trend * dekomp.mul.sezonowosc
+
+p1 <- autoplot(cbind(dane, fit.dekomp.add), lwd=1) 
+p2 <- autoplot(cbind(dane, fit.dekomp.mul), lwd=1)
+
+p1/p2
+```
+
+#### Wniosek
+
+Model multiplikatywny jest wyraźnie lepiej dopasowany do danych niż model addytywny. 
+W przeciwieństwie do dekompozycji addytywnej, metoda multiplikatywna prawidłowo odwzorowuje 
+multiplikatywny charakter sezonowości – amplituda wahań sezonowych rośnie .
+
+### Porównanie modeli tslm (trend jako wielomian różnych stopni)
+
+```{r tslm_porównanie}
+
+fit.tslm.0 <- fitted(tslm0)
+fit.tslm.1 <- fitted(tslm1)
+fit.tslm.2 <- fitted(tslm2)
+fit.tslm.5 <- fitted(tslm5)
+
+autoplot(cbind(dane, fit.tslm.0, fit.tslm.1, fit.tslm.2, fit.tslm.5), lwd=1, alpha = 0.7)
+```
+
+Trend jest najlepiej odwzorowany, przy użyciu wielomianu stopnia **piątego**.
+
+
+
+
+\newpage
+
+### Porównanie modeli (stl dla różnych modeli parametrycznych trendu, parametry wygładzające)
+
+```{r WYKRESY_STL}
+
+fit.stl.1 <- trendcycle(stl.1) + seasonal(stl.1)
+p1 <- autoplot(cbind(dane, fit.stl.1), lwd = 1, alpha = 0.5) +
+  theme_minimal() +
+  labs(
+    title    = "STL: s.window = \"periodic\",\n t.window = domyślne",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  ) +
+  theme(plot.title = element_text(size = 9))
+
+
+stl.2 <- stl(dane, s.window=7,t.window = 4)
+
+fit.stl.2 <- trendcycle(stl.2) + seasonal(stl.2)
+p2 <- autoplot(cbind(dane, fit.stl.2), lwd = 1, alpha = 0.5) +
+  theme_minimal() +
+  labs(
+    title    = "STL: s.window = 7,\n t.window = 4",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  ) +
+  theme(plot.title = element_text(size = 9))
+
+stl.3 <- stl(dane, s.window=13,t.window = 4)
+fit.stl.3 <- trendcycle(stl.3) + seasonal(stl.3)
+p3 <- autoplot(cbind(dane, fit.stl.3), lwd = 1, alpha = 0.5) +
+  theme_minimal() +
+  labs(
+    title    = "STL: s.window = 13,\n t.window = 4",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  ) +
+  theme(plot.title = element_text(size = 9))
+
+stl.4 <- stl(dane, s.window=13,t.window = 7)
+# 4) STL 4 – s.window = 13, t.window = 7
+fit.stl.4 <- trendcycle(stl.4) + seasonal(stl.4)
+p4 <- autoplot(cbind(dane, fit.stl.4), lwd = 1, alpha = 0.5) +
+  theme_minimal() +
+  labs(
+    title    = "STL: s.window = 13,\n t.window = 7",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  ) +
+  theme(plot.title = element_text(size = 9))
+
+(p1 | p2) / (p3 | p4)
+```
+Parametry wygładzające mają istostny wpływ na wyniki , z wykresów bezpośrednio wynika, że najlepsze dopasowanie uzyskujemy, przy parametrach wygładzających s.window = 7 oraz t.window = 4. Takie parametry pozwalają na dobre odwzorowanie sezonowości kwartalnej oraz zmienności jej wariancji w czasie.
+
+\newpage
+
+## Próba rozstrzygnięcia czy zastosowanie tranformacji Boxa-Coxa prowadzi do poprawy jakości dopasowania modeli dekompozycji 
+
+### Dla decompose (używamy tranformacji Boxa-Coxa z lambda = 0)
+```{r box_cox_decompose}
+
+dane.lambda.0 <- BoxCox(dane, lambda=0)
+
+dekomp.add.lambda.0 <- decompose(dane.lambda.0)
+
+fit.dekomp.add.lambda.0 <- dekomp.add.lambda.0$trend + dekomp.add.lambda.0$seasonal
+
+fit.dekomp.add.lambda.0 <- InvBoxCox(fit.dekomp.add.lambda.0, lambda=0)
+
+autoplot(cbind(dane,
+               fit.dekomp.add,
+               fit.dekomp.add.lambda.0),
+         lwd=1, ylab="",
+         main="Dekompozycja addytywna z \n i bez transformacji Boxa-Coxa",alpha = 0.7)
+```
+
+Widać poprawę dopasowania dekompozycji addytywnej po zastosowaniu transformacji boxa-coxa
+
+
+```{r box_cox_decompose2}
+autoplot(cbind(fit.dekomp.mul, fit.dekomp.add.lambda.0),lwd=1, ylab="",
+         main="Dekompozycja multiplikatywna z \n i addytywną z \n transformacją Boxa-Coxa",alpha = 0.7)
+
+```
+
+Zastosowanie transformacji Boxa–Coxa wyraźnie poprawia działanie dekompozycji
+addytywnej. W praktyce dekompozycja multiplikatywna prowadzi niemal do identycznych
+rezultatów jak sekwencja:
+
+1) transformacja Boxa–Coxa z \(\lambda = 0\) (czyli logarytmowanie),  
+2) dekompozycja addytywna,  
+3) odwrotna transformacja Boxa–Coxa.
+
+Oznacza to, że multiplikatywną strukturę sezonowości można skutecznie sprowadzić
+do postaci addytywnej za pomocą odpowiedniej transformacji.
+
+### Dla tslm (używamy tranformacji Boxa-Coxa z lambda = 0)
+```{r box_cox_tslm}
+
+tslm0.lambda.0 <- tslm(dane ~ trend, lambda=0)
+tslm1.lambda.0 <- tslm(dane ~ season + trend, lambda=0)
+tslm2.lambda.0 <- tslm(dane ~ season + trend + I(trend^2), lambda=0)
+tslm5.lambda.0 <- tslm(dane ~ season + trend + I(trend^2) + I(trend^3)+ I(trend^4)+ I(trend^5), lambda=0)
+
+fit.tslm.0.lambda.0 <- fitted(tslm0.lambda.0)
+fit.tslm.1.lambda.0 <- fitted(tslm1.lambda.0)
+fit.tslm.2.lambda.0 <- fitted(tslm2.lambda.0)
+fit.tslm.5.lambda.0 <- fitted(tslm5.lambda.0)
+
+autoplot(cbind(dane, fit.tslm.2, fit.tslm.2.lambda.0), lwd=1)
+autoplot(cbind(dane, fit.tslm.5, fit.tslm.5.lambda.0), lwd=1)
+
+
+```
+Porównanie modeli regresyjnych bez transformacji i po zastosowaniu transformacji
+Boxa–Coxa wskazuje, że wpływ tej transformacji jest silnie uzależniony od jakości
+samego modelu.
+
+
+- **Model `tslm2` vs `tslm2` + Box–Cox**  
+  Wnioski są analogiczne jak dla `tslm1`: dodanie samej sezonowości nie wystarcza,
+  aby uchwycić pełną dynamikę szeregu, a Box–Cox nie wpływa istotnie na poprawę
+  dopasowania.
+
+- **Model `tslm5` vs `tslm5` + Box–Cox**  
+  Dopiero w bardziej złożonym modelu, uwzględniającym zarówno sezonowość,
+  jak i wielomianowy trend, transformacja Boxa–Coxa przynosi zauważalną poprawę.
+  Model po transformacji lepiej odwzorowuje ogólny trend oraz cechy zmienności
+  szeregu.
+
+Podsumowując, transformacja Boxa–Coxa przynosi korzyści głównie w modelach,
+w których trend i sezonowość zostały już poprawnie zidentyfikowane. W prostszych
+modelach, niewystarczająco opisujących strukturę szeregu, jej wpływ jest minimalny
+
+\newpage
+
+### Dla stl (używamy tranformacji Boxa-Coxa z lambda = 0)
+
+```{r box_cox_dla_stl}
+
+stl.1.lambda.0 <- stl(dane.lambda.0, s.window='periodic')
+stl.2.lambda.0 <- stl(dane.lambda.0, s.window=7,t.window = 4)
+stl.3.lambda.0 <- stl(dane.lambda.0, s.window=13,t.window = 4)
+stl.4.lambda.0 <- stl(dane.lambda.0, s.window=13, t.window=7)
+
+
+fit.stl.1.lambda.0 <- trendcycle(stl.1.lambda.0) + seasonal(stl.1.lambda.0)
+fit.stl.2.lambda.0 <- trendcycle(stl.2.lambda.0) + seasonal(stl.2.lambda.0)
+fit.stl.3.lambda.0 <- trendcycle(stl.3.lambda.0) + seasonal(stl.3.lambda.0)
+fit.stl.4.lambda.0 <- trendcycle(stl.4.lambda.0) + seasonal(stl.4.lambda.0)
+
+fit.stl.1.lambda.0 <- InvBoxCox(fit.stl.1.lambda.0,lambda=0)
+fit.stl.2.lambda.0 <- InvBoxCox(fit.stl.2.lambda.0,lambda=0)
+fit.stl.3.lambda.0 <- InvBoxCox(fit.stl.3.lambda.0,lambda=0)
+fit.stl.4.lambda.0 <- InvBoxCox(fit.stl.4.lambda.0,lambda=0)
+
+
+p1 <- autoplot(cbind(dane, fit.stl.1, fit.stl.1.lambda.0),
+               lwd = 0.5, ylab = "", alpha = 0.5) +
+  labs(
+    title = "STL 1: s.window = \"periodic\", t.window = domyślne",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  )
+
+p2 <- autoplot(cbind(dane, fit.stl.2, fit.stl.2.lambda.0),
+               lwd = 0.5, ylab = "", alpha = 0.5) +
+  labs(
+    title = "STL 2: s.window = 7, t.window = 4",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  )
+
+p3 <- autoplot(cbind(dane, fit.stl.3, fit.stl.3.lambda.0),
+               lwd = 0.5, ylab = "", alpha = 0.5) +
+  labs(
+    title = "STL 3: s.window = 13, t.window = 4",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  )
+
+p4 <- autoplot(cbind(dane, fit.stl.4, fit.stl.4.lambda.0),
+               lwd = 0.5, ylab = "", alpha = 0.5) +
+  labs(
+    title = "STL 4: s.window = 13, t.window = 7",
+    x = "Rok",
+    y = "Produkcja [ML]"
+  )
+
+p_all <- (p1 + p2) / (p3 + p4)
+
+# jedna legenda + małe czcionki
+(p_all) &
+  theme(
+    legend.position = "bottom",
+    legend.title    = element_text(size = 7),
+    legend.text     = element_text(size = 6),
+    text            = element_text(size = 7),
+    axis.text       = element_text(size = 6),
+    plot.title      = element_text(size = 8)
+  )
+```
+
+Widać poprawę dopasowania modeli poprzez zastosowanie transformacji Boxa-Coxa
+
+Najlepiej dopasowane po tranformacji są modele z s.window równym 13 lub 7 oraz t.window równym 4
+
+
+
+
+## Porównanie wyników eliminacji trendu i sezonowości na podstawie rozważanych metod dekompozycji z wynikikami uzyskanymi poprzez odpowiednie różnicowanie danych
+
+### Dane zróżnicowane co 4
+
+```{r zad7}
+dane.diff.1.4 <- diff(dane, lag=4)
+
+ggplot_ACF_extended(dane.diff.1.4)
+
+
+
+```
+
+Na podstawie wykresu szeregu po różnicowaniu o 4 (usunięciu sezonowości) oraz
+odpowiadających mu funkcji ACF i PACF można stwierdzić, że:
+
+- w przekształconym szeregu **nie obserwuje się już wyraźnego trendu ani regularnej
+  sezonowości**, a wahania oscylują wokół stałej średniej
+- **około 75,5% wartości ACF** znajduje się w przedziale ufności – część lagów wciąż
+  przekracza granice, ale nie tworzy wyraźnego, systematycznego wzorca, nie ma jednorodności wariancji
+
+Podsumowując, szereg po różnicowaniu o 4 można uznać za **bliski stacjonarności**:
+
+```{r dekomp_mul_reszty}
+
+ggplot_ACF_extended(na.omit(dekomp.mul.reszty))
+
+```
+Na podstawie wykresu reszt po dekompozycji multiplikatywnej oraz funkcji ACF
+i PACF można stwierdzić, że:
+
+- reszty oscylują wokół stałej średniej, bez wyraźnego trendu ani sezonowości,
+  co przemawia za **w przybliżeniu stacjonarnym charakterem** szeregu
+- około 75% wartości ACF leży w przedzialach ufności,nie występują regularne wzorce oraz zachowana jest jednorodnośc wariancji. - jest to wyraźna poprawa
+  względem danych pierwotnych, ale nadal obserwujemy kilka istotnych lagów,
+  co oznacza utrzymującą się **słabą autokorelację**
+  
+Wniosek: **reszty można uznać za w przybliżeniu stacjonarne**, ale nie spełniają
+one w pełni założeń białego szumu 
+
+### Reszty z dekompozycji addytywnej z tranformacją boxa-coxa
+
+```{r dekomp_add_boxcox}
+
+ggplot_ACF_extended(na.omit(dekomp.add.lambda.0$random))
+
+```
+Wnioski analogiczne jak do poprzedniego wykresu.
+
+### Reszty z regresji wielomianem 5 stopnia i tranfjormacją boxa-coxa
+
+```{r model_regresjiiboxcox}
+
+ggplot_ACF_extended(na.omit((residuals(tslm5.lambda.0))))
+
+```
+Na podstawie wykresu reszt oraz odpowiadających im funkcji ACF i PACF można
+stwierdzić, że:
+
+- na wykresie liniowym reszty oscylują wokół zera, bez wyraźnego trendu ani
+  sezonowości – w tym sensie szereg ma charakter zbliżony do stacjonarnego
+- jednak tylko ok. 70% wartości ACF mieści się w przedziałach ufności, ale jest niejednorodność wariancji.
+  , a kilka lagów jest wyraźnie odstających
+  
+W konsekwencji **nie można jednoznacznie uznać reszt za biały szum** – szereg
+nie zawiera już trendu ani silnej sezonowości, ale zachowana jest niewielka autokorelacja.
+
+### Reszty z stl plus Box-Cox
+
+```{r stl_boxox}
+
+ggplot_ACF_extended(na.omit(remainder(stl.4.lambda.0)))
+
+```
+
+Pomimo tylko 70% danych w przedziale ufności, reszty oscylują wokół 0. Nie widać żadnej sezonowości ACF i jest tylko jedna obserwacja znacznie wychodząca poza przedział ufności, mamy również jednorodność wariancji, co skłania do skategoryzowania reszty jako szeregu stacjonarnego. 
