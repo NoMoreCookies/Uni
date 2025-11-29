@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1764266272 source:c:\users\egrac\uni\uczenie maszynowe semestr 5\neural_network\main.cpp
+	<vector>
+	<random>
+	<cstddef>
+
