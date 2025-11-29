@@ -68,13 +68,15 @@ f <- function(dane,typ = 'k'){
   #bo zobacz , że to jest czas pojawienia się pierwszej cenzurowanej
   #na wykresie to jest | to zejście w ostatnim schodku ,
   #moment tego zejścia i chcemy mieć czasy do nieg
-  time <- s$time[1:(last_index+1)]
+  #Po updacie treści zadania jednak jest +2
+  time <- s$time[1:(last_index+2)]
   
   # dlaczego surv juz nie do last_index + 1 ,
   #bo zobacz że chcemy mieć wysokość tego ostatniego schodka,
   #a w index+1 to już jest  
   # po zejściu z tego schodka ta ostatnia   wartość, jej nie chcemy.
-  surv <- s$surv[1:last_index]
+  #tutaj po update treści zadania jednak do +1
+  surv <- s$surv[1:(last_index+1)]
   
   # dodaje ten początkowy przypadek
   time <- c(0,time)

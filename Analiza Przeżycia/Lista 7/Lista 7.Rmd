@@ -1,17 +1,43 @@
 ---
-title: "Analiz Przeżycia"
-output: html_document
-date: "2025-11-19"
+title: "Lista 7"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \ Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+
 ```
 
-1. Napisać deklarację funkcji, której argumentami będą dane cenzurowane losowo, wartość poziomu
-ufności oraz wartość τ (zobacz wyjaśnienie nad wzorem (15) w wykładzie 6,7), a wartością dolna
-i górna granica przedziału ufności dla wartości średniej czasu życia na poziomie ufności 1−α (zobacz
-wzór (20) i (21) w notatkach do wykładu 6 i 7).
+```{r requirements}
+library(survival)
+library(survminer)
+library(patchwork)
+library(knitr)
+```
+
+
+# Lista 7
 
 ```{r dane}
 
@@ -19,22 +45,37 @@ library(survival)
 library(survminer)
 library(patchwork)
 library(knitr)
-'
+
 #28, 89, 175, 195, 309, 377+, 393+, 421+, 447+,
 #462, 709+, 744+, 770+, 1106+ ,1206+
 
-dane <- c(28, 89, 175, 195, 309, 377, 393, 421, 447,
+dane1 <- c(28, 89, 175, 195, 309, 377, 393, 421, 447,
 462, 709, 744, 770, 1106 ,1206)
 
-status <- c(rep(1,5),rep(0,4),1,rep(0,5))
+status1 <- c(rep(1,5),rep(0,4),1,rep(0,5))
 
-dane <- data.frame(time = dane,status =status)
+dane1 <- data.frame(time = dane1,status =status1)
+
+dane2 <- c(34, 88, 137, 199, 280, 291, 299, 300, 309,
+351, 358, 369, 369, 370, 375, 382, 392, 429, 451, 1119 )
+
+status2 <- c(rep(1,6),rep(0,2),rep(1,9),0,1,0)
+
+dane2 <- data.frame(time = dane2,status = status2)
 
 ```
-```{r zadanie 1}
-f <- function(dane,tau,typ = 'k'){
+## Zadanie 1 
+
+1. Napisać deklarację funkcji, której argumentami będą dane cenzurowane losowo, wartość poziomu
+ufności oraz wartość $\tau$ (zobacz wyjaśnienie nad wzorem (15) w wykładzie 6,7), a wartością dolna
+i górna granica przedziału ufności dla wartości średniej czasu życia na poziomie ufności 1-$\alpha$ (zobacz
+wzór (20) i (21) w notatkach do wykładu 6 i 7).
+
+```{r zadanie 1,echo = TRUE}
+f <- function(dane,tau, l=1,typ = 'k'){
   
   #Wybranie typu
+  
   if(typ == 'f'){
     s <- survfit((Surv(time,status)~1),
                  data = dane,
@@ -49,39 +90,88 @@ f <- function(dane,tau,typ = 'k'){
   last_index <- which(s$surv > min(s$surv))
   last_index <- max(last_index) 
   
-  time <- s$time[1:(last_index+1)]
+  time <- s$time[1:(last_index+2)]
   time <- c(time,tau)
 
-  print(time)
   # dlaczego surv juz nie do last_index + 1 ,
   #bo zobacz że chcemy mieć wysokość tego ostatniego schodka,
   #a w index+1 to już jest  
   # po zejściu z tego schodka ta ostatnia   wartość, jej nie chcemy.
-  print(s$surv)
-  surv <- s$surv[1:(last_index+1)]
-
+  # po zmianie do last_index+2
+  surv <- s$surv[1:(last_index+2)]
   
   # dodaje ten początkowy przypadek
   time <- c(0,time)
   surv <- c(1,surv)
   
-  print(time)
+  #teraz odcinamy z przodu, za pomoc l
+  which_to_leave <- which(time>l)
+  time <- c(l,time[which_to_leave])
+  surv <- surv[c(min(which_to_leave)-1,which_to_leave[1:(length(which_to_leave)-1)])]
+  # ostatnia linijka jest troche poplątana, ogl musiałem odjąć ten jeden na koncu bo surv jest krótsze od time
+
   #obliczam szerokości tych kwadratów (patrz wykresy z poprzedniej listy)
-  
+
   time_diff <- diff(time)
-  print(time_diff)
-  print(surv)
   # pole pod schodkami
   result <- sum(time_diff*surv)
   
   #suma pola pod schodkami i ogonem
-  
+
   #zwrócenie wartości
   return(result)
 }
 
+d <- function(dane, s_i){
+  time   <- dane$time
+  status <- dane$status
+  return (sum(time == s_i & status == 1))
+}
+
+r <- function(dane, s_i){
+  time <- dane$time
+  return (sum(time >= s_i))
+}
+
+V <- function(dane, tau){
+  time   <- dane$time
+  status <- dane$status
+  
+  s <- sort(unique(time[status == 1]))
+  s <- s[s <= tau]          
+  
+  result <- 0
+  
+  for (s_i in s) {
+    d_i <- d(dane, s_i)    
+    r_i <- r(dane, s_i)     
+    
+    I_i <- f(dane, tau, l = s_i) 
+    
+    result <- result + (I_i^2) * d_i / (r_i * (r_i - d_i))
+  }
+  
+  return(result)
+}
+
+CInterval <- function(dane, tau, alpha){
+  mu      <- f(dane, tau, l = 0)
+  V_value <- V(dane, tau)
+  z       <- qnorm(1 - alpha/2)
+  
+  Tl <- mu - z * sqrt(V_value)
+  Tr <- mu + z * sqrt(V_value)
+  
+  return(c(Tl, Tr))
+}
+```
+## Zadanie 2
+```{r f}
+df <- data.frame(
+"niski_stopień_rozwoju" = CInterval(dane1,1500,0.05),
+"wysoki_stopień_rozwoju" = CInterval(dane2,1500,0.05)
+)
+kable(t(df), caption = "Badanie przedziałów ufności (progresja choroby vs stopień jej zaawansowania", digits = 2, align = "c")
 ```
 
-```{r f}
-f(dane,1500)
-```
+Wnioski: Zgodnie z przyjętym modelem, 95% przedział ufności dla średniego czasu do progresji choroby wskazuje, że jest on istotnie dłuższy u chorych w wczesnym stadium niż u pacjentów w stadium zaawansowanym. Wynik ten jest zgodny z intuicją kliniczną - w bardziej zaawansowanym stadium choroba postępuje szybciej, co wiąże się z większym obciążeniem organizmu i mniejszą rezerwą czynnościową narządów.

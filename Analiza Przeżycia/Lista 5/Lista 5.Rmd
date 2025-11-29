@@ -156,7 +156,7 @@ KM_z_ogonem <- function(times, status, name) {
   
   last_index <- which(KM.df$surv > min(KM.df$surv))
   
-  last_index <- c(last_index,length(last_index)+1) #muszę dodać jeszcze ten ostatni czas
+  last_index <- c(last_index,length(last_index)+1,length(last_index)+2) #muszę dodać jeszcze ten ostatni czas poprawione na +2 z +1 bo treść zadania
   
   t_plus <- KM.df$time[max(last_index)]
   S_t_plus <- KM.df$surv[max(last_index)]
@@ -165,7 +165,7 @@ KM_z_ogonem <- function(times, status, name) {
   
   nu <- -log(S_t_plus) / t_plus
   
-  t_tail <- seq(t_plus, 2, length.out = 100)
+  t_tail <- seq(t_plus, 3, length.out = 100)
   S_tail <- exp(-nu * t_tail)
   tail_df <- data.frame(time = t_tail, surv = S_tail)
   
@@ -183,12 +183,12 @@ KM_z_ogonem <- function(times, status, name) {
 }
 p1 <- KM_z_ogonem(timeA,statusA,"A") + theme(plot.margin = margin(r = 30)) 
 p2 <- KM_z_ogonem(timeB,statusB,"B") + theme(plot.margin = margin(l = 30))
-p1 | p2
+p1 + p2
 
 ```
 
 [Ogon](#ogon) jest zdefiniowany względem definicji zaproponowanej przez Browna, Hollandera i Kowara. Na skutek czego wzór funkcji  ogona 
-w przypadku leku A jak i leku B jest taki sam i wynoi $e^{\frac{{ln\hat{S}(t^{+}})}{t^{+}}*t}$ gdzie w obu przypadkach $t^{+}=\frac{1}{2}$.
+w przypadku leku A jak i leku B jest taki sam i wynosi $e^{\frac{{ln\hat{S}(t^{+}})}{t^{+}}*t}$ gdzie w obu przypadkach $t^{+}=\frac{1}{2}$.
 [Ogon](#ogon) lepszy sposób odwzorowuje prawdę, że im dłuzej pacjent jest chory tym szansa remisji jest coraz mniejsza
 
 ## Zadanie 3

@@ -1146,6 +1146,14 @@ W tym werdykcie utwierdza nas również test Ljunga-Boxa:
 ```
 ##### szumm IID + trend deterministyczny + sezonowość
 
+Rozważamy szereg czasowy złożony z **i.i.d. szumu**, **liniowego trendu rosnącego** oraz **składowej sezonowej** o okresie 12:
+
+\[
+X_t = \varepsilon_t + 0{,}05\,t + 2 \sin\left(\frac{2\pi t}{12}\right), \quad t = 1,\dots,200,
+\]
+gdzie \(\varepsilon_t \sim \mathcal{N}(0,1)\) są niezależnymi zmiennymi losowymi o rozkładzie normalnym (szum i.i.d. o średniej 0 i odchyleniu standardowym 1).
+
+
 ```{r szum_iid_trend_sezonowość}
 set.seed(123)
 
@@ -1159,16 +1167,13 @@ sezon <- 2 * sin(2 * pi * t / 12)    # sezonowość o okresie 12
 
 ts_IID_trend_sezon <- szum_iid + trend + sezon
 
-plot(ts_IID_trend_sezon,
-     main = "IID + trend deterministyczny + sezonowość",
-     ylab = "")
-acf(ts_IID_trend_sezon,
-    main = "ACF dla IID + trend + sezonowość")
-
+ggplot_ACF(ts_IID_trend_sezon)
 
 
 ```
+Test graficzny jednoznacznie stwierdza na brak białoszumowego charakteru danych
 
+Co potwierdzają również test Boxa-Persea oraz Ljunga-Boxa jednoznacznei zwracając FALSE (dane nie są białym szumem).
 
 # Zadanie 4
 
