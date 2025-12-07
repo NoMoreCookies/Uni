@@ -1,0 +1,177 @@
+---
+title: "Lista 8"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \ Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+```
+
+```{r requirements}
+library(survival)
+library(coin)
+library(ggplot2)
+library(survminer)
+library(dplyr)
+library(tidyr)
+library(knitr)
+```
+
+# Lista 8
+
+## Zadanie 1
+
+```{r dane}
+# niski stopień zaawansowania 
+time_low <- c(28, 89, 175, 195, 309, 377, 393, 421, 447, 462, 709, 744, 770, 1106, 1206)
+status_low <- c(1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0) 
+
+# wysoki stopień zaawansowania 
+time_high <- c(34, 88, 137, 199, 280, 291, 299, 300, 309, 351, 358, 369, 369, 370, 375, 382, 392, 429, 451, 1119)
+status_high <- c(1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0)
+
+data <- data.frame(
+  time = c(time_low, time_high),
+  status = c(status_low, status_high),
+  group = factor(c(rep("Low", length(time_low)), rep("High", length(time_high))))
+)
+
+```
+
+```{r testy}
+test_logrank <- logrank_test(Surv(time, status) ~ group, data = data, type = "logrank")
+test_gehan <- logrank_test(Surv(time, status) ~ group, data = data, type = "Gehan-Breslow")
+test_tarone <- logrank_test(Surv(time, status) ~ group, data = data, type = "Tarone-Ware")
+test_peto <- logrank_test(Surv(time, status) ~ group, data = data, type = "Peto-Peto")
+
+wyniki_testow <- data.frame(
+  Test = c("Log-Rank", "Gehan-Breslow", "Tarone-Ware", "Peto-Peto"),
+  'Wartość p' = c(
+    pvalue(test_logrank),
+    pvalue(test_gehan),
+    pvalue(test_tarone),
+    pvalue(test_peto)
+  ))
+
+```
+
+
+```{r p_value_tabela}
+kable(wyniki_testow, 
+      caption = "Porównanie wartości p dla różnych testów jednorodności", digits = 4,
+      align = c('l', 'c'))
+```
+
+## Zadanie 2
+
+```{r tworzenie_wykresu_est_km}
+fit_km <- survfit(Surv(time, status) ~ group, data = data)
+
+plot_km <- ggsurvplot(
+  fit_km, 
+  data = data, 
+  xlab = "Czas (dni)", 
+  ylab = "Prawdopodobieństwo przeżycia (S(t))",
+  title = "Krzywe Kaplana-Meiera w dwóch badanych grupach",
+  palette = c("red", "blue"),
+  ggtheme = theme_minimal()
+)
+```
+
+```{r wykres_km}
+
+print(plot_km)
+
+```
+
+```{r normalizacja_tworzenie_wykresow_wag}
+fit_pooled <- survfit(Surv(time, status) ~ 1, data = data)
+
+weights_df <- data.frame(
+  time = fit_pooled$time,
+  n.risk = fit_pooled$n.risk,
+  n.event = fit_pooled$n.event, 
+  surv = fit_pooled$surv
+)
+
+
+start_row <- data.frame(
+  time = 0,
+  n.risk = nrow(data),
+  n.event = 0,
+  surv = 1
+)
+weights_df <- rbind(start_row, weights_df)
+
+weights_df <- weights_df %>%
+  mutate(
+    raw_LogRank = 1,
+    raw_Gehan = n.risk,
+    raw_Tarone = sqrt(n.risk),
+    raw_Peto = surv 
+  )
+
+sums <- weights_df %>%
+  filter(n.event > 0) %>%
+  summarise(
+    sum_LogRank = sum(raw_LogRank),
+    sum_Gehan = sum(raw_Gehan),
+    sum_Tarone = sum(raw_Tarone),
+    sum_Peto = sum(raw_Peto)
+  )
+
+weights_df <- weights_df %>%
+  mutate(
+    LogRank_norm = raw_LogRank/sums$sum_LogRank,
+    Gehan_norm  = raw_Gehan /sums$sum_Gehan,
+    Tarone_norm = raw_Tarone/sums$sum_Tarone,
+    Peto_norm = raw_Peto/sums$sum_Peto
+  ) %>%
+  select(time, LogRank_norm, Gehan_norm, Tarone_norm, Peto_norm) %>%
+  pivot_longer(cols = -time, names_to = "Test", values_to = "Weight")
+
+
+plot_weights <- ggplot(weights_df, aes(x = time, y = Weight, color = Test)) +
+  geom_line(linewidth = 1.2) + 
+  scale_color_manual(
+    breaks = c("LogRank_norm", "Gehan_norm", "Peto_norm", "Tarone_norm"),
+    values = c("LogRank_norm" = "red", 
+               "Gehan_norm" = "purple", 
+               "Peto_norm" = "blue", 
+               "Tarone_norm" = "orange"), 
+    labels = c("Log-Rank", 
+               "Gehan-Breslow", 
+               "Peto-Peto", 
+               "Tarone-Ware")
+  ) +
+  labs(title = "Wykres unormowanych wag w testach jednorodności", 
+       x = "Czas",
+       y = "Unormowana waga") +
+  theme_minimal() +
+  theme(legend.position = "right") + coord_cartesian(xlim = c(0, 500))
+```
+
+```{r wykres_funkcji_wagowych, fig.width=6}
+print(plot_weights)
+```
