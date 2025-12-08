@@ -41,6 +41,7 @@ library(knitr)
 ## Zadanie 1
 
 Program został przygotowany zgodnie z wytycznymi zadania. Implementacja obejmuje jedną funkcję, logicznie podzieloną na dwie części za pomocą parametru typ. Została ona opracowana na podstawie definicji wartości oczekiwanej (rozumianej potocznie jako pole pod wykresem) oraz materiałów z listy zadań nr 5. Całość pozostaje w pełnej zgodzie z wymaganiami zadania.
+
 ```{r zad1,echo = TRUE}
 f <- function(dane,typ = 'k'){
   
@@ -57,6 +58,7 @@ f <- function(dane,typ = 'k'){
   # Znalezienie ostatniego indeksu surv i time
   #( to jest moment tego ostatniego spadku, patrz wykres 5 lista)
   last_index <- which(s$surv > min(s$surv))
+  last_index <- c(last_index, length(last_index) + 1, length(last_index) + 2)
   last_index <- max(last_index) 
   
   
@@ -69,14 +71,14 @@ f <- function(dane,typ = 'k'){
   #na wykresie to jest | to zejście w ostatnim schodku ,
   #moment tego zejścia i chcemy mieć czasy do nieg
   #Po updacie treści zadania jednak jest +2
-  time <- s$time[1:(last_index+2)]
+  time <- s$time[1:last_index]
   
   # dlaczego surv juz nie do last_index + 1 ,
   #bo zobacz że chcemy mieć wysokość tego ostatniego schodka,
   #a w index+1 to już jest  
   # po zejściu z tego schodka ta ostatnia   wartość, jej nie chcemy.
   #tutaj po update treści zadania jednak do +1
-  surv <- s$surv[1:(last_index+1)]
+  surv <- s$surv[1:last_index-1]
   
   # dodaje ten początkowy przypadek
   time <- c(0,time)

@@ -33,7 +33,10 @@ knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
 library(survival)
 library(survminer)
 library(patchwork)
+library(RColorBrewer)
+library(knitr)
 ```
+
 
 ## Zadanie 1 
 
@@ -92,15 +95,16 @@ KM.df.B$group <- "Lek B"
 KM.all <- rbind(KM.df.A, KM.df.B)
 
 ggplot(KM.all, aes(x = time, y = surv, color = group)) +
-  geom_step() +
+  geom_step(lwd = 2) +
   labs(x = "Czas", y = "Prawdopodobieństwo braku remisji",
        color = "Grupa") +
           theme_minimal()+
-            ggtitle( "Wykres estymatorów Kaplana-Meiera dla leków A i B")
+            ggtitle( "Wykres estymatorów Kaplana-Meiera dla leków A i B")+
+            scale_color_brewer(palette = "Set2")
 ```
 
-[Wykres](#wykresy_KM) estymatorów Kaplana–Meiera dla leków A oraz B wskazuje na szybsze osiąganie remisji w grupie leku B – prawdopodobieństwo pozostawania bez remisji spada do 0 wcześniej niż w grupie leku A.
-[Krzywa](#wykresy_KM) dla leku A jest mniej stroma i przebiega wyżej, co oznacza, że po czasie t = 0,75 około 60% pacjentów wciąż nie osiągnęło remisji, podczas gdy w grupie leku B prawdopodobieństwo braku remisji jest już bliskie 0
+[Wykres](#wykresy_KM) estymatorów Kaplana–Meiera dla leków A oraz B wskazuje na szybsze osiąganie remisji w grupie leku B – prawdopodobieństwo pozostawania bez remisji spada do 0.5 wcześniej niż w grupie leku A.
+[Krzywa](#wykresy_KM) dla leku A jest mniej stroma i przebiega wyżej, co oznacza, że po czasie t = 0,75 około 60% pacjentów wciąż nie osiągnęło remisji, podczas gdy w grupie leku B prawdopodobieństwo braku remisji jest już bliskie 50%
 
 ### Wykresy Fleminga-Harringtona{#wykresy_FH}
 
@@ -129,11 +133,12 @@ KM.df.B$group <- "Lek B"
 KM.all <- rbind(KM.df.A, KM.df.B)
 
 ggplot(KM.all, aes(x = time, y = surv, color = group)) +
-  geom_step() +
+  geom_step(lwd = 2) +
   labs(x = "Czas", y = "Prawdopodobieństwo braku remisji",
        color = "Grupa") +
   theme_minimal()+
-    ggtitle("Wykres estymatorów Fleminga-Harringtona dla leków A i B")
+    ggtitle("Wykres estymatorów Fleminga-Harringtona dla leków A i B")+
+  scale_color_brewer(palette = "Set2")
 
 ```
 
@@ -147,21 +152,19 @@ Na podstawie obu wykresów można przypuszczać, że leki A i B charakteryzują 
  
 ```{r zad2,fig.cap="Wykresy estymatorów Kaplana-Meiera dla leków A i B z ogonem"}
 
-KM_z_ogonem <- function(times, status, name) {
-  
+KM_z_ogonem_dane <- function(times, status) {
   dane <- data.frame(time = times, status = status)
   
   KM.fit <- survfit(Surv(time, status) ~ 1, data = dane)
   KM.df <- data.frame(time = KM.fit$time, surv = KM.fit$surv)
   
   last_index <- which(KM.df$surv > min(KM.df$surv))
-  
-  last_index <- c(last_index,length(last_index)+1,length(last_index)+2) #muszę dodać jeszcze ten ostatni czas poprawione na +2 z +1 bo treść zadania
+  last_index <- c(last_index, length(last_index) + 1, length(last_index) + 2)
   
   t_plus <- KM.df$time[max(last_index)]
   S_t_plus <- KM.df$surv[max(last_index)]
   
-  KM.df <- KM.df[c(last_index),]
+  KM.df <- KM.df[c(last_index), ]
   
   nu <- -log(S_t_plus) / t_plus
   
@@ -169,21 +172,39 @@ KM_z_ogonem <- function(times, status, name) {
   S_tail <- exp(-nu * t_tail)
   tail_df <- data.frame(time = t_tail, surv = S_tail)
   
-  
-  return(ggplot() +
-    geom_step(data = KM.df, aes(x = time, y = surv)) +
-    geom_line(data = tail_df, aes(x = time, y = surv)) + 
-    geom_hline(yintercept = S_t_plus, linetype = "dashed",color = "red") +
-    labs(
-      x = "Czas",
-      y = "Prawdopodobieństwo braku remisji"
-    ) +
-    theme_minimal()+
-    ggtitle(paste("Wykres estymatora \n Kaplana-Meiera \n wraz z ogonem \n dla danych ", name)))
+  list(KM = KM.df, tail = tail_df,
+       t_plus = t_plus, S_t_plus = S_t_plus)
 }
-p1 <- KM_z_ogonem(timeA,statusA,"A") + theme(plot.margin = margin(r = 30)) 
-p2 <- KM_z_ogonem(timeB,statusB,"B") + theme(plot.margin = margin(l = 30))
-p1 + p2
+
+dA <- KM_z_ogonem_dane(timeA, statusA)
+dB <- KM_z_ogonem_dane(timeB, statusB)
+
+KM_A   <- transform(dA$KM,   grupa = "A")
+tail_A <- transform(dA$tail, grupa = "A")
+
+KM_B   <- transform(dB$KM,   grupa = "B")
+tail_B <- transform(dB$tail, grupa = "B")
+
+KM_all   <- rbind(KM_A, KM_B)
+tail_all <- rbind(tail_A, tail_B)
+
+ggplot() +
+  # KM
+  geom_step(data = KM_all,
+            aes(x = time, y = surv, color = grupa),lwd = 2) +
+  # ogony wykładnicze
+  geom_line(data = tail_all,
+            aes(x = time, y = surv, color = grupa),
+            linetype = "dashed",lwd = 2) +
+  labs(
+    x = "Czas",
+    y = "Prawdopodobieństwo braku remisji",
+    color = "Grupa"
+  ) +
+  theme_minimal() +
+  ggtitle("Estymator Kaplana-Meiera z ogonem\n dla danych A i B na jednym wykresie")+
+  scale_color_brewer(palette = "Set2")
+
 
 ```
 
@@ -193,31 +214,319 @@ w przypadku leku A jak i leku B jest taki sam i wynosi $e^{\frac{{ln\hat{S}(t^{+
 
 ## Zadanie 3
 
-```{r generator}
-#--------------------------Generator danych I typu-----------------------
+Wybrane parametry to $\alpha=3,\lambda=5$
+
+Dla uogólnionego rozkładu wykładniczego
+
+wartość oczekiwana jest równa $\mathbb{E}(X) = \frac{1}{\lambda}\sum_{k = 1}^{\alpha}{\frac{1}{k}}$
+U nas $t_0 = \mathbb{E}(X)$
+
+```{r funkcje_generujace}
+
 gen1 <- function(n, alpha, lambda, t0){
+  
+  # generujemy dane metodą odwrotnej dystrybuanty
   y <- runif(n)
   x <- - (1/lambda)*log(1- y^(1/alpha))
   
+  #liczymy czasy obserwacji oraz czy był cenzurowane
   delta <- ifelse(x <= t0, 1, 0)
   x_obs <- pmin(x, t0)
   
-  return(data.frame(x = x_obs, delta = delta))
+  return(data.frame(time = x_obs, status = delta))
+  
 }
-#-------------------------------------------------------------------------
 
 ```
 
-Wybrane parametry to $\alpha=3,\lambda=5$
+```{r wybór_lambdy_i_alphy}
+#wybór lambdy oraz alphy oraz wyliczenia na ich podstawie t0
 
-Dla uogólnionego rozkłądu wykładniczego
-```{r zadanie3}
+alpha = 2
 
-# u nas
+lambda = 5
 
+# liczymy t0 ( przybliżona wartość oczekiwana )
+t0 = (sum(c(1 / (1:alpha))))/lambda 
+
+```
+
+```{r test}
+
+KM_BHK_S_at <- function(times, status, t_eval) {
+  
+  # z dostarczonych danych tworzy data.frame
+  dane <- data.frame(time = times, status = status)
+  
+  # funkcja survit do estymatora przeżycia
+  KM.fit <- survfit(Surv(time, status) ~ 1, data = dane)
+
+  time <- KM.fit$time
+  surv <- KM.fit$surv
+  
+  # last index, musimy jeszcze dodać te dwa, żeby mieć ten ostatnij schodek, bo survfit zwraca bez niego
+  last_index <- which(surv > min(surv))
+  last_index <- c(last_index, length(last_index) + 1, length(last_index) + 2)
+  
+  #moment, w którym doczepiamy ogon
+  t_plus <- time[max(last_index)]
+  S_t_plus <- surv[max(last_index)]
+  
+  #wzór dla ogon
+  nu <- -log(S_t_plus) / t_plus
+  
+  #na każdym elemencie listy zwracamy oszacowania
+  sapply(t_eval, function(t0) {
+    if (t0 <= t_plus) {
+      
+      surv[max(which(time <= t0))]
+    } else {
+      
+      exp(-nu * t0)
+    }
+  })
+}
+
+```
+
+```{r kolejny_fragment_zadania}
 M <- 1000
-n <- c(30,50,100)
-t0 <- 7/6
+
+
+wyn50  <- matrix(NA, nrow = M, ncol = 2,
+                 dimnames = list(NULL, c("t0", "2t0")))
+wyn100 <- matrix(NA, nrow = M, ncol = 2,
+                 dimnames = list(NULL, c("t0", "2t0")))
+wyn200 <- matrix(NA, nrow = M, ncol = 2,
+                 dimnames = list(NULL, c("t0", "2t0")))
+
+```
+
+```{r dalsza_część_zadania}
+
+set.seed(123)  
+
+for (i in 1:M) {
+  # n = 50
+  dat50 <- gen1(50,  alpha, lambda, t0)  
+  wyn50[i, ] <- KM_BHK_S_at(dat50$time, dat50$status, c(t0, 2*t0))
+  
+  # n = 100
+  dat100 <- gen1(100, alpha, lambda, t0)
+  wyn100[i, ] <- KM_BHK_S_at(dat100$time, dat100$status, c(t0, 2*t0))
+  
+  # n = 200
+  dat200 <- gen1(200, alpha, lambda, t0)
+  wyn200[i, ] <- KM_BHK_S_at(dat200$time, dat200$status, c(t0, 2*t0))
+}
 
 
 ```
+
+### Wykresy dla n = 50 {#n50}
+```{r wykresy_dla_n50}
+
+
+
+p1 <- ggplot(data.frame(x = wyn50[, "t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +  
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn50[, "t0"]),
+      sd   = sd(wyn50[, "t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram t0 dla n = 50",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p2 <- ggplot(data.frame(x = wyn50[, "2t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn50[, "2t0"]),
+      sd   = sd(wyn50[, "2t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram 2t0 dla n = 50",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p1 | p2
+
+```
+[Histogramy](#n50) dla $t_0$ i $2t_0$ ogólnie przypominają rozkład normalny, zwłaszcza w części centralnej.
+Widoczne są jednak lokalne odchylenia – pojedyncze słupki wyraźnie odbiegają od krzywej normalnej, co skłania 
+do odrzucenia hipotezy o normalności rozkładów.
+
+### Wykresy dla n = 100 {#n100}
+```{r wykresy_dla_n100}
+
+p1 <- ggplot(data.frame(x = wyn100[, "t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +  
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn100[, "t0"]),
+      sd   = sd(wyn100[, "t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram t0 dla n = 100",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p2 <- ggplot(data.frame(x = wyn100[, "2t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn100[, "2t0"]),
+      sd   = sd(wyn100[, "2t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram 2t0 dla n = 100",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p1 | p2
+```
+
+[Tutaj](#n100) analogiczne wnioski jak w przypadku próby o długości 50
+
+### Wykresy dla n = 200 {#n200}
+```{r wykresy_dla_n200}
+
+p1 <- ggplot(data.frame(x = wyn200[, "t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +  
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn200[, "t0"]),
+      sd   = sd(wyn200[, "t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram t0 dla n = 200",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p2 <- ggplot(data.frame(x = wyn200[, "2t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn200[, "2t0"]),
+      sd   = sd(wyn200[, "2t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram 2t0 dla n = 200",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p1 | p2
+
+```
+
+Dla [n = 200 rozkład](#n200) $t_0$ bardzo dobrze odwzorowuje kształt rozkładu normalnego.
+W przypadku $2t_0$ podobieństwo również jest widoczne, choć nie tak wyraźne jak dla $t_0$ — pojawiają się większe lokalne odchylenia od krzywej normalnej.
+
+
+Żeby potweirdzic wnioski z historgamów, wykonamy jeszcze testy shapiro-wilka dla danych.
+
+```{r dane_do_tabelek}
+
+
+
+tests <- list(
+  "n = 50,  t0"  = shapiro.test(wyn50[ , "t0"]),
+  "n = 50, 2t0"  = shapiro.test(wyn50[ , "2t0"]),
+  "n = 100, t0"  = shapiro.test(wyn100[, "t0"]),
+  "n = 100, 2t0" = shapiro.test(wyn100[, "2t0"]),
+  "n = 200, t0"  = shapiro.test(wyn200[, "t0"]),
+  "n = 200, 2t0" = shapiro.test(wyn200[, "2t0"])
+)
+
+df <- data.frame(
+  Próba   = names(tests),
+  W       = sapply(tests, function(x) x$statistic),
+  p_value = sapply(tests, function(x) x$p.value)
+)
+
+kable(df, digits = 6, caption = "Wyniki testu Shapiro–Wilka")
+
+
+```
+We wszystkich przypadkach statystyka W > 0.95, co wskazuje na bliskość z rozkładem normalnym.
+Jednak na podstawie p-value brak podstaw do odrzucenia normalności jedynie dla próby z 
+$n = 200$ w punkcie $t_0$
+
+Wnioski: Same histogramy nie dają jednoznacznej odpowiedzi co do normalności – przy mniejszych próbach (n = 50, 100) widoczne są lokalne odchylenia.
+Dla $n = 200$ w punkcie $t_0$ rozkład jest już bardzo zbliżony do normalnego.
+

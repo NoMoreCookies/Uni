@@ -174,4 +174,4 @@ df <- data.frame(
 kable(t(df), caption = "Badanie przedziałów ufności (progresja choroby vs stopień jej zaawansowania", digits = 2, align = "c")
 ```
 
-Wnioski: Zgodnie z przyjętym modelem, 95% przedział ufności dla średniego czasu do progresji choroby wskazuje, że jest on istotnie dłuższy u chorych w wczesnym stadium niż u pacjentów w stadium zaawansowanym. Wynik ten jest zgodny z intuicją kliniczną - w bardziej zaawansowanym stadium choroba postępuje szybciej, co wiąże się z większym obciążeniem organizmu i mniejszą rezerwą czynnościową narządów.
+Wnioski: Zgodnie z przyjętym modelem, 95% realizacja przedziału ufności dla średniego czasu do progresji choroby wskazuje, że jest on istotnie dłuższy u chorych w wczesnym stadium niż u pacjentów w stadium zaawansowanym. Wynik ten jest zgodny z intuicją kliniczną - w bardziej zaawansowanym stadium choroba postępuje szybciej, co wiąże się z większym obciążeniem organizmu.
