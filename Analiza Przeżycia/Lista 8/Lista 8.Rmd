@@ -67,7 +67,7 @@ test_peto <- logrank_test(Surv(time, status) ~ group, data = data, type = "Peto-
 
 wyniki_testow <- data.frame(
   Test = c("Log-Rank", "Gehan-Breslow", "Tarone-Ware", "Peto-Peto"),
-  'Wartość p' = c(
+  p_wartość = c(
     pvalue(test_logrank),
     pvalue(test_gehan),
     pvalue(test_tarone),
@@ -78,10 +78,16 @@ wyniki_testow <- data.frame(
 
 
 ```{r p_value_tabela}
-kable(wyniki_testow, 
-      caption = "Porównanie wartości p dla różnych testów jednorodności", digits = 4,
+kable(wyniki_testow, col.names = c("Test", "p-wartość"),
+      caption = "Porównanie p wartości dla różnych testów jednorodności", digits=4,
       align = c('l', 'c'))
 ```
+
+Na poziomie istotności $\alpha$ = 0.05, jedynie test log-rank wskazuje na istotną statystycznie różnicę w rozkładach czasu do progresji choroby pomiędzy grupami (p-value < 0.05). Pozostałe testy (Gehana-Breslowa, Tarone’a-Ware’a, Peto-Peto) nie dały podstaw do odrzucenia hipotezy o równości rozkładów. 
+
+Różnice w wynikach wynikają z wag, jakie poszczególne testy przypisują zdarzeniom w czasie, tzn. test log-rank stosuje stałą wagę ($w=1$) dla wszystkich zdarzeń, natomiast pozostałe testy przypisują największą wagę zdarzeniom występującym na początku obserwacji, kiedy liczebność grup jest największa.
+Możemy się o tym upewnić analizując poniższe wykresy:
+
 
 ## Zadanie 2
 
@@ -92,7 +98,7 @@ plot_km <- ggsurvplot(
   fit_km, 
   data = data, 
   xlab = "Czas (dni)", 
-  ylab = "Prawdopodobieństwo przeżycia (S(t))",
+  ylab = "Prawdopodobieństwo przeżycia",
   title = "Krzywe Kaplana-Meiera w dwóch badanych grupach",
   palette = c("red", "blue"),
   ggtheme = theme_minimal()
@@ -175,3 +181,6 @@ plot_weights <- ggplot(weights_df, aes(x = time, y = Weight, color = Test)) +
 ```{r wykres_funkcji_wagowych, fig.width=6}
 print(plot_weights)
 ```
+
+W analizowanym zbiorze danych, w początkowym okresie (do ok. 200-go dnia), krzywe przeżycia grupy o niskim i wysokim stopniu zaawansowania choroby przebiegają blisko siebie, co sprawia, że testy nie wykrywają istotnych różnic.
+Zauważalna różnica między grupami pojawia się w okresie powyżej 300 dni. W grupie o wysokim stopniu zaawansowania następuje wtedy nagromadzenie progresji choroby, podczas gdy w grupie o niskim stopniu zaawansowania dominuje cenzurowanie. Test log-rank jest najbardziej czuły na te późniejsze różnice, ponieważ ma stałą wagę, wagi przypisywane zdarzeniom w przypadku pozostałych testów maleją z upływem czasu, dlatego nie dają oczekiwanych wyników.
