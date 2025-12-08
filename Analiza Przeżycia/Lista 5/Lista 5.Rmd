@@ -293,11 +293,11 @@ KM_BHK_S_at <- function(times, status, t_eval) {
 M <- 1000
 
 
-wyn50  <- matrix(NA, nrow = M, ncol = 2,
+wyn20  <- matrix(NA, nrow = M, ncol = 2,
                  dimnames = list(NULL, c("t0", "2t0")))
-wyn100 <- matrix(NA, nrow = M, ncol = 2,
+wyn30 <- matrix(NA, nrow = M, ncol = 2,
                  dimnames = list(NULL, c("t0", "2t0")))
-wyn200 <- matrix(NA, nrow = M, ncol = 2,
+wyn50 <- matrix(NA, nrow = M, ncol = 2,
                  dimnames = list(NULL, c("t0", "2t0")))
 
 ```
@@ -308,25 +308,139 @@ set.seed(123)
 
 for (i in 1:M) {
   # n = 50
-  dat50 <- gen1(50,  alpha, lambda, t0)  
-  wyn50[i, ] <- KM_BHK_S_at(dat50$time, dat50$status, c(t0, 2*t0))
+  dat20 <- gen1(20,  alpha, lambda, t0)  
+  wyn20[i, ] <- KM_BHK_S_at(dat20$time, dat20$status, c(t0, 2*t0))
   
   # n = 100
-  dat100 <- gen1(100, alpha, lambda, t0)
-  wyn100[i, ] <- KM_BHK_S_at(dat100$time, dat100$status, c(t0, 2*t0))
+  dat30 <- gen1(30, alpha, lambda, t0)
+  wyn30[i, ] <- KM_BHK_S_at(dat30$time, dat30$status, c(t0, 2*t0))
   
   # n = 200
-  dat200 <- gen1(200, alpha, lambda, t0)
-  wyn200[i, ] <- KM_BHK_S_at(dat200$time, dat200$status, c(t0, 2*t0))
+  dat50 <- gen1(50, alpha, lambda, t0)
+  wyn50[i, ] <- KM_BHK_S_at(dat50$time, dat50$status, c(t0, 2*t0))
 }
 
 
 ```
 
+### Wykresy dla n = 20 {#n20}
+```{r wykresy_dla_n20}
+
+
+
+p1 <- ggplot(data.frame(x = wyn20[, "t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +  
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn20[, "t0"]),
+      sd   = sd(wyn20[, "t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram t0 dla n = 20",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p2 <- ggplot(data.frame(x = wyn20[, "2t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn20[, "2t0"]),
+      sd   = sd(wyn20[, "2t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram 2t0 dla n = 20",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p1 | p2
+
+```
+[Histogramy](#n20) dla $t_0$ i $2t_0$ ogólnie przypominają rozkład normalny, zwłaszcza w części centralnej.
+Widoczne są jednak lokalne odchylenia – pojedyncze słupki wyraźnie odbiegają od krzywej normalnej, co skłania 
+do odrzucenia hipotezy o normalności rozkładów.
+
+### Wykresy dla n = 30 {#n30}
+```{r wykresy_dla_n30}
+
+p1 <- ggplot(data.frame(x = wyn30[, "t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +  
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn30[, "t0"]),
+      sd   = sd(wyn30[, "t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram t0 dla n = 30",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p2 <- ggplot(data.frame(x = wyn30[, "2t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn30[, "2t0"]),
+      sd   = sd(wyn30[, "2t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Histogram 2t0 dla n = 30",
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p1 | p2
+```
+
+[Tutaj](#n30) analogiczne wnioski jak w przypadku próby o długości 20
+
 ### Wykresy dla n = 50 {#n50}
 ```{r wykresy_dla_n50}
-
-
 
 p1 <- ggplot(data.frame(x = wyn50[, "t0"]), aes(x)) +
   geom_histogram(
@@ -379,138 +493,25 @@ p2 <- ggplot(data.frame(x = wyn50[, "2t0"]), aes(x)) +
 p1 | p2
 
 ```
-[Histogramy](#n50) dla $t_0$ i $2t_0$ ogólnie przypominają rozkład normalny, zwłaszcza w części centralnej.
-Widoczne są jednak lokalne odchylenia – pojedyncze słupki wyraźnie odbiegają od krzywej normalnej, co skłania 
-do odrzucenia hipotezy o normalności rozkładów.
 
-### Wykresy dla n = 100 {#n100}
-```{r wykresy_dla_n100}
+Dla [n = 200 rozkład](#n50) $t_0$ bardzo już lepiej odwzorowuje kształt wukresy rozkłądu normalnego, ale wciąż występują odchylenia
+składaniające do odrzucenia hipotezy o normalności rozkładu.
+Podobnie w przypadku $2t_0$
 
-p1 <- ggplot(data.frame(x = wyn100[, "t0"]), aes(x)) +
-  geom_histogram(
-    bins = 25,
-    color = "black",
-    fill  = "#FC8D62",
-    lwd   = 1,
-    aes(y = after_stat(..density..))
-  ) +  
-  stat_function(
-    fun = dnorm,
-    args = list(
-      mean = mean(wyn100[, "t0"]),
-      sd   = sd(wyn100[, "t0"])
-    ),
-    linewidth = 1,
-    color = "red"
-  ) +
-  theme_minimal() +
-  labs(
-    title = "Histogram t0 dla n = 100",
-    x     = expression(hat(S)(t[0])),
-    y     = "Gęstość"
-  )
+Żeby potwierdzić wnioski z historgamów, wykonamy jeszcze testy shapiro-wilka dla danych.
 
-p2 <- ggplot(data.frame(x = wyn100[, "2t0"]), aes(x)) +
-  geom_histogram(
-    bins = 25,
-    color = "black",
-    fill  = "#FC8D62",
-    lwd   = 1,
-    aes(y = after_stat(..density..))
-  ) +
-  stat_function(
-    fun = dnorm,
-    args = list(
-      mean = mean(wyn100[, "2t0"]),
-      sd   = sd(wyn100[, "2t0"])
-    ),
-    linewidth = 1,
-    color = "red"
-  ) +
-  theme_minimal() +
-  labs(
-    title = "Histogram 2t0 dla n = 100",
-    x     = expression(hat(S)(t[0])),
-    y     = "Gęstość"
-  )
-
-p1 | p2
-```
-
-[Tutaj](#n100) analogiczne wnioski jak w przypadku próby o długości 50
-
-### Wykresy dla n = 200 {#n200}
-```{r wykresy_dla_n200}
-
-p1 <- ggplot(data.frame(x = wyn200[, "t0"]), aes(x)) +
-  geom_histogram(
-    bins = 25,
-    color = "black",
-    fill  = "#FC8D62",
-    lwd   = 1,
-    aes(y = after_stat(..density..))
-  ) +  
-  stat_function(
-    fun = dnorm,
-    args = list(
-      mean = mean(wyn200[, "t0"]),
-      sd   = sd(wyn200[, "t0"])
-    ),
-    linewidth = 1,
-    color = "red"
-  ) +
-  theme_minimal() +
-  labs(
-    title = "Histogram t0 dla n = 200",
-    x     = expression(hat(S)(t[0])),
-    y     = "Gęstość"
-  )
-
-p2 <- ggplot(data.frame(x = wyn200[, "2t0"]), aes(x)) +
-  geom_histogram(
-    bins = 25,
-    color = "black",
-    fill  = "#FC8D62",
-    lwd   = 1,
-    aes(y = after_stat(..density..))
-  ) +
-  stat_function(
-    fun = dnorm,
-    args = list(
-      mean = mean(wyn200[, "2t0"]),
-      sd   = sd(wyn200[, "2t0"])
-    ),
-    linewidth = 1,
-    color = "red"
-  ) +
-  theme_minimal() +
-  labs(
-    title = "Histogram 2t0 dla n = 200",
-    x     = expression(hat(S)(t[0])),
-    y     = "Gęstość"
-  )
-
-p1 | p2
-
-```
-
-Dla [n = 200 rozkład](#n200) $t_0$ bardzo dobrze odwzorowuje kształt rozkładu normalnego.
-W przypadku $2t_0$ podobieństwo również jest widoczne, choć nie tak wyraźne jak dla $t_0$ — pojawiają się większe lokalne odchylenia od krzywej normalnej.
-
-
-Żeby potweirdzic wnioski z historgamów, wykonamy jeszcze testy shapiro-wilka dla danych.
-
+### Test shapiro-wilka {#wilk}
 ```{r dane_do_tabelek}
 
 
 
 tests <- list(
-  "n = 50,  t0"  = shapiro.test(wyn50[ , "t0"]),
-  "n = 50, 2t0"  = shapiro.test(wyn50[ , "2t0"]),
-  "n = 100, t0"  = shapiro.test(wyn100[, "t0"]),
-  "n = 100, 2t0" = shapiro.test(wyn100[, "2t0"]),
-  "n = 200, t0"  = shapiro.test(wyn200[, "t0"]),
-  "n = 200, 2t0" = shapiro.test(wyn200[, "2t0"])
+  "n = 20,  t0"  = shapiro.test(wyn20[ , "t0"]),
+  "n = 20, 2t0"  = shapiro.test(wyn20[ , "2t0"]),
+  "n = 30, t0"  = shapiro.test(wyn30[, "t0"]),
+  "n = 30, 2t0" = shapiro.test(wyn30[, "2t0"]),
+  "n = 50, t0"  = shapiro.test(wyn50[, "t0"]),
+  "n = 50, 2t0" = shapiro.test(wyn50[, "2t0"])
 )
 
 df <- data.frame(
@@ -523,10 +524,5 @@ kable(df, digits = 6, caption = "Wyniki testu Shapiro–Wilka")
 
 
 ```
-We wszystkich przypadkach statystyka W > 0.95, co wskazuje na bliskość z rozkładem normalnym.
-Jednak na podstawie p-value brak podstaw do odrzucenia normalności jedynie dla próby z 
-$n = 200$ w punkcie $t_0$
-
-Wnioski: Same histogramy nie dają jednoznacznej odpowiedzi co do normalności – przy mniejszych próbach (n = 50, 100) widoczne są lokalne odchylenia.
-Dla $n = 200$ w punkcie $t_0$ rozkład jest już bardzo zbliżony do normalnego.
+[Testy shapiro - wilka](#wilk) potwierdzają podobieństwa rozkładów do normalnych (duże wskaźniki W), ale małe p-value wskazują na odrzuceniu hipotezy o ich normalności.
 
