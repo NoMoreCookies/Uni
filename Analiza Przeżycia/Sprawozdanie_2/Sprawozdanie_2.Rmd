@@ -1,0 +1,937 @@
+---
+title: "Sprawozdanie 2"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \n Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+
+```
+
+```{r packages}
+library(survival)
+library(survminer)
+library(patchwork)
+library(RColorBrewer)
+library(knitr)
+library(coin)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+
+# Lista 5
+
+## Zadanie 1 
+
+Dane przedstawiają dwie grupy pacjentów, na których badano działanie leków A i B. \
+Przedstawione wyniki prezentują czas do remisji choroby.
+
+Dane opisane w zadaniu 3 z listy 2 : \
+Lek A : 0.03345514, 0.08656403, 0.08799947, 0.24385821, 0.27755032, \
+0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208
+
+Lek B : 0.03788958, 0.12207257, 0.20319983, 0.24474299, 0.30492413, \
+0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721
+
+W każdej z tych grup było jeszcze 10 osób u których nie zaobserwowano remisji choroby.
+
+```{r zad1_dane}
+
+timeA <- c(0.03345514, 0.08656403, 0.08799947, 0.24385821, 0.27755032, 
+0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208,rep(1,10))
+
+statusA <- c(rep(1,10),rep(0,10))
+
+timeB <- c(0.03788958, 0.12207257, 0.20319983, 0.24474299, 0.30492413,
+0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721,rep(1,10))
+
+statusB <- c(rep(1,10),rep(0,10))
+
+```
+
+### Wykresy Kaplana-Meiera{#wykresy_KM}
+
+```{r zad1_kaplan,fig.cap="Wykres estymatorów Kaplana–Meiera dla leków A i B"}
+#------------------------------ Kaplan-Meier------------------------------------
+
+dane.A <- data.frame(time = timeA, status = statusA)
+
+KM.fit.A <- survfit((Surv(time,status)~1), data = dane.A)
+
+KM.df.A <- data.frame(time = KM.fit.A$time , surv = KM.fit.A$surv)
+
+dane.B <- data.frame(time = timeB, status = statusB)
+
+KM.fit.B <- survfit((Surv(time,status)~1), data = dane.B)
+
+KM.df.B <- data.frame(time = KM.fit.B$time , surv = KM.fit.B$surv)
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+KM.df.A$group <- "Lek A"
+KM.df.B$group <- "Lek B"
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+KM.df.A$group <- "Lek A"
+KM.df.B$group <- "Lek B"
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+ggplot(KM.all, aes(x = time, y = surv, color = group)) +
+  geom_step(lwd = 2) +
+  labs(x = "Czas", y = "Prawdopodobieństwo braku remisji",
+       color = "Grupa") +
+          theme_minimal()+
+            ggtitle( "Wykres estymatorów Kaplana-Meiera dla leków A i B")+
+            scale_color_brewer(palette = "Set2")
+```
+
+[Wykres](#wykresy_KM) estymatorów Kaplana–Meiera dla leków A oraz B wskazuje na szybsze osiąganie remisji w grupie leku B – prawdopodobieństwo pozostawania bez remisji spada do 0.5 wcześniej niż w grupie leku A.
+[Krzywa](#wykresy_KM) dla leku A jest mniej stroma i przebiega wyżej, co oznacza, że po czasie t = 0,75 około 60% pacjentów wciąż nie osiągnęło remisji, podczas gdy w grupie leku B prawdopodobieństwo braku remisji jest już bliskie 50%.
+
+### Wykresy Fleminga-Harringtona{#wykresy_FH}
+
+```{r zad1_harrington,fig.cap="Wykres estymatorów Fleminga-Harringtona dla leków A i B"}
+#------------------------------ Fleming-Harrington------------------------------
+
+statusB <- c(rep(1,10),rep(0,10))
+
+dane.A <- data.frame(time = timeA, status = statusA)
+
+KM.fit.A <- survfit((Surv(time,status)~1), data = dane.A,type = "fleming-harrington")
+
+KM.df.A <- data.frame(time = KM.fit.A$time , surv = KM.fit.A$surv)
+
+dane.B <- data.frame(time = timeB, status = statusB)
+
+KM.fit.B <- survfit((Surv(time,status)~1), data = dane.B,type = "fleming-harrington")
+
+KM.df.B <- data.frame(time = KM.fit.B$time , surv = KM.fit.B$surv)
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+KM.df.A$group <- "Lek A"
+KM.df.B$group <- "Lek B"
+
+KM.all <- rbind(KM.df.A, KM.df.B)
+
+ggplot(KM.all, aes(x = time, y = surv, color = group)) +
+  geom_step(lwd = 2) +
+  labs(x = "Czas", y = "Prawdopodobieństwo braku remisji",
+       color = "Grupa") +
+  theme_minimal()+
+    ggtitle("Wykres estymatorów Fleminga-Harringtona dla leków A i B")+
+  scale_color_brewer(palette = "Set2")
+
+```
+
+Z [wykresu](#wykresy_FH) estymatorów Fleminga–Harringtona dla obu leków można wysnuć wnioski analogiczne jak na podstawie [krzywych](#wykresy_KM) Kaplana–Meiera. Przebieg  [krzywych](#wykresy_FH) dla leków A i B jest bardzo zbliżony, co potwierdza szybsze osiąganie remisji w grupie leku B oraz wskazuje, że wybór estymatora (Kaplana–Meiera vs Fleminga–Harringtona) nie wpływa istotnie na interpretację wyników w tym przykładzie.
+
+Na podstawie obu wykresów można przypuszczać, że leki A i B charakteryzują się zbliżonym profilem skuteczności, przy czym lek B wiąże się z szybszym uzyskaniem remisji. Krzywa przeżycia dla leku B spada szybciej i wcześniej osiąga niższe wartości prawdopodobieństwa braku remisji niż krzywa dla leku A, co sugeruje krótszy czas do remisji w tej grupie.
+
+## Zadanie 2 
+
+### Wykresy estymatorów Kaplana-Meiera dla leków A i B z ogonem{#ogon}
+ 
+```{r zad2,fig.cap="Wykresy estymatorów Kaplana-Meiera dla leków A i B z ogonem"}
+
+KM_z_ogonem_dane <- function(times, status) {
+  dane <- data.frame(time = times, status = status)
+  
+  KM.fit <- survfit(Surv(time, status) ~ 1, data = dane)
+  KM.df <- data.frame(time = KM.fit$time, surv = KM.fit$surv)
+  
+  last_index <- which(KM.df$surv > min(KM.df$surv))
+  last_index <- c(last_index, length(last_index) + 1, length(last_index) + 2)
+  
+  t_plus <- KM.df$time[max(last_index)]
+  S_t_plus <- KM.df$surv[max(last_index)]
+  
+  KM.df <- KM.df[c(last_index), ]
+  
+  nu <- -log(S_t_plus) / t_plus
+  
+  t_tail <- seq(t_plus, 3, length.out = 100)
+  S_tail <- exp(-nu * t_tail)
+  tail_df <- data.frame(time = t_tail, surv = S_tail)
+  
+  list(KM = KM.df, tail = tail_df,
+       t_plus = t_plus, S_t_plus = S_t_plus)
+}
+
+dA <- KM_z_ogonem_dane(timeA, statusA)
+dB <- KM_z_ogonem_dane(timeB, statusB)
+
+KM_A   <- transform(dA$KM,   grupa = "A")
+tail_A <- transform(dA$tail, grupa = "A")
+
+KM_B   <- transform(dB$KM,   grupa = "B")
+tail_B <- transform(dB$tail, grupa = "B")
+
+KM_all   <- rbind(KM_A, KM_B)
+tail_all <- rbind(tail_A, tail_B)
+
+ggplot() +
+  # KM
+  geom_step(data = KM_all,
+            aes(x = time, y = surv, color = grupa),lwd = 2) +
+  # ogony wykładnicze
+  geom_line(data = tail_all,
+            aes(x = time, y = surv, color = grupa),
+            linetype = "dashed",lwd = 2) +
+  labs(
+    x = "Czas",
+    y = "Prawdopodobieństwo braku remisji",
+    color = "Grupa"
+  ) +
+  theme_minimal() +
+  ggtitle("Estymator Kaplana-Meiera z ogonem\n dla danych A i B na jednym wykresie")+
+  scale_color_brewer(palette = "Set2")
+
+
+```
+
+[Ogon](#ogon) jest zdefiniowany względem definicji zaproponowanej przez Browna, Hollandera i Kowara, na skutek czego wzór funkcji  ogona 
+w przypadku leku A jak i leku B jest taki sam i wynosi $e^{\frac{{ln\hat{S}(t^{+}})}{t^{+}}*t}$ gdzie w obu przypadkach $t^{+}=\frac{1}{2}$.
+[Ogon](#ogon) w lepszy sposób odwzorowuje prawdę, że im dłużej pacjent jest chory tym szansa na remisję jest coraz mniejsza.
+
+## Zadanie 3
+
+Wybrane parametry to $\alpha=3,\lambda=5$
+
+Dla uogólnionego rozkładu wykładniczego
+
+wartość oczekiwana jest równa $\mathbb{E}(X) = \frac{1}{\lambda}\sum_{k = 1}^{\alpha}{\frac{1}{k}}$
+U nas $t_0 = \mathbb{E}(X)$
+
+```{r funkcje_generujace}
+
+gen1 <- function(n, alpha, lambda, t0){
+  
+  # generujemy dane metodą odwrotnej dystrybuanty
+  y <- runif(n)
+  x <- - (1/lambda)*log(1- y^(1/alpha))
+  
+  #liczymy czasy obserwacji oraz czy był cenzurowane
+  delta <- ifelse(x <= t0, 1, 0)
+  x_obs <- pmin(x, t0)
+  
+  return(data.frame(time = x_obs, status = delta))
+  
+}
+
+```
+
+```{r wybór_lambdy_i_alphy}
+#wybór lambdy oraz alphy oraz wyliczenia na ich podstawie t0
+
+alpha = 2
+
+lambda = 5
+
+# liczymy t0 ( przybliżona wartość oczekiwana )
+t0 = (sum(c(1 / (1:alpha))))/lambda 
+
+```
+
+```{r test}
+
+KM_BHK_S_at <- function(times, status, t_eval) {
+  
+  # z dostarczonych danych tworzy data.frame
+  dane <- data.frame(time = times, status = status)
+  
+  # funkcja survit do estymatora przeżycia
+  KM.fit <- survfit(Surv(time, status) ~ 1, data = dane)
+
+  time <- KM.fit$time
+  surv <- KM.fit$surv
+  
+  # last index, musimy jeszcze dodać te dwa, żeby mieć ten ostatnij schodek, bo survfit zwraca bez niego
+  last_index <- which(surv > min(surv))
+  last_index <- c(last_index, length(last_index) + 1, length(last_index) + 2)
+  
+  #moment, w którym doczepiamy ogon
+  t_plus <- time[max(last_index)]
+  S_t_plus <- surv[max(last_index)]
+  
+  #wzór dla ogon
+  nu <- -log(S_t_plus) / t_plus
+  
+  #na każdym elemencie listy zwracamy oszacowania
+  sapply(t_eval, function(t0) {
+    if (t0 <= t_plus) {
+      
+      surv[max(which(time <= t0))]
+    } else {
+      
+      exp(-nu * t0)
+    }
+  })
+}
+
+```
+
+```{r kolejny_fragment_zadania}
+M <- 1000
+
+wyn30 <- matrix(NA, nrow = M, ncol = 2,
+                 dimnames = list(NULL, c("t0", "2t0")))
+wyn50 <- matrix(NA, nrow = M, ncol = 2,
+                 dimnames = list(NULL, c("t0", "2t0")))
+wyn100  <- matrix(NA, nrow = M, ncol = 2,
+                 dimnames = list(NULL, c("t0", "2t0")))
+
+```
+
+```{r dalsza_część_zadania}
+
+set.seed(123)  
+
+for (i in 1:M) {
+  # n = 30
+  dat30 <- gen1(30, alpha, lambda, t0)
+  wyn30[i, ] <- KM_BHK_S_at(dat30$time, dat30$status, c(t0, 2*t0))
+  
+  # n = 50
+  dat50 <- gen1(50, alpha, lambda, t0)
+  wyn50[i, ] <- KM_BHK_S_at(dat50$time, dat50$status, c(t0, 2*t0))
+  
+  # n = 100
+  dat100 <- gen1(100,  alpha, lambda, t0)  
+  wyn100[i, ] <- KM_BHK_S_at(dat100$time,dat100$status,c(t0,2*t0))
+}
+
+
+```
+
+### Wykresy dla n = 30 {#n30}
+
+```{r t0_n30, fig.cap = "Rozkład $\\hat{S}(t_0)$ oraz $\\hat{S}(2t_0)$ dla $n=30$"}
+
+p1 <- ggplot(data.frame(x = wyn30[, "t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +  
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn30[, "t0"]),
+      sd   = sd(wyn30[, "t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = expression(paste("Histogram ", t[0], " dla n = 30")),
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+
+p2 <- ggplot(data.frame(x = wyn30[, "2t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn30[, "2t0"]),
+      sd   = sd(wyn30[, "2t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = expression(paste("Histogram ", 2, t[0], " dla n = 20")),
+    x     = expression(hat(S)(paste(2, t[0]))),
+    y     = "Gęstość"
+  )
+
+p1 | p2
+```
+
+[Histogramy](#n30) dla $t_0$ i $2t_0$ ogólnie przypominają rozkład normalny, zwłaszcza w części centralnej.
+Widoczne są jednak lokalne odchylenia – pojedyncze słupki wyraźnie odbiegają od krzywej normalnej, co skłania 
+do odrzucenia hipotezy o normalności rozkładów.
+
+### Wykresy dla n = 50 {#n50}
+```{r wykresy_dla_n50,  fig.cap = "Rozkład $\\hat{S}(t_0)$ oraz $\\hat{S}(2t_0)$ dla $n=50$"}
+
+p1 <- ggplot(data.frame(x = wyn50[, "t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +  
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn50[, "t0"]),
+      sd   = sd(wyn50[, "t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = expression(paste("Histogram ", t[0], " dla n = 50")),
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p2 <- ggplot(data.frame(x = wyn50[, "2t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn50[, "2t0"]),
+      sd   = sd(wyn50[, "2t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = expression(paste("Histogram ", 2, t[0], " dla n = 50")),
+    x     = expression(hat(S)(paste(2, t[0]))),
+    y     = "Gęstość"
+  )
+
+p1 | p2
+
+```
+
+Dla [n = 50 rozkład](#n50) $t_0$ już lepiej odwzorowuje kształt wykresu rozkładu normalnego, ale wciąż występują odchylenia
+skłaniające do odrzucenia hipotezy o normalności rozkładu.
+Podobnie w przypadku $2t_0$.
+
+### Wykresy dla n = 100 {#n100}
+```{r wykresy_dla_n100, fig.cap = "Rozkład $\\hat{S}(t_0)$ oraz $\\hat{S}(2t_0)$ dla $n=100$"}
+
+p1 <- ggplot(data.frame(x = wyn100[, "t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +  
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn100[, "t0"]),
+      sd   = sd(wyn100[, "t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = expression(paste("Histogram ", t[0], " dla n = 100")),
+    x     = expression(hat(S)(t[0])),
+    y     = "Gęstość"
+  )
+
+p2 <- ggplot(data.frame(x = wyn100[, "2t0"]), aes(x)) +
+  geom_histogram(
+    bins = 25,
+    color = "black",
+    fill  = "#FC8D62",
+    lwd   = 1,
+    aes(y = after_stat(..density..))
+  ) +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(wyn100[, "2t0"]),
+      sd   = sd(wyn100[, "2t0"])
+    ),
+    linewidth = 1,
+    color = "red"
+  ) +
+  theme_minimal() +
+  labs(
+    title = expression(paste("Histogram ", 2, t[0], " dla n = 100")),
+    x     = expression(hat(S)(paste(2, t[0]))),
+    y     = "Gęstość"
+  )
+
+p1 | p2
+
+```
+
+Dla [n = 100](#n100) wnioski są analogiczne jak dla Dla [n = 50](#n50). 
+
+Żeby potwierdzić wnioski z histogramów, wykonamy jeszcze testy Shapiro-Wilka dla danych.
+
+### Test Shapiro-Wilka {#wilk}
+```{r dane_do_tabelek}
+
+tests <- list(
+  "n = 30, $t_0$"   = shapiro.test(wyn30[, "t0"]),
+  "n = 30, $2t_0$"  = shapiro.test(wyn30[, "2t0"]),
+  "n = 50, $t_0$"   = shapiro.test(wyn50[, "t0"]),
+  "n = 50, $2t_0$"  = shapiro.test(wyn50[, "2t0"]),
+  "n = 100, $t_0$"  = shapiro.test(wyn100[ , "t0"]),
+  "n = 100, $2t_0$" = shapiro.test(wyn100[ , "2t0"])
+)
+
+df <- data.frame(
+  Próba   = names(tests),
+  # żeby pozbyć się nazw typu "n=30, t0.W"
+  W       = unname(sapply(tests, function(x) x$statistic)),
+  p_value = unname(sapply(tests, function(x) x$p.value))
+)
+
+# row.names = FALSE usuwa pierwszą, zduplikowaną kolumnę
+# escape = FALSE - wzory matematyczne
+knitr::kable(df, 
+             digits = 6, 
+             row.names = FALSE, 
+             escape = FALSE,
+             caption = "Wyniki testu Shapiro – Wilka")
+
+```
+[Testy Shapiro-Wilka](#wilk) potwierdzają podobieństwa rozkładów do normalnych (duże wskaźniki W), ale małe p-value wskazują na odrzuceniu hipotezy o ich normalności.
+
+
+# Lista 6
+
+## Zadanie 1
+
+Program został przygotowany zgodnie z wytycznymi zadania. Implementacja obejmuje jedną funkcję, logicznie podzieloną na dwie części za pomocą parametru typ. Została ona opracowana na podstawie definicji wartości oczekiwanej (rozumianej potocznie jako pole pod wykresem) oraz materiałów z listy zadań nr 5. 
+
+```{r zad1,echo = TRUE}
+f <- function(dane,typ = 'k'){
+  
+  #Wybranie typu
+  if(typ == 'f'){
+    s <- survfit((Surv(time,status)~1),
+                 data = dane,
+                 type = 'fleming-harrington')
+  }else{
+    s <- survfit((Surv(time,status)~1),
+                 data = dane)
+  }
+  
+  # Znalezienie ostatniego indeksu surv i time
+  #( to jest moment tego ostatniego spadku, wykres 5 lista)
+  last_index <- which(s$surv > min(s$surv))
+  last_index <- c(last_index, length(last_index) + 1, length(last_index) + 2)
+  last_index <- max(last_index) 
+  
+  
+  #moment w którym zaczyna się ogon
+  tplus <- s$time[last_index]
+  s_dash <- s$surv[last_index]
+  
+  #wzięcie wartości, do ogona, dlaczego last index+1? 
+  #bo to jest czas pojawienia się pierwszej cenzurowanej
+  #na wykresie to jest | to zejście w ostatnim schodku ,
+  #moment tego zejścia i chcemy mieć czasy do nieg
+  #Po updacie treści zadania jednak jest +2
+  time <- s$time[1:last_index]
+  
+  # dlaczego surv juz nie do last_index + 1 ,
+  #bo chcemy mieć wysokość tego ostatniego schodka,
+  #a w index+1 to już jest  
+  # po zejściu z tego schodka ta ostatnia   wartość, jej nie chcemy.
+  #tutaj po update treści zadania jednak do +1
+  surv <- s$surv[1:last_index-1]
+  
+  # dodaje ten początkowy przypadek
+  time <- c(0,time)
+  surv <- c(1,surv)
+  
+  #szerokości tych kwadratów (wykresy z poprzedniej listy)
+  time_diff <- diff(time)
+  
+  
+  # pole pod schodkami
+  result <- sum(time_diff*surv)
+  
+  # pole pod ogonem
+  summary <-  -exp((log(s_dash)/tplus) * tplus)/((log(s_dash)/tplus))
+
+  #suma pola pod schodkami i ogonem
+  result <- summary + result
+  
+  #zwrócenie wartości
+  return(result)
+}
+
+```
+
+## Zadanie 2
+
+Dane zostały przygotowane zgodnie z wytycznymi zawartymi w poleceniu 
+(źródło danych: zadanie 3 z listy 2).
+
+```{r zad2 inicjalizacja_danych,echo = TRUE}
+timeA <- c(0.03345514, 0.08656403, 0.08799947, 0.24385821, 0.27755032, 
+0.40787247, 0.58825664, 0.64125620, 0.90679161, 0.94222208,rep(1,10))
+
+statusA <- c(rep(1,10),rep(0,10))
+
+timeB <- c(0.03788958, 0.12207257, 0.20319983, 0.24474299, 0.30492413,
+0.34224462, 0.42950144, 0.44484582, 0.63805066, 0.69119721,rep(1,10))
+
+statusB <- c(rep(1,10),rep(0,10))
+
+dane.A <- data.frame(time = timeA, status = statusA)
+
+dane.B <- data.frame(time = timeB, status = statusB)
+
+
+```
+
+### Tabela porównująca oczekiwane czasy do remisji choroby {#czasy_do_remisji_T}
+
+```{r zad2 obliczanie,fig.cap="Tabela_oczekiwanych_czasów_remisji_względem_estymatorów"}
+
+f.A.K <- f(dane.A,'k') 
+f.B.K <- f(dane.B,'k')
+f.A.F <- f(dane.A,'f')
+f.B.F <- f(dane.B,'f')
+
+dfA1 <- data.frame(data = 'A',type = "Kaplan-Meier",ERT = f.A.K)
+dfA2 <- data.frame(data = 'A',type = "Fleming-Harrington",ERT = f.A.F)
+dfB1 <- data.frame(data = 'B',type = "Kaplan-Meier",ERT = f.B.K)
+dfB2 <- data.frame(data = 'B',type = "Fleming-Harrington",ERT = f.B.F)
+
+dfALL <- rbind(dfA1,dfA2,dfB1,dfB2)
+
+kable(dfALL, caption = "Porównanie średnich czasów do remisji dla leku A i B wzgędem \n estymatorów Kaplana-Meiera i Fleminga-Harringtona", digits = 4, align = "c")
+```
+
+Jak wynika z [tabeli](#czasy_do_remisji_T), nie występują istotne różnice pomiędzy wartościami uzyskanymi przy użyciu estymatora Kaplana-Meiera a metodą Fleminga-Harringtona. Warto jednak podkreślić, że lek B charakteryzuje się wyraźnie krótszym oczekiwanym czasem remisji — wynosi on jedynie około $\frac{2}{3}$ czasu obserwowanego u pacjentów stosujących lek A.
+
+
+# Lista 7
+
+```{r dane}
+
+#28, 89, 175, 195, 309, 377+, 393+, 421+, 447+,
+#462, 709+, 744+, 770+, 1106+ ,1206+
+
+dane1 <- c(28, 89, 175, 195, 309, 377, 393, 421, 447,
+462, 709, 744, 770, 1106 ,1206)
+
+status1 <- c(rep(1,5),rep(0,4),1,rep(0,5))
+
+dane1 <- data.frame(time = dane1,status =status1)
+
+dane2 <- c(34, 88, 137, 199, 280, 291, 299, 300, 309,
+351, 358, 369, 369, 370, 375, 382, 392, 429, 451, 1119 )
+
+status2 <- c(rep(1,6),rep(0,2),rep(1,9),0,1,0)
+
+dane2 <- data.frame(time = dane2,status = status2)
+
+```
+
+## Zadanie 1 
+
+Poniżej zadeklarowano funkcję, której argumentami są dane cenzurowane losowo, wartość poziomu
+ufności oraz wartość $\tau$, a wartością dolna
+i górna granica przedziału ufności dla wartości średniej czasu życia na poziomie ufności 1-$\alpha$.
+
+```{r zadanie 1,echo = TRUE}
+f <- function(dane,tau, l=1,typ = 'k'){
+  
+  #Wybranie typu
+  
+  if(typ == 'f'){
+    s <- survfit((Surv(time,status)~1),
+                 data = dane,
+                 type = 'fleming-harrington')
+  }else{
+    s <- survfit((Surv(time,status)~1),
+                 data = dane)
+  }
+  
+  # Znalezienie ostatniego indeksu surv i time
+  #( to jest moment tego ostatniego spadku, wykres 5 lista)
+  last_index <- which(s$surv > min(s$surv))
+  last_index <- max(last_index) 
+  
+  time <- s$time[1:(last_index+2)]
+  time <- c(time,tau)
+
+  # dlaczego surv juz nie do last_index + 1 ,
+  #bo chcemy mieć wysokość tego ostatniego schodka,
+  #a w index+1 to już jest  
+  # po zejściu z tego schodka ta ostatnia wartość, jej nie chcemy.
+  # po zmianie do last_index+2
+  surv <- s$surv[1:(last_index+2)]
+  
+  # dodaje ten początkowy przypadek
+  time <- c(0,time)
+  surv <- c(1,surv)
+  
+  #teraz odcinamy z przodu, za pomoc l
+  which_to_leave <- which(time>l)
+  time <- c(l,time[which_to_leave])
+  surv <- surv[c(min(which_to_leave)-1,
+                 which_to_leave[1:(length(which_to_leave)-1)])]
+  # trzeba odjąć ten jeden na koncu bo surv jest krótsze od time
+
+  #szerokości tych kwadratów (wykresy z poprzedniej listy)
+
+  time_diff <- diff(time)
+  # pole pod schodkami
+  result <- sum(time_diff*surv)
+  
+  #suma pola pod schodkami i ogonem
+
+  #zwrócenie wartości
+  return(result)
+}
+
+d <- function(dane, s_i){
+  time   <- dane$time
+  status <- dane$status
+  return (sum(time == s_i & status == 1))
+}
+
+r <- function(dane, s_i){
+  time <- dane$time
+  return (sum(time >= s_i))
+}
+
+V <- function(dane, tau){
+  time   <- dane$time
+  status <- dane$status
+  
+  s <- sort(unique(time[status == 1]))
+  s <- s[s <= tau]          
+  
+  result <- 0
+  
+  for (s_i in s) {
+    d_i <- d(dane, s_i)    
+    r_i <- r(dane, s_i)     
+    
+    I_i <- f(dane, tau, l = s_i) 
+    
+    result <- result + (I_i^2) * d_i / (r_i * (r_i - d_i))
+  }
+  
+  return(result)
+}
+
+CInterval <- function(dane, tau, alpha){
+  mu      <- f(dane, tau, l = 0)
+  V_value <- V(dane, tau)
+  z       <- qnorm(1 - alpha/2)
+  
+  Tl <- mu - z * sqrt(V_value)
+  Tr <- mu + z * sqrt(V_value)
+  
+  return(c(Tl, Tr))
+}
+```
+## Zadanie 2 {#przedziały_ufn}
+```{r f}
+df <- data.frame(
+"niski_stopień_rozwoju" = CInterval(dane1,1500,0.05),
+"wysoki_stopień_rozwoju" = CInterval(dane2,1500,0.05)
+)
+kable(t(df), caption = "Badanie przedziałów ufności (progresja choroby vs stopień jej zaawansowania", digits = 2, align = "c")
+```
+
+Zgodnie z [przyjętym modelem](#przedziały_ufn), 95% realizacji przedziału ufności dla średniego czasu do progresji choroby wskazuje, że jest on istotnie dłuższy u chorych w wczesnym stadium niż u pacjentów w stadium zaawansowanym. Wynik ten jest zgodny z intuicją kliniczną - w bardziej zaawansowanym stadium choroba postępuje szybciej, co wiąże się z większym obciążeniem organizmu.
+
+
+# Lista 8
+
+## Zadanie 1 {#porown_p_val}
+
+Na podstawie danych opisanych w zadaniu 2 na liście 7, na poziomie istotności 0.05, zweryfikujemy hipotezę o jednakowym rozkładzie czasu do progresji choroby w dwóch badanych grupach pacjentek,
+korzystając z testu log-rank, Gehana-Breslowa, Tarone’a-Warego, Peto-Peto (korzystamy w tym celu z funkcji *logrank_test*).
+
+
+```{r dane_lista_8}
+# niski stopień zaawansowania 
+time_low <- c(28, 89, 175, 195, 309, 377, 393, 421, 447, 462, 709, 744, 770, 1106, 1206)
+status_low <- c(1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0) 
+
+# wysoki stopień zaawansowania 
+time_high <- c(34, 88, 137, 199, 280, 291, 299, 300, 309, 351, 358, 369, 369, 370, 375, 382, 392, 429, 451, 1119)
+status_high <- c(1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0)
+
+data <- data.frame(
+  time = c(time_low, time_high),
+  status = c(status_low, status_high),
+  group = factor(c(rep("Low", length(time_low)), rep("High", length(time_high))))
+)
+
+```
+
+```{r testy, echo=TRUE}
+test_logrank <- logrank_test(Surv(time, status) ~ group, data = data, type = "logrank")
+test_gehan <- logrank_test(Surv(time, status) ~ group, data = data, type = "Gehan-Breslow")
+test_tarone <- logrank_test(Surv(time, status) ~ group, data = data, type = "Tarone-Ware")
+test_peto <- logrank_test(Surv(time, status) ~ group, data = data, type = "Peto-Peto")
+```
+
+```{r df_na_p_val}
+wyniki_testow <- data.frame(
+  Test = c("Log-Rank", "Gehan-Breslow", "Tarone-Ware", "Peto-Peto"),
+  p_wartość = c(
+    pvalue(test_logrank),
+    pvalue(test_gehan),
+    pvalue(test_tarone),
+    pvalue(test_peto)
+  ))
+
+```
+
+
+```{r p_value_tabela}
+kable(wyniki_testow, col.names = c("Test", "p-wartość"),
+      caption = "Porównanie p-value dla różnych testów jednorodności", digits=4,
+      align = c('l', 'c'))
+```
+
+Analizując wyniki zawarte w [tabeli](#porown_p_val) na poziomie istotności $\alpha$ = 0.05, jedynie test log-rank wskazuje na istotną statystycznie różnicę w rozkładach czasu do progresji choroby pomiędzy grupami (p-value < 0.05). Pozostałe testy (Gehana-Breslowa, Tarone’a-Ware’a, Peto-Peto) nie dały podstaw do odrzucenia hipotezy o równości rozkładów. 
+
+Różnice w wynikach wynikają z wag, jakie poszczególne testy przypisują zdarzeniom w czasie, tzn. test log-rank stosuje stałą wagę ($w=1$) dla wszystkich zdarzeń, natomiast pozostałe testy przypisują największą wagę zdarzeniom występującym na początku obserwacji, kiedy liczebność grup jest największa.
+Możemy się o tym upewnić analizując poniższe wykresy:
+
+
+## Zadanie 2 {#km_wagi}
+
+```{r tworzenie_wykresu_est_km}
+fit_km <- survfit(Surv(time, status) ~ group, data = data)
+
+plot_km <- ggsurvplot(
+  fit_km, 
+  data = data, 
+  xlab = "Czas (dni)", 
+  ylab = "Prawdopodobieństwo przeżycia",
+  title = "Krzywe Kaplana-Meiera w dwóch badanych grupach",
+  palette = c("red", "blue"),
+  ggtheme = theme_minimal()
+)
+```
+
+```{r wykres_km, fig.cap="Wykres estymatorów Kaplana-Meiera funkcji przeżycia dla czasu progresji choroby w dwóch badanych grupach"}
+print(plot_km)
+```
+
+```{r normalizacja_tworzenie_wykresow_wag}
+fit_pooled <- survfit(Surv(time, status) ~ 1, data = data)
+
+weights_df <- data.frame(
+  time = fit_pooled$time,
+  n.risk = fit_pooled$n.risk,
+  n.event = fit_pooled$n.event, 
+  surv = fit_pooled$surv
+)
+
+
+start_row <- data.frame(
+  time = 0,
+  n.risk = nrow(data),
+  n.event = 0,
+  surv = 1
+)
+weights_df <- rbind(start_row, weights_df)
+
+weights_df <- weights_df %>%
+  mutate(
+    raw_LogRank = 1,
+    raw_Gehan = n.risk,
+    raw_Tarone = sqrt(n.risk),
+    raw_Peto = surv 
+  )
+
+sums <- weights_df %>%
+  filter(n.event > 0) %>%
+  summarise(
+    sum_LogRank = sum(raw_LogRank),
+    sum_Gehan = sum(raw_Gehan),
+    sum_Tarone = sum(raw_Tarone),
+    sum_Peto = sum(raw_Peto)
+  )
+
+weights_df <- weights_df %>%
+  mutate(
+    LogRank_norm = raw_LogRank/sums$sum_LogRank,
+    Gehan_norm  = raw_Gehan /sums$sum_Gehan,
+    Tarone_norm = raw_Tarone/sums$sum_Tarone,
+    Peto_norm = raw_Peto/sums$sum_Peto
+  ) %>%
+  select(time, LogRank_norm, Gehan_norm, Tarone_norm, Peto_norm) %>%
+  pivot_longer(cols = -time, names_to = "Test", values_to = "Weight")
+
+
+plot_weights <- ggplot(weights_df, aes(x = time, y = Weight, color = Test)) +
+  geom_line(linewidth = 1.2) + 
+  scale_color_manual(
+    breaks = c("LogRank_norm", "Gehan_norm", "Peto_norm", "Tarone_norm"),
+    values = c("LogRank_norm" = "red", 
+               "Gehan_norm" = "purple", 
+               "Peto_norm" = "blue", 
+               "Tarone_norm" = "orange"), 
+    labels = c("Log-Rank", 
+               "Gehan-Breslow", 
+               "Peto-Peto", 
+               "Tarone-Ware")
+  ) +
+  labs(title = "Wykres unormowanych wag w testach jednorodności", 
+       x = "Czas",
+       y = "Unormowana waga") +
+  theme_minimal() +
+  theme(legend.position = "right") + coord_cartesian(xlim = c(0, 500))
+```
+
+```{r wykres_funkcji_wagowych, fig.width=6, fig.cap="Wykres unormowanych funkcji wagowych w testach jednorodności"}
+print(plot_weights)
+```
+
+W analizowanym [zbiorze danych](#km_wagi), w początkowym okresie (do ok. 200-go dnia), krzywe przeżycia grupy o niskim i wysokim stopniu zaawansowania choroby przebiegają blisko siebie, co sprawia, że testy nie wykrywają istotnych różnic.
+Zauważalna różnica między grupami pojawia się w okresie powyżej 300 dni. W grupie o wysokim stopniu zaawansowania następuje wtedy nagromadzenie progresji choroby, podczas gdy w grupie o niskim stopniu zaawansowania dominuje cenzurowanie. Test log-rank jest najbardziej czuły na te późniejsze różnice, ponieważ ma stałą wagę, wagi przypisywane zdarzeniom w przypadku pozostałych testów maleją z upływem czasu, dlatego nie dają oczekiwanych wyników.
