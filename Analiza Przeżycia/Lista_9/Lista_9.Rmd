@@ -1,0 +1,72 @@
+---
+title: "Sprawozdanie 2"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \n Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+
+```
+
+```{r packages}
+library(survival)
+library(eha)
+```
+
+```{r preparing data}
+library(survival)
+data("lung")
+dane <- lung[, 2:7]
+dane <- dane[complete.cases(dane), ]
+mean_wiek <- mean(dane[, 3])
+mean_ph_karno <- mean(dane[, 6])
+
+dane[, 3] <- dane[, 3] - mean_wiek
+dane[, 6] <- dane[, 6] - mean_ph_karno
+
+```
+
+# Zadanie 1
+```{r model_aft}
+model <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno, data = dane, dist = "weibull")
+beta <- summary(model)$coefficients
+mu <- model$icoef[1]
+sigma <- exp(model$icoef[2])
+alpha <-  1/sigma
+lambda <- exp(-mu*alpha)
+
+```
+
+
+# Zadanie 5
+
+```{r model_ph}
+model <-  phreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno, data = dane, dist = "weibull")
+
+beta <- model$coefficients[-c(7,8)]
+mu <- model$coefficients['log(scale)']
+sigma <- exp(model$coefficients['log(shape)'])
+lambda <- exp(-mu*sigma)
+alpha <- sigma
+```
