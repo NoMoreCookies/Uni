@@ -32,6 +32,7 @@ knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
 ```{r packages}
 library(survival)
 library(eha)
+library(knitr)
 ```
 
 ```{r preparing data}
@@ -50,14 +51,51 @@ dane[, 6] <- dane[, 6] - mean_ph_karno
 # Zadanie 1
 ```{r model_aft}
 model <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno, data = dane, dist = "weibull")
-beta <- summary(model)$coefficients
+beta <- -summary(model)$coefficients[-1]
 mu <- model$icoef[1]
 sigma <- exp(model$icoef[2])
 alpha <-  1/sigma
 lambda <- exp(-mu*alpha)
+```
+
+# Zadanie 2
+
+```{r wsp_beta_AFT}
+wsp.beta.AFT <- data.frame(
+  Zmienne = c("age", "sex", "ph.ecog = 1", "ph.ecog = 2", "ph.ecog= 3", "ph.karno"),
+    Wspólczynnik = unname(beta)) # żeby nie było starych nazw
+
+kable(wsp.beta.AFT, caption = "Współczynniki $\\beta$ w modelu AFT", digits = 5, col.names = c("Zmienne", "Współczynnik $\\beta$" ),  align = c('l', 'c'))
+```
+
+Dla danych $lung$ współczynniki $\beta$ w modelu AFT są ujemne dla charakterystyki $sex$, natomiast dla charakterystyk $age$, $ph.ecog$ oraz $ph.karno$ są one dodatnie.
+
+# Zadanie 3
+
+```{r oszacowanie_S}
+z1 <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
+
+S_0 <- function(x) exp(-lambda*(x^alpha))
+
+S <- function (t) {
+  exp(-lambda*exp(alpha*sum(beta*z1))*t^alpha)
+}
 
 ```
 
+```{r prawd_czas_wiekszy_300}
+prawdo1 <- S(300)
+```
+
+Prawdopodobieństwo, że czas życia tej kobiety będzie większy niż 300 dni wynosi `r prawdo1`.
+
+# Zadanie 4
+
+```{r wykres_AFT, fig.cap="Wykres oszacowanej funkcji przeżycia - model AFT"}
+t <- 0:1500
+plot(t, S(t), type = "l", lwd = 2, col = "blue", ylim = c(0,1),
+     xlab = "Czas (w dniach)", ylab = "Prawdopodobieństwo przeżycia S(t)")
+```
 
 # Zadanie 5
 
@@ -69,4 +107,85 @@ mu <- model$coefficients['log(scale)']
 sigma <- exp(model$coefficients['log(shape)'])
 lambda <- exp(-mu*sigma)
 alpha <- sigma
+```
+
+# Zadanie 6
+
+Dla danych $lung$ współczynniki $\beta$ w modelu PH są dodatnie dla charakterystyk: $age$, $ph.ecog$ oraz $ph.karno$ oraz ujemne dla charakterystyki $sex$. 
+
+# Zadanie 7
+
+```{r 70_1_90_kobieta_PH}
+z1 <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
+z2 <- c(70 - mean_wiek, 1, 0, 1, 0, 90 - mean_ph_karno)
+
+h_0 <- function(x) {
+  return (lambda*alpha*x^(alpha-1))
+  }
+
+h <- function(x, z) {
+  h_0(x)*exp(sum(beta*z))
+}
+
+
+x <- 0:1500
+
+haz1 <- sapply(x, function(t) h(t, z1)) 
+haz2 <- sapply(x, function(t) h(t, z2))
+```
+
+```{r hazard_plot}
+
+plot(x, haz2, type = "l", col = "red", lwd = 2,
+     ylab = "Hazard h(t)", xlab = "Czas (dni)",
+     main = "Funkcje hazardu", ylim = c(0, max(haz2)*1.1))
+lines(x, haz1, col = "blue", lwd = 2)
+legend("topleft", legend = c("ecog=2", "ecog=1"),
+       col = c("red", "blue"), lwd = 2)
+grid()
+
+```
+
+```{r log_plot}
+
+plot(x, log(haz2), type = "l", col = "red", lwd = 2,
+     ylab = "log(h(t))", xlab = "Czas (dni)",
+     main = "Logarytmy funkcji hazardu")
+lines(x, log(haz1), col = "blue", lwd = 2)
+legend("bottomright", legend = c("ecog=2", "ecog=1"),
+       col = c("red", "blue"), lwd = 2)
+grid()
+
+
+```
+
+
+# Zadanie 8
+
+```{r oszacowanie_f_przezycia_ph}
+S_0 <- function(x) exp(-lambda*(x^alpha))
+
+S <- function (t, z) {
+  (S_0(t))^exp(sum(beta*z))
+}
+
+```
+
+```{r prawdo_zad_8}
+
+praw1 <- S(300, z1)
+praw2 <- S(300, z2)
+
+```
+
+Prawdopodobieństwo, że czas życia kobiety w wieku 70 lat o charakterystyce $ph.ecog$ = 1 i $ph.karno$ = 90 będzie większy niż 300 dni wynosi `r praw1`. Natomiast prawdopodobieństwo, że czas życia kobiety w wieku 70 lat o charakterystyce $ph.ecog$ = 2 i $ph.karno$ = 90 będzie większy niż 300 dni wynosi `r praw2`. Porównując wynik dla kobiety o charakterystykach opisanych w punkcie (a) z tym otrzymanym w zadaniu 3 możemy zauważyć, że oszacowane prawdopodobieństwo jest większe, gdy korzystamy z modelu PH zamiast AFT.
+
+
+# Zadanie 9
+
+```{r wykres_PH, fig.cap="Wykres oszacowanej funkcji przeżycia - model PH"}
+t <- 0:1500
+plot(t, S(t, z1), type = "l", lwd = 2, col = "blue", ylim = c(0,1),
+     xlab = "Czas (w dniach)", ylab = "Prawdopodobieństwo przeżycia S(t)")
+
 ```
