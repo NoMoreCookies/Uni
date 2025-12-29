@@ -7,6 +7,8 @@ header-includes:
    - \usepackage[utf8]{inputenc}
    - \usepackage{graphicx}
    - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}[section]
 output: 
   pdf_document:
     toc: true
@@ -22,7 +24,10 @@ editor_options:
     wrap: sentence
 ---
 
+
+
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
@@ -33,58 +38,198 @@ knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
 library(survival)
 library(eha)
 library(knitr)
+library(lintr)
+library(ggplot2)
 ```
 
 ```{r preparing data}
-library(survival)
+
+# data import
 data("lung")
+
+# avoiding columns [inst, pat.karno, meal.cal, wt.loss] 
 dane <- lung[, 2:7]
+
+# deleting rows with missing values
 dane <- dane[complete.cases(dane), ]
+
 mean_wiek <- mean(dane[, 3])
 mean_ph_karno <- mean(dane[, 6])
 
+# centering continuous data
 dane[, 3] <- dane[, 3] - mean_wiek
 dane[, 6] <- dane[, 6] - mean_ph_karno
 
 ```
 
 # Zadanie 1
-```{r model_aft}
-model <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno, data = dane, dist = "weibull")
+Parametry zostały oszacowane zgodnie z przykładem zawartym na stronie 8 wykładu 9. 
+
+```{r model_aft, echo = TRUE}
+
+# parameter estimation (based on example in lecture)
+model <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+
+# params assignment
 beta <- -summary(model)$coefficients[-1]
 mu <- model$icoef[1]
 sigma <- exp(model$icoef[2])
 alpha <-  1/sigma
 lambda <- exp(-mu*alpha)
+
+wsp.AFT <- data.frame(
+  "alpha" = alpha,
+  "beta" = beta,
+  "lambda" = lambda,
+  "mu" = mu,
+  "sigma" = sigma
+)
+
+rownames(wsp.AFT) <- c("age",
+                       "sex",
+                       "ph.ecog = 1",
+                       "ph.ecog = 2",
+                       "ph.ecog= 3",
+                       "ph.karno")
+
 ```
+
+\newpage
 
 # Zadanie 2
 
-```{r wsp_beta_AFT}
-wsp.beta.AFT <- data.frame(
-  Zmienne = c("age", "sex", "ph.ecog = 1", "ph.ecog = 2", "ph.ecog= 3", "ph.karno"),
-    Wspólczynnik = unname(beta)) # żeby nie było starych nazw
+```{r wsp_AFT}
 
-kable(wsp.beta.AFT, caption = "Współczynniki $\\beta$ w modelu AFT", digits = 5, col.names = c("Zmienne", "Współczynnik $\\beta$" ),  align = c('l', 'c'))
+
+kable(wsp.AFT, caption = "Współczynniki w modelu AFT",
+      digits = 5,
+      col.names = c("Zmienne",
+                    "$\\alpha$",
+                    "$\\beta$",
+                    "$\\lambda$",
+                    "$\\mu$" ,
+                    "$\\sigma$"),
+          align = c('l', 'c')
+      )
+
 ```
 
-Dla danych $lung$ współczynniki $\beta$ w modelu AFT są ujemne dla charakterystyki $sex$, natomiast dla charakterystyk $age$, $ph.ecog$ oraz $ph.karno$ są one dodatnie.
+Dlaczego tylko współczynniki $\beta$ się różnią?
+
+W pakiecie R funkcja, której parametry estymujemy za pomocą surveg ma postać $ln(X_z) = \mu-{\beta}^{T}+{\sigma}W$
+gdzie ${\beta}^{T} = {{\beta}_{1}{z_1}+...+{\beta}_{n}{z_n}}$ 
+
+Jest to postać liniowa modelu AFT a $\alpha$ i $\lambda$ pojawiają sie dopiero po przejściu do postaci ogólnej, sa one funkcjami parametrów
+ $\mu$ oraz $\sigma$
+ 
+gdzie
+
+$\mu$ - przesunięcie (poziom log-czasu gdy z = 0 )
+
+$-{\beta}^{T}$ - iloczyn skalarny
+
+${\sigma}{W}$ - to jest część losowa
+
+Przy tej konwencji $\beta > 0$ odejmujemy, więc czas się skraca
+
+dla $\beta < 0$ jest analogicznie, odwrotnie 
+
+Więc do interpretacji potrzebujemy jedynie współczynników $\beta$
+
+```{r wsp.BETA.ATF}
+
+wsp.BETA.AFT <- data.frame(
+  "beta" = beta
+)
+
+rownames(wsp.BETA.AFT) <- c("age", "sex", "ph.ecog = 1", "ph.ecog = 2", "ph.ecog= 3", "ph.karno")
+
+```
+
+```{r wsp.BETA.AFT}
+
+kable(wsp.BETA.AFT, caption = "Współczynniki $\\beta$ w modelu AFT", digits = 5, col.names = c("Zmienne","$\\beta$"),  align = c('l', 'c'))
+
+```
+Z tabeli wynika, że ujemny współczynnik ma jedynie sex
+
+sex jest zmienną typu faktor, więc ma poziomy referencyjne
+
+Sprawdzamy poziomy referencyjen dla sex 
+
+```{r poziom_referencyjny_sex}
+
+levels(as.factor(lung$sex))
+
+```
+Czyli zmienną referencyjna jest 1
+
+to oznacza, że sex = 2 wydłuża czas przeżycia w stosunku do pacjentów o wartości sex = 1
+
+Kolejną zmienną typu factor jest ph.ecog
+
+sprawdzamy jaki poziom jest referencyjny
+
+```{r poziom_referencyjny_ph.ecog}
+
+levels(as.factor(lung$ph.ecog))
+
+```
+Poziom referencyjny to 0
+
+współczynniki beta dla 1,2,3 wyszły > 0, to oznacza, że 
+ph.ecog = 1,2,3 skraca czaś przeżycia w stosunku do ph.ecog = 0 
+
+Pozostałe zmienne są typu ciągłego oraz mają współczynnniki beta > 0, więc wzrost każdej z nich skraca czas przeżycia
 
 # Zadanie 3
 
-```{r oszacowanie_S}
-z1 <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
+
+W modelu przyspieszonego czasu życia (AFT) zakłada się, że funkcja przeżycia
+jednostki o wektorze charakterystyk $z$ może zostać zapisana jako przeskalowanie
+czasu w bazowej funkcji przeżycia:
+\begin{equation}
+S(t \mid z) = S_0\!\left( \exp\!\left(\beta^{\top} z\right)\, t \right),
+\label{eq:aft_definition}
+\end{equation}
+gdzie $S_0(t)$ oznacza funkcję przeżycia jednostki bazowej, tj. odpowiadającej
+zerowemu wektorowi charakterystyk.
+
+Jeżeli bazowy czas przeżycia ma rozkład Weibulla z parametrami
+$\lambda > 0$ oraz $\alpha > 0$, to bazowa funkcja przeżycia dana jest wzorem
+\begin{equation}
+S_0(t) = \exp\!\left( -\lambda\, t^{\alpha} \right), \qquad t \geq 0.
+\label{eq:weibull_survival}
+\end{equation}
+
+Podstawiając \eqref{eq:weibull_survival} do definicji \eqref{eq:aft_definition},
+otrzymujemy funkcję przeżycia jednostki o wektorze charakterystyk $z$ w postaci
+\begin{equation}
+S(t \mid z)
+= \exp\!\left(
+-\lambda\, \exp\!\left(\alpha\, \beta^{\top} z\right)\, t^{\alpha}
+\right).
+\label{eq:aft_weibull}
+\end{equation}
+
+```{r oszacowanie_S, echo = TRUE}
+
+pacjent <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
 
 S_0 <- function(x) exp(-lambda*(x^alpha))
 
 S <- function (t) {
-  exp(-lambda*exp(alpha*sum(beta*z1))*t^alpha)
+  exp(-lambda*exp(alpha*sum(beta*pacjent))*t^alpha)
 }
 
 ```
 
 ```{r prawd_czas_wiekszy_300}
+
 prawdo1 <- S(300)
+
 ```
 
 Prawdopodobieństwo, że czas życia tej kobiety będzie większy niż 300 dni wynosi `r prawdo1`.
@@ -93,14 +238,56 @@ Prawdopodobieństwo, że czas życia tej kobiety będzie większy niż 300 dni w
 
 ```{r wykres_AFT, fig.cap="Wykres oszacowanej funkcji przeżycia - model AFT"}
 t <- 0:1500
-plot(t, S(t), type = "l", lwd = 2, col = "blue", ylim = c(0,1),
-     xlab = "Czas (w dniach)", ylab = "Prawdopodobieństwo przeżycia S(t)")
+
+data <- data.frame(
+  "x" = t,
+  "y" = S(t)
+)
+
+ggplot(data,aes(x,y))+
+  geom_line(lwd = 2,color = "red")+
+  labs(
+    title = "Wykres prawdopodobieństwa przeżycia przez kobietę więcej niż x dni",
+    y = "Prawdopodobieństwo",
+    x = "x dni"
+  )+
+  theme_minimal()
+
 ```
 
 # Zadanie 5
 
-```{r model_ph}
-model <-  phreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno, data = dane, dist = "weibull")
+
+\begin{definition}
+Niech $h_0(x)$ będzie funkcją hazardu (o znanej postaci) obserwowalnej zmiennej
+losowej $X$, odpowiadającej jednostce o zerowym wektorze charakterystyk.
+Wówczas model, w którym funkcja hazardu jednostki o wektorze charakterystyk
+$z$ ma postać
+\begin{equation}
+h(x \mid z) = h_0(x)\,\exp\!\left(\beta^{\top} z\right),
+\label{eq:ph_definition}
+\end{equation}
+nazywamy (parametrycznym) modelem proporcjonalnych hazardów (PH).
+Funkcję $h_0(x)$ nazywamy bazową funkcją hazardu.
+\end{definition}
+
+Model proporcjonalnych hazardów charakteryzuje się prostą własnością
+interpretacyjną. Jeżeli $z_1$ oraz $z_2$ są dwoma wektorami charakterystyk,
+to na podstawie \eqref{eq:ph_definition} otrzymujemy
+\begin{equation}
+\frac{h(x \mid z_1)}{h(x \mid z_2)}
+= \exp\!\left(\beta^{\top}(z_1 - z_2)\right),
+\label{eq:ph_ratio}
+\end{equation}
+co oznacza, że iloraz hazardów dwóch jednostek jest stały w czasie,
+a zatem hazardy są proporcjonalne.
+
+```{r model_ph, echo = TRUE}
+model <-  phreg(
+  Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+  data = dane,
+  dist = "weibull"
+  )
 
 beta <- model$coefficients[-c(7,8)]
 mu <- model$coefficients['log(scale)']
@@ -111,11 +298,28 @@ alpha <- sigma
 
 # Zadanie 6
 
-Dla danych $lung$ współczynniki $\beta$ w modelu PH są dodatnie dla charakterystyk: $age$, $ph.ecog$ oraz $ph.karno$ oraz ujemne dla charakterystyki $sex$. 
+```{r wsp.PH}
+
+wsp.PH <- data.frame(
+  "alpha" = alpha,
+  "beta" = beta,
+  "lambda" = lambda,
+  "mu" = mu,
+  "sigma" = sigma
+)
+
+rownames(wsp.PH) <- c("age", "sex", "ph.ecog = 1", "ph.ecog = 2", "ph.ecog= 3", "ph.karno")
+
+kable(wsp.PH, caption = "Współczynniki w modelu PH", digits = 5, col.names = c("Zmienne", "$\\alpha$","$\\beta$", "$\\lambda$", "$\\mu$" , "$\\sigma$"),  align = c('l', 'c'))
+
+```
+Jak interpretować współczynniki
+
 
 # Zadanie 7
 
 ```{r 70_1_90_kobieta_PH}
+
 z1 <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
 z2 <- c(70 - mean_wiek, 1, 0, 1, 0, 90 - mean_ph_karno)
 
