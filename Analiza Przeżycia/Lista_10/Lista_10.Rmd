@@ -1,0 +1,315 @@
+---
+title: "Sprawozdanie 2"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \n Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}[section]
+   - \usepackage{draftwatermark}
+   - \SetWatermarkText{{\rmfamily\bfseries KACPER SZMIGIELSKI \\ \rmfamily\bfseries MARTA STANKIEWICZ}}
+   - \SetWatermarkScale{2}
+   - \SetWatermarkColor[gray]{0.9}
+   - \SetWatermarkFontSize{26pt}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+```
+
+```{r libraries}
+
+library(survival)
+library(eha)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+
+```
+
+
+```{r data_import_and_processing}
+
+# data import
+data("lung")
+
+# avoiding columns [inst, pat.karno, meal.cal, wt.loss] 
+dane <- lung[, 2:7]
+
+# deleting rows with missing values
+dane <- dane[complete.cases(dane), ]
+
+mean_wiek <- mean(dane[, 3])
+mean_ph_karno <- mean(dane[, 6])
+
+# centering continuous data
+dane[, 3] <- dane[, 3] - mean_wiek
+dane[, 6] <- dane[, 6] - mean_ph_karno
+
+```
+
+# Zadanie 1
+
+## Treść
+
+Oszacować parametry modelu proporcjonalnych hazardów Coxa, przyjmując za zmienną zależną zmienną time, a za charakterystyki zmienne:
+age, sex, ph.ecog, ph.karno.
+
+## Rozwiązanie
+
+W modelu proporcjonalnych hazardów Coxa mamy
+
+$$h_z(t) = h_0(t)\psi(z) $$
+
+Najczęściej przyjmuje się, że 
+
+$$\psi(z) = exp(\beta^Tz) $$
+Czyli 
+
+$$ h_z(t) = h_0(t)exp(\beta^Tz)$$
+
+```{r oszacowanie_parametrów, echo = TRUE}
+
+
+model <- coxph(Surv(time, status) ~ age + factor(sex) + factor(ph.ecog) + ph.karno,
+             data = dane, ties = "efron")
+
+
+s <- summary(model)
+
+beta  <- s$coefficients[, "coef"]
+pval  <- s$coefficients[, "Pr(>|z|)"]
+HR    <- s$coefficients[, "exp(coef)"]
+
+# 95% CI dla HR:
+CI <- s$conf.int[, c("lower .95", "upper .95")]
+
+wyniki <- cbind(beta=beta, HR=HR, CI, p.value=pval)
+
+```
+
+\newpage
+
+# Zadanie 2
+
+## Treść
+
+Podać interpretację współczynników modelu z zadania 1.
+
+## Rozwiązanie
+
+```{r rozw_2}
+
+kable(wyniki)
+
+
+```
+
+Dla age mamy wsp $$\beta >0$$ co wskazuje że ta zmienna powoduje wzrost hazardu.
+Przedział ufności wskazuje również na dokładne oszacowanie współcztynnika beta.
+Problem pojawia się przy p-value, ponieważ $$ p > 0.05 $$ co oznacza, że uzyskany wynik nie jest statystycznie istotny
+
+Dla zmiennej sex wsp.$$\beta<0$$ oraz $$p<0.05$$ co wskazuje, że zmienna sex ma stosunkowy wpływ na hazard w stosunku do poziomu bazowego. Zmniejsza go. Również przedział ufności jest dość wązki, co wskazuje na dokładność oszacowania.
+
+Dla zmiennej ph.ecog widać, że w każdym przypadku wsp.$$\beta >0$$ co oznacza, że zwiększa ona hazard w stosunku do poziomu bazowego. W każdym przypadku również $$p<0.05$$ więc wyniki są statystycznie istotne. Problem pojawia się przy przedziałach Walda, które w każdym przypadku są stosunkowo szerokie co może wskazywać na niedokładność oszacowania.
+
+Dla zmiennej ph.karno mamy wsp.$$\beta>0$$ oraz wązki przedział ufności, lecz niestety $$p>0.05$$, więc nie możemy uznawać wyniku za statystycznie istotny. co myślisz o takich wnioskach?
+
+\newpage
+
+# Zadanie 3
+
+## Treść
+
+Wyznaczyć oszacowanie bazowej skumulowanej funkcji hazardu i bazowej funkcji przeżycia odpowiadającej rozkładowi czasu życia
+
+## Rozwiązanie
+
+Tutaj wykorzystamy wzory przedstawione w zadaniu nr.1
+
+$$
+h(t\mid x)=h_0(t)\exp(x^\top\beta)
+$$
+
+$$
+H(t\mid x)=H_0(t)\exp(x^\top\beta)
+$$
+
+$$
+S(t\mid x)=\big(S_0(t)\big)^{\exp(x^\top\beta)}
+$$
+
+$$
+S_0(t)=\exp\!\big(-H_0(t)\big)
+$$
+A dla bazowego Weibulla
+
+$$
+H_0(t)=\left(\frac{t}{\sigma}\right)^{\alpha}
+$$
+
+$$
+S_0(t)=\exp\!\left(-\left(\frac{t}{\sigma}\right)^{\alpha}\right)
+$$
+
+```{r rozwiązanie}
+
+H0 <- basehaz(model, centered = TRUE)  
+
+
+H0$S0 <- exp(-H0$hazard)
+
+ggplot() +
+  geom_line(data = H0, aes(x = time, y = S0,     color = "S0"),     linewidth = 1.1) +
+  geom_line(data = H0, aes(x = time, y = hazard, color = "hazard"), linewidth = 1.1) +
+  labs(color = "Legenda")
+
+
+```
+
+\newpage
+# Zadanie 4
+
+## Treść
+
+Wyznaczyć oszacowanie skumulowanej funkcji hazardu odpowiadającej
+rozkładowi czasu życia.
+(a) kobiety w wieku 70 lat o charakterystyce ph.ecog=1 i ph.karno=90,
+(b) kobiety w wieku 70 lat o charakterystyce ph.ecog=2 i ph.karno=90,
+narysować wykresy tych funkcji i wykresy logarytmów tych funkcji. Czy
+na podstawie tych wykresów możemy mieć wątpliwości co do przyjętego
+modelu proporcjonalnych hazardów?
+
+## Rozwiązanie
+$$
+\textbf{Skumulowany hazard:}
+$$
+
+$$
+H(t \mid x)=\int_{0}^{t} h(u \mid x)\,du
+$$
+
+$$
+\textbf{W modelu Coxa:}
+$$
+
+$$
+H(t \mid x)=H_{0}(t)\exp\!\big(\beta^{\top}x\big)
+$$
+
+$$
+\textbf{Po zalogowaniu:}
+$$
+
+$$
+\log H(t \mid x)=\log H_{0}(t)+\beta^{\top}x
+$$
+Więc wykresy logarytmów powinny być równoległe i przesunięte jedynie na osi OY.
+```{r rozw_zad_4}
+
+nd <- data.frame(
+  age = c(70, 70)-mean_wiek,
+  sex = factor(c(2, 2), levels = levels(factor(dane$sex))),     
+  ph.ecog = factor(c(1, 2), levels = levels(factor(dane$ph.ecog))),
+  ph.karno = c(90, 90)-mean_ph_karno
+)
+
+#obliczanie nowych funkcji
+sf <- survfit(model, newdata = nd) 
+
+t <- sf$time
+S <- as.matrix(sf$surv)   
+
+H <- -log(S)              # skumulowany hazard
+
+dfH <- data.frame(
+  time = t,
+  `a) ecog=1` = H[,1],
+  `b) ecog=2` = H[,2]
+) %>%
+  pivot_longer(-time, names_to="grupa", values_to="H")
+
+
+p1 <- ggplot(dfH, aes(time, H, color=grupa)) +
+  geom_step(linewidth=1.1) +
+  labs(y="H(t | x)", x="t", color="Grupa")
+
+p2 <- ggplot(dfH %>% filter(H > 0), aes(time, log(H), color=grupa)) +
+  geom_step(linewidth=1.1) +
+  labs(y="log H(t | x)", x="t", color="Grupa")
+
+(p1 | p2) + plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+```
+Wykresy wskazują na prawidłowośc zastosowanego modelu. Dla $$H(t|x)$$ widać że wykresy są przeskalowane (przemnożnoe względem siebie). Natomiast dla $$log(H(t|x)) $$ wykresy są przesuniętem wzgledem siebie na osi OY. Czyli wyniki są zgodne z założeniami. Wyniki nie skłaniają ku wątpieniu w prawidłowość modelu.
+
+\newpage
+
+# Zadanie 5
+
+## Treść
+
+Wyznaczyć oszacowanie funkcji przeżycia (w dniach) odpowiadającej
+rozkładowi czasu życia
+(a) kobiety w wieku 70 lat o charakterystyce ph.ecog=1 i ph.karno=90,
+(b) kobiety w wieku 70 lat o charakterystyce ph.ecog=2 i ph.karno=90
+i na podstawie tego oszacowania obliczyć szacowane prawdopodobieństwo, że czas życia kobiet o powyżej podanych charakterystykach będzie większy niż 300 dni. Oszacowane prawdopodobieństwo dla kobiety
+o charakterystykach opisanych w punkcie (a) porównać z prawdopodobieństwem uzyskanym w zadaniu 3 oraz 8 z listy 9
+
+## Rozwiązanie
+
+```{r rozw_zad_5}
+
+
+dfS <- data.frame(
+  time = t,
+  `a) ecog=1` = S[,1],
+  `b) ecog=2` = S[,2]
+) %>%
+  pivot_longer(-time, names_to="grupa", values_to="S")
+
+
+p1 <- ggplot(dfS, aes(time, S, color=grupa)) +
+  geom_step(linewidth=1.1) +
+  labs(y="S(t | x)", x="t", color="Grupa")
+
+p1
+
+S300 <- summary(sf, times = 300, extend = TRUE)$surv
+
+S300_tab <- data.frame(
+  `ph.ecog = 1` = S300[1],
+  `ph.ecog = 2` = S300[2]
+)
+rownames(S300_tab) <- "Prawdopodobieństwo"
+
+knitr::kable(S300_tab, caption = "Prawdopodobieństwo przeżycia > 300 dni")
+
+```
+
+Prawdopodobiestwo przeżycia przez pacjentkę z ph.ecog = 1 conajmniej 300 dni wynosi $$4%$$ a przez pacjentkę z ph.ecog = 2 wynosi $$0.2%$$
+
+\newpage
+# Zadanie 6
