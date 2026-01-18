@@ -1,0 +1,381 @@
+---
+title: "PLAN INWESTYCYJNY 2026"
+subtitle: "Uporządkowany plan bezpiecznego pomnażania kapitału"
+author: "Kacper Szmigielski"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{draftwatermark}
+   - \SetWatermarkText{{\rmfamily\bfseries KACPER SZMIGIELSKI}}
+   - \SetWatermarkScale{2}
+   - \SetWatermarkColor[gray]{0.9}
+   - \SetWatermarkFontSize{26pt}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+```
+
+```{r libraries}
+
+library( astsa )
+library( forecast)
+library(ggplot2)
+library(ggfortify)
+library(timsac)
+
+```
+
+```{r data_import}
+
+df <-  gtemp_both
+  
+```
+
+# Zadanie 3
+
+
+## Treść
+
+
+## Zadanie 1
+
+### Treść
+
+
+
+### a)
+
+### Rozwiązanie
+
+```{r wykres_szeregu}
+
+ggtsdisplay(df)
+
+```
+### Wstępne wnioski
+
+Wykres szeregu wskazuje na wyraźny trend rosnący, natomiast nie widać regularnych wahań sezonowych.
+
+Aby to potwierdzić, wykorzystano funkcje ndiffs() (liczba różnicowań potrzebna do uzyskania stacjonarności) oraz nsdiffs() (ocena potrzeby różnicowania sezonowego).
+
+`ndiffs(df)` zwraca wartość `r ndiffs(df)`, co sugeruje zastosowanie jednokrotnego różnicowania (d = 1).
+
+`nsdiffs(df)` zwraca brak potrzeby różnicowania sezonowego
+
+W dalszej analizie zastosowano zatem różnicowanie pierwszego rzędu:
+
+\[
+\nabla df_t = df_t - df_{t-1}.
+\]
+
+### Dane po różnicowaniu (lag = 1)
+
+```{r różnicowanie1}
+
+df.diff.1 <- diff(df, lag = 1)
+
+
+ggtsdisplay(df.diff.1, main = "Szereg po różnicowaniu (lag = 1)")
+
+```
+Po jednokrotnym różnicowaniu widoczna jest eliminacja trendu długookresowego, co sugeruje, że transformacja ta przybliża szereg do stacjonarności.
+
+Wykres PACF dla zróżnicowanych danych wskazuje na istotne wartości do opóźnienia około 5,
+co może sugerować obecność zależności autoregresyjnych rzędu ~5 (kandydat na model AR(5)).
+Należy jednak podkreślić, że sama postać PACF nie przesądza o istnieniu „trendu wielomianowego”, a jedynie informuje o strukturze zależności czasowych w szeregu po transformacji.
+
+### Czy dalsze różnicowanie coś wnosi?
+
+```{r różnicowanie2}
+
+df.diff.2 <- diff(df, lag = 2)
+
+
+ggtsdisplay(df.diff.2, main = "Szereg po różnicowaniu (lag = 2)")
+
+```
+Porównanie wykresów ACF po różnicowaniu pierwszego i drugiego rzędu nie wskazuje na istotne zmiany w strukturze autokorelacji — przebieg ACF pozostaje bardzo podobny. Oznacza to, że dodatkowe różnicowanie nie wnosi istotnej poprawy i w dalszej analizie przyjęto \(d = 1\).
+
+### Czy stosować transformację Boxa–Coxa?
+
+Z wykresu szeregu nie widać wyraźnej zmiany wariancji w czasie (brak efektu „lejka”, tj. rosnącej amplitudy wahań wraz z poziomem szeregu). W celu weryfikacji oszacowano parametr \(\lambda\) transformacji Boxa–Coxa.
+
+Wartość wsp. lambda
+```{r boxocx}
+lambda <- BoxCox.lambda(df)  # df = ts
+lambda
+```
+Otrzymano \(\lambda \approx `r lambda`\), czyli wartość bliską 1. Oznacza to, że ewentualna transformacja byłaby zbliżona do braku transformacji, dlatego w dalszej analizie nie stosuje się transformacji Boxa–Coxa.
+
+
+### b) estymacja i eliminacja trendu wielomianowego (odpowiedniego stopnia)
+
+#### Trend stopnia 1
+
+```{r trend1}
+df.trend.1 <- tslm(df ~ trend)
+```
+
+Dla trendu pierwszego stopnia wsp.BIC jest równy
+`r BIC(df.trend.1)`
+
+Wykres przedstawiający dopasowany model
+```{r wykres trendu pierwszego stopnia}
+
+res1 <- df - df.trend.1$fitted
+
+autoplot(cbind(df,df.trend.1$fitted))+
+  ggtitle("Dopasowanie trendu liniowego (stopień 1)")
+```
+
+Trend liniowy opisuje wyłącznie średni kierunek zmian w czasie.
+
+```{r po_odjęciu_trendu}
+
+ggtsdisplay(res1, main = "Reszty po usunięciu trendu liniowego (stopień 1)")
+
+```
+Natomiast w resztach nadal obserwuje się długookresowe zależności (widoczny wzorzec oraz istotne autokorelacje), co wskazuje, że stopień 1 jest niewystarczający.
+
+
+ 
+#### Trend stopnia 2
+
+```{r trend2}
+
+df.trend.2 <- tslm(df ~ trend + I(trend^2))
+
+```
+
+Dla trendu drugiego stopnia wsp.BIC jest równy
+`r BIC(df.trend.2)`
+i jest on znacznie mniejszy niż dla trendu stopnia pierwszego, czyli dopasowanie jest lepsze
+
+Wykres przedstawiający dopasowany model
+```{r wykres trendu drugiego stopnia}
+res2 <- df - df.trend.2$fitted
+
+autoplot(cbind(df,df.trend.2$fitted))
+  ggtitle("Dopasowanie trendu liniowego (stopień 2)")
+```
+
+Widać znaczną poprawę opisywania średniego kierunku zmian w czasie
+
+```{r po_odjęciu_trendu2}
+
+ggtsdisplay(res2, main = "Reszty po usunięciu trendu liniowego (stopień 2)")
+
+```
+W resztach nie obserwuje się już trendu długookresowego, co wskazuje na skuteczne usunięcie składowej trendu.
+Jednocześnie na wykresie ACF widoczne są istotne autokorelacje (słupki znacznie przekraczające granice istotności), co sugeruje, że reszty nadal nie mają charakteru białego szumu.
+
+#### Trend stopnia 3
+
+```{r trend3}
+
+df.trend.x <- tslm(df ~ poly(trend, 3))
+
+```
+
+Dla trendu trzeciego stopnia wsp.BIC jest równy
+`r BIC(df.trend.2)`
+i jest on istotnie mniejszy niż dla trendu stopnia drugiego, czyli dopasowanie jest lepsze
+
+Wykres przedstawiający dopasowany model
+```{r wykres trendu trzeciego stopnia}
+res3 <- df - df.trend.x$fitted
+
+autoplot(cbind(df,df.trend.x$fitted))
+  ggtitle("Dopasowanie trendu liniowego (stopień 2)")
+```
+
+Widać poprawę opisywania średniego kierunku zmian w czasie
+
+```{r po_odjęciu_trendu3}
+
+ggtsdisplay(res3, main = "Reszty po usunięciu trendu liniowego (stopień 3)")
+
+```
+
+Na wykresie ACF nie obserwuje się już wyraźnie odstających wartości.
+Pojedynczy słupek przekraczający granice istotności nie musi jednak oznaczać braku białoszumowego charakteru reszt — przy skończonej liczbie opóźnień sporadyczne przekroczenia mogą wynikać z losowej zmienności.
+Kluczowe jest, że nie widać systematycznego wzorca autokorelacji.
+
+
+Aby to potwierdzić możemy wykonać jeszcze test Ljunga-Boxa
+
+Wynik:
+```{r Ljung-Box}
+Box.test(res3, lag = 20, type = "Ljung-Box")
+```
+p value > 0.05
+Więc nie ma dowodów na autokorelację, i reszty możemy uznać za biały szum.
+
+Trend wielomianowy stopnia 3 okazał się wystarczający. Dalsze zwiększanie stopnia wielomianu prowadziło do wzrostu wartości kryterium BIC, co wskazuje, że dodatkowa złożoność nie jest uzasadniona (ryzyko przeuczenia).
+
+Na wykresie ACF reszt obserwuje się co najwyżej pojedyncze przekroczenie granic istotności, które może wynikać z losowej zmienności przy skończonej liczbie opóźnień.
+Test Ljunga–Boxa nie daje podstaw do odrzucenia hipotezy o braku autokorelacji (dla rozważanego laga), dlatego reszty można uznać za nieskorelowane, a eliminację trendu stopnia 3 za adekwatną.
+
+## Zadanie 2
+
+### Treść
+
+### Rozwiązanie
+
+W dalszej części wyznaczymy optymalny rząd modelu AR(p) na podstawie szeregu po eliminacji trendu wielomianowego stopnia 3, ponieważ w poprzednim punkcie został on uznany za najlepiej dopasowany.
+Oraz rząd dla eliminacji metodą różnicowania z opóźnieniem 1.
+
+
+```{r pacf_dla_res3}
+
+autoplot(Pacf(res3))
+
+```
+
+Dla szeregu reszt po usunięciu trendu wielomianowego stopnia 3 wykres PACF sugeruje obecność istotnych zależności do około opóźnienia 12, 
+co wskazuje na kandydata na model autoregresyjny rzędu \(p \approx 12\). Ostateczny wybór rzędu zostanie zweryfikowany kryteriami informacyjnymi AIC oraz FPE.
+
+
+```{r diff1}
+
+autoplot(Pacf(df.diff.1))
+
+```
+
+Dla szeregu po jednokrotnym różnicowaniu wykres PACF sugeruje istotne wartości do opóźnienia około 5, co wskazuje na kandydata na model autoregresyjny rzędu \(p \approx 5\).
+
+
+### Indentyfikacja rzędu na podstawie AIC
+
+#### Dla różnicowania
+
+```{r AICdiff}
+
+n <- length(df)
+
+p.max.AIC <- floor(10 * log10(n))
+
+ar.aic.diff  <- ar(df.diff.1,  aic = TRUE)$aic
+
+
+plot(0:p.max.AIC, ar.aic.diff, type = "b", xlab = "p")
+grid()
+
+
+print(which(ar.aic.diff == min(ar.aic.diff)))
+
+```
+
+Mamy p = 5, wynik zgodny ze wstępnymi obserwacjami
+
+#### Dla trendu wielomianowego
+
+```{r AICtrend}
+
+ar.aic.trend <- ar(res3, aic = TRUE)$aic
+plot(0:p.max.AIC, ar.aic.trend, type = "b", xlab = "p")
+grid()
+
+print(which(ar.aic.trend == min(ar.aic.trend))) #p=2
+```
+Z porównania wartości kryterium (AIC/FPE) dla kolejnych rzędów \(p\) wynika, że minimum osiągane jest dla \(p=1\), co wskazuje na wybór modelu AR(1). Na wykresie widoczne jest również lokalne obniżenie wartości kryterium w okolicach \(p=13\), jednak wartość ta pozostaje większa niż dla \(p=1\), dlatego nie stanowi optymalnego wyboru.
+
+
+### Identyfikacja rzędu na podstawie FPE
+
+
+
+```{r model_EFT_dla_reszt}
+
+# dla tslm() tj. szeregu [dane.reszty.2]
+dane.reszty <- resx
+#dane.reszty <- dane.diff.1
+
+# Długość [N] badanego szeregu reszt [dane.reszty.2]
+N <- length(dane.reszty)
+
+# Maksymalny badany rząd [p.max.FPE]
+p.max.FPE <- floor(2 * sqrt(N))
+
+# wektor [fpe.dane.reszty] do wypełnienia wartościami FPE 
+# dla rzędów p=1,2,...,p.max.FPE)) 
+fpe.dane.reszty <- numeric(p.max.FPE)
+
+# wypełnianie wektora [fpe.tslm] wartościami
+for (p in 1:p.max.FPE) {
+  c.MN <- (N+p) / (N-p)
+  fpe.value <- ar(dane.reszty, aic=FALSE, method="yw", order.max=p)$var.pred 
+  fpe.dane.reszty[p] <- c.MN * fpe.value
+}
+
+# Wykres zależności fpe.tslm od rzędu p modelu AR(p)
+plot(1:p.max.FPE, fpe.dane.reszty, type="b", xlab="p") 
+
+# indeks z minimalnym FPE dla tslm()
+which(fpe.dane.reszty == min(fpe.dane.reszty))   # p=...
+
+
+
+```
+
+```{r model_EFT_dla_różnicowanie}
+
+# dla tslm() tj. szeregu [dane.reszty.2]
+dane.reszty <- df.diff.1
+#dane.reszty <- dane.diff.1
+
+# Długość [N] badanego szeregu reszt [dane.reszty.2]
+N <- length(dane.reszty)
+
+# Maksymalny badany rząd [p.max.FPE]
+p.max.FPE <- floor(2 * sqrt(N))
+
+# wektor [fpe.dane.reszty] do wypełnienia wartościami FPE 
+# dla rzędów p=1,2,...,p.max.FPE)) 
+fpe.dane.reszty <- numeric(p.max.FPE)
+
+# wypełnianie wektora [fpe.tslm] wartościami
+for (p in 1:p.max.FPE) {
+  c.MN <- (N+p) / (N-p)
+  fpe.value <- ar(dane.reszty, aic=FALSE, method="yw", order.max=p)$var.pred 
+  fpe.dane.reszty[p] <- c.MN * fpe.value
+}
+
+# Wykres zależności fpe.tslm od rzędu p modelu AR(p)
+plot(1:p.max.FPE, fpe.dane.reszty, type="b", xlab="p") 
+
+# indeks z minimalnym FPE dla tslm()
+which(fpe.dane.reszty == min(fpe.dane.reszty))   # p=...
+
+
+
+```
+
+Dla AIC i FPE mamy analogicxzne wnioski, czyli można przYjąć, że modele któe nalezy dopasowac są rzedu 5 dla różnicowania i 1 dla trendu.
+
+## Zadanie 3
+
+## Zadanie 4
+
+## Zadanie 5
+
+## Zadanie 6
+
+## Zadanie 7
