@@ -1,0 +1,426 @@
+---
+title: "Lista 11"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \n Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}[section]
+   - \usepackage{draftwatermark}
+   - \SetWatermarkText{{\rmfamily\bfseries KACPER SZMIGIELSKI \\ \rmfamily\bfseries MARTA STANKIEWICZ}}
+   - \SetWatermarkScale{2}
+   - \SetWatermarkColor[gray]{0.9}
+   - \SetWatermarkFontSize{26pt}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+```
+
+```{r libraries}
+
+library(survival)
+library(eha)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+library(timereg)
+library(nltm)
+
+```
+
+# Zadanie 1
+
+```{r dane}
+
+
+# data import
+data("lung")
+
+# avoiding columns [inst, pat.karno, meal.cal, wt.loss] 
+dane <- lung[, 2:7]
+
+# deleting rows with missing values
+dane <- dane[complete.cases(dane), ]
+
+mean_wiek <- mean(dane[, 3])
+mean_ph_karno <- mean(dane[, 6])
+
+# centering continuous data
+dane[, 3] <- dane[, 3] - mean_wiek
+dane[, 6] <- dane[, 6] - mean_ph_karno
+
+
+```
+## Treść
+
+Przyjmując model przyspieszonego czasu awarii, w którym bazowa funkcja przeżycia odpowiada
+rozkładowi Weibulla, przyjmując za zmienną zależną zmienną time, a za charakterystyki zmienne:
+age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.
+
+## Rozwiązanie
+
+### a)
+
+#### Treść
+
+ Korzystając z testu Walda oraz testu IW, na poziomie istotności 0.05, zweryfikować hipotezę,
+że zmienna age nie jest istotna w przyjętym modelu
+
+#### Rozwiązanie
+
+```{r zad1a}
+
+# parameter estimation (based on example in lecture)
+model <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+
+
+tab <- summary(model)$table
+
+print(tab["age", ])
+
+
+
+#noage
+model_noage <- update(model, . ~ . - age)
+anova(model_noage, model)$"Pr(>Chi)"
+
+```
+Dla testu walda mamy 0.2 > 0.05 brak podstaw do odrzucenia hipotezy o niestotności age (age istotna)
+Dla testu IW mamy p = 0.045 < 0.05. Według testu IW zmienna age jest istotna
+
+### b)
+
+```{r zad2a}
+
+tab["as.factor(sex)2",]
+
+#nosex
+model_nosex <- update(model, . ~ . - as.factor(sex))
+anova(model_nosex, model)$"Pr(>Chi)"
+
+
+```
+Dla zmiennej sex mamy p < 0.05, czyli możemy przyjąc hipotezę H0, że zmienna sex jest istotna.
+
+Dla testu IW mamy p<0.05, co potwierdza tezę o istotności zmiennej sex
+
+### c)
+
+#### Treść
+
+(c) Korzystając z testu ilorazu wiarogodności, na poziomie istotności 0.05, zweryfikować hipotezę,
+że rozkład czasu życia jest taki sam dla pacjenta o sprawności ECOG wg. lekarza na poziomie
+0, 1, 2, 3 (zmienna ph.ecog teoretycznie może przyjmować wartości 0, 1, 2, 3, 4, 5, ale w zbiorze
+danych mamy tylko wartości od 0 do 3)
+
+
+#### Rozwiązanie
+
+
+```{r rozwc}
+
+
+#noage
+model_noecog <- update(model, . ~ . - as.factor(ph.ecog))
+anova(model_noecog, model)$"Pr(>Chi)"
+
+```
+W teście ilorazu wiarygodności otrzymano p = 0.00214 < 0.05, więc odrzucamy hipotezę H_0, że rozkład czasu życia jest taki sam dla pacjentów z ECOG 0,1,2,3. Oznacza to, że zmienna ph.ecog jest istotna w przyjętym modelu
+
+# Zadanie 2
+
+## Treść 
+
+ Przyjmując model proporcjonalnych hazardów Coxa ze zmienną zależną time, a za charakterystyki
+zmienne: age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.
+
+## Rozwiązanie
+
+```{r model_podst_coxph}
+# parameter estimation (based on example in lecture)
+model_podst <- coxph(Surv(time, status==2)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,)
+
+```
+
+### a)
+
+#### Treść
+
+ Korzystając z testu Walda oraz z testu IW, na poziomie istotności 0.05, zweryfikować hipotezę,
+że zmienna age nie jest istotna w przyjętym modelu
+
+#### Rozwiązanie
+
+```{r ageWald}
+
+tab <- summary(model_podst)$coefficients
+tab
+
+```
+
+Dla testu Walda dla zmiennej age p < 0.05 nie ma dowodó aby odrzucić hipotezę o jej istotności (jest nieistotna)
+
+```{r ageIW}
+m0 <- update(model_podst, . ~ . - age)
+
+print(anova(m0, model_podst, test = "LRT"))   
+
+```
+Dla testu mamy p > 0.05, nie ma podstaw przyjęcia hipotezy o istotności ( zmienna jest nieistotna)
+### b)
+
+#### Treść
+
+Korzystając z testu Walda oraz testu IW, na poziomie istotności 0.05, zweryfikować hipotezę,
+że zmienna sex nie jest istotna w przyjętym modelu
+
+#### Rozwiązanie
+
+```{r sexWald}
+tab
+```
+
+Dla sex p<0.05 więc ta zmienna jest istotna
+
+
+```{r sexIW}
+m0 <- update(model_podst, . ~ . - as.factor(sex))
+
+print(anova(m0, model_podst, test = "LRT"))  
+
+```
+Dla testu IW mamy p < 0.05, co oznacza, że zmienna age ma istotny wpływ na rozkład przeżycia
+### c)
+
+#### Treść
+
+Korzystając z testu ilorazu wiarogodności, na poziomie istotności 0.05, zweryfikować hipotezę,
+że rozkład czasu życia jest taki sam dla pacjenta o sprawności ECOG wg. lekarza na poziomie
+0, 1, 2, 3 (zmienna ph.ecog teoretycznie może przyjmować wartości 0, 1, 2, 3, 4, 5, ale w zbiorze
+danych mamy tylko wartości od 0 do 3)
+
+#### Rozwiązanie
+
+```{r ecogIW}
+
+m0 <- update(model_podst, . ~ . - as.factor(ph.ecog))
+
+print(anova(m0, model_podst, test = "LRT"))  
+```
+p<0.05, więc zmienna ph.ecog ma istotny wpływ na rozkład przeżycia jednostek
+
+# Zadanie 3
+
+## Treść 
+
+Przyjmując model przyspieszonego czasu awarii, w którym bazowa funkcja przeżycia odpowiada
+rozkładowi Weibulla, przyjmując za zmienną zależną zmienną time, a za charakterystyki zmienne:
+age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.d
+
+## Rozwiązanie
+
+### a)
+
+#### Treść
+
+Korzystając z metody eliminacji, w oparciu o test ilorazu wiarogodności, dokonać wyboru
+zmiennych do modelu przyspieszonego czasu awarii.
+
+#### Rozwiązanie
+
+```{r mEliminacji_krk1}
+
+m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+
+anova(update(m, . ~ . - age), m)  # IW dla age
+anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
+anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
+anova(update(m, . ~ . - ph.karno), m)  # IW dla ph.karn
+
+
+
+
+```
+Usuwamy age bo ma najwięszke p > 0.05
+
+Usuwamy age, ph.karno bo mają największe p >0.05
+
+```{r krkr2}
+
+
+
+m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+
+anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
+anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
+anova(update(m, . ~ . - ph.karno), m)  # IW dla ph.karn
+
+```
+
+Usuwamy zmienną ph.karno bo ma największe p > 0.05
+
+```{r krkr3}
+
+
+m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
+                 data = dane,
+                 dist = "weibull")
+
+anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
+anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
+
+
+```
+Dla teraz wszystkie p < 0.05 więc mamy już gotowy model AIC.
+W modelu końcowym zakłada się , że jedynymi znaczącymi zmiennymi są sex i ph.ecog
+
+### b)
+
+#### Treść
+
+Korzystając z kryterium informacyjnego Akaike’a (AIC), dokonać wyboru najlepszego modelu
+przyspieszonego czasu awarii, korzystając z funkcji step.
+
+```{r krk1AIC}
+
+m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+AIC(m)
+
+```
+
+```{r krk1AIC}
+
+AIC(update(m, . ~ . - age), m)  
+AIC(update(m, . ~ . - as.factor(sex)),      m)  
+AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)  
+AIC(update(m, . ~ . - ph.karno), m)
+
+```
+AIC przyjmuje najmniejszą wartośc po usunięciu zmiennej age, więc ją usuwamy
+
+```{r krk2AIC}
+
+m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+
+AIC(update(m, . ~ . - as.factor(sex)),      m)  
+AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)  
+AIC(update(m, . ~ . - ph.karno), m)
+
+```
+Najmniejsza wartość AIC po usunięciu ph.karno, więc je usuwamy
+
+```{r krk3ACI}
+
+
+m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
+                 data = dane,
+                 dist = "weibull")
+AIC(m)
+AIC(update(m, . ~ . - as.factor(sex)),      m)  
+AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)  
+
+
+
+```
+Usunięcie którejkolwiek z pozostałych zmiennych zmniejsza wskaźnik AIC, więc uznajemy nasz model za końcowy.
+
+
+```{r z_funkcją_step}
+m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+m_aic <- step(m, direction = "backward", trace = 1)
+summary(m_aic)
+AIC(m_aic)
+formula(m_aic)
+
+```
+
+Ten sam efekt dla funkcji step
+#### Rozwiązanie
+
+### c)
+
+#### Treść
+
+Korzystając z bayesowskiego kryterium informacyjnego (BIC), dokonać wyboru najlepszego
+modelu przyspieszonego czasu awarii, korzystając z funkcji step.
+
+#### Rozwiązanie
+
+Tutaj już tylko funckja step
+
+
+```{r BICsteps}
+
+m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+n <- nrow(dane)
+m_bic <- step(m, direction = "backward", k = log(n), trace = 1)
+
+summary(m_bic)
+formula(m_bic)
+BIC(m_bic)
+
+```
+
+
+Według kryterium bayesowskiego mamy ten sam efekt co w każdej poprzedniej metodzie. Zostają zmienne sex i ph.ecog
+
+# Zadanie 4
+
+## Treść
+
+## Rozwiązanie
+
+### a)
+
+#### Treść
+
+#### Rozwiązanie
+
+### b)
+
+#### Treść
+
+#### Rozwiązanie
+
+### c)
+
+#### Treść
+
+#### Rozwiązanie
