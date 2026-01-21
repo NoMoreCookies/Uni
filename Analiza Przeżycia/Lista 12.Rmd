@@ -403,24 +403,109 @@ Według kryterium bayesowskiego mamy ten sam efekt co w każdej poprzedniej meto
 
 # Zadanie 4
 
-## Treść
-
 ## Rozwiązanie
 
 ### a)
 
 #### Treść
 
+Korzystając z metody eliminacji, w oparciu o test ilorazu wiarogodności, dokonać wyboru
+zmiennych do modelu przyspieszonego czasu awarii.
+
 #### Rozwiązanie
+
+```{r mEliminacji_krk1_coxph}
+
+m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane)
+
+anova(update(m, . ~ . - age), m)  # IW dla age
+anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
+anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
+anova(update(m, . ~ . - ph.karno), m)  # IW dla ph.karn
+
+
+
+
+```
+Usuwamy ph.karno bo ma najwięszke p > 0.05
+
+Usuwamy age, ph.karno bo mają największe p >0.05
+
+```{r krkr2coxph}
+
+
+
+m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) ,
+                 data = dane)
+
+anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
+anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
+anova(update(m, . ~ . - age), m)  # IW dla ph.karn
+
+```
+
+Usuwamy zmienną ph.age bo ma największe p > 0.05
+
+```{r krkr3coxph}
+
+
+m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) ,
+                 data = dane)
+
+anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
+anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
+
+
+```
+Dla teraz wszystkie p < 0.05 więc mamy już gotowy model AIC.
+W modelu końcowym zakłada się , że jedynymi znaczącymi zmiennymi są sex i ph.ecog
 
 ### b)
 
 #### Treść
 
+Korzystając z kryterium informacyjnego Akaike’a (AIC), dokonać wyboru najlepszego modelu
+przyspieszonego czasu awarii, korzystając z funkcji step.
+
+
+```{r z_funkcją_step_coxph}
+m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane)
+
+m_aic <- step(m, direction = "backward", trace = 1)
+summary(m_aic)
+AIC(m_aic)
+formula(m_aic)
+
+```
+
+Ten sam efekt dla funkcji step
 #### Rozwiązanie
 
 ### c)
 
 #### Treść
 
+Korzystając z bayesowskiego kryterium informacyjnego (BIC), dokonać wyboru najlepszego
+modelu przyspieszonego czasu awarii, korzystając z funkcji step.
+
 #### Rozwiązanie
+
+Tutaj już tylko funckja step
+
+
+```{r BICsteps}
+
+m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane)
+n <- nrow(dane)
+m_bic <- step(m, direction = "backward", k = log(n), trace = 1)
+
+summary(m_bic)
+formula(m_bic)
+BIC(m_bic)
+
+```
+
+Znowu ten sam efekt. Dobra teraz to do kupy i koniec. 
