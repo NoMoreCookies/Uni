@@ -1,0 +1,179 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+/* Board rows */
+.board-row {
+  display: flex;
+  gap: 14px;
+}
+
+/* Controls container: horizontal, centered */
+.controls {
+  display: flex;
+  justify-content: center;   /* center horizontally */
+  align-items: center;       /* center vertically */
+  gap: 20px;                 /* space between h2 and toggle */
+  margin-bottom: 16px;       /* space above board */
+}
+
+/* Status text */
+.controls h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+/* Toggle container */
+.toggle {
+  display: flex;             /* horizontal layout */
+  align-items: center;       /* vertically center slider + text */
+  gap: 12px;                 /* space between slider and text */
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Hide the default checkbox */
+.toggle input {
+  display: none;
+}
+
+/* Switch background */
+.slider {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  background: #3b6df2;       /* blue = AI OFF */
+  border-radius: 999px;
+  transition: background 0.25s ease;
+}
+
+/* Moving circle inside the switch */
+.slider::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.25s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+/* AI enabled = red background */
+.toggle input:checked + .slider {
+  background: #e53935;
+}
+
+/* Move circle to the right when enabled */
+.toggle input:checked + .slider::before {
+  transform: translateX(24px);
+}
+
+/* Label text next to switch */
+.label-text {
+  font-family: "Comic Sans MS", "Comic Sans";
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 16px;           /* reduced font size to fit nicely */
+  color: #282c34;
+}
+
+/* 3D button */
+.btn-3d {
+  --bg: #5b7cfa;
+  --shadow: #3b56c9;
+
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 28px;
+  color: #fff;
+
+  font-family: "Comic Sans MS", "Comic Sans";
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 50px;
+  cursor: pointer;
+
+  background: var(--bg);
+  box-shadow: 0 10px 0 var(--shadow);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+
+.btn-3d:hover,
+.btn-3d.down {
+  transform: translateY(8px);
+  box-shadow: 0 2px 0 var(--shadow);
+}
+
+/* App container */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;  
+  gap: 15px;     
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column; /* stack everything vertically */
+  align-items: center;    /* center horizontally */
+  gap: 16px;              /* spacing between items */
+}
+
+.status {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+
+.controls-column {
+  display: flex;
+  flex-direction: column;  /* stack items vertically */
+  align-items: center;     /* center horizontally */
+  gap: 12px;               /* space between status and toggle */
+  margin-bottom: 16px;
+}
+
+.status {
+  font-size: 24px;         /* or whatever size you want */
+  font-weight: bold;
+}
+
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
