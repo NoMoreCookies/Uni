@@ -37,7 +37,6 @@ knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
 ```
 
 ```{r libraries}
-
 library(survival)
 library(eha)
 library(knitr)
@@ -49,7 +48,6 @@ library(timereg)
 library(nltm)
 
 ```
-
 
 ```{r data_import_and_processing}
 
@@ -84,12 +82,10 @@ proporcjonalnych szans niż była podana na wykładzie wykorzystywaną w tej dru
 
 ## Rozwiązanie
 
-```{r rozw1}
+```{r rozw1, echo = TRUE}
 
 model<-prop.odds(Event(time, cause = status) ~ age + factor(sex) + factor(ph.ecog) + ph.karno,
              data = dane,n.sim=500,profile=1)
-
-
 
 ```
 
@@ -109,7 +105,7 @@ kable(model$gamma)
 
 ```
 
-Korzystając z powyższych wzorów możemy podać interpretację:
+Korzystając z poniższych wzorów możemy podać interpretację:
 
 $$
 \theta_0(t) = \frac{1 - S_0(t)}{S_0(t)}
@@ -141,20 +137,23 @@ Uwaga. To zadanie można wykonać korzystając np. z funkcji nltm biblioteki o t
 
 ```{r rozw3}
 
-
 s <-  predict(model, Z = c(0,0,0,0,0,0))
 
 df <- data.frame(
   t <- s$time,
-  s0 <-c(s$S0)
+  s0 <- c(s$S0),
+  H0 <- -log(c(s$S0))
 )
 
 
-ggplot(df, aes(x = t, y = s0))+geom_step()
+p1 <- ggplot() +
+  geom_step(data = df, aes(x = t, y = s0,     color = "S0")) +
+  labs(color = "Legenda")
+p2 <- ggplot() +
+  geom_step(data = df, aes(x = t, y = H0, color = "hazard")) +
+  labs(color = "Legenda")
 
-
-
-
+p1 / p2
 
 ```
 
@@ -163,45 +162,187 @@ ggplot(df, aes(x = t, y = s0))+geom_step()
 
 ## Treść
 
-## Rozwiązanie
+Wyznaczyć oszacowanie skumulowanej funkcji hazardu odpowiadającej rozkładowi czasu życia
+(przyjmując model opisany w zadaniu 1)
 
-```{r zad4}
-z1 <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
-z2 <- c(70 - mean_wiek, 1, 0, 1, 0, 90 - mean_ph_karno)
+```{r model_z_listy_10}
 
-s1 <-  predict(model, Z = z1)
-s2 <-  predict(model, Z = z2)     
+model_l10 <- coxph(Surv(time, status) ~ age + factor(sex) + factor(ph.ecog) + ph.karno,
+             data = dane, ties = "efron")
 
-H1 <- -log(c(s1$S0))              # skumulowany hazard
-H2 <- -log(c(s2$S0))              # skumulowany hazard
-
-df1 <- data.frame(
-  t = s1$time,
-  S0  = (s1$S0),
-  H <- H1
-)
-df2 <- data.frame(
-  t = s2$time,
-  S0  = (s2$S0),
-  H <-  H2
-)
-
-
-ggplot(df1, aes(x = t, y = s0))+geom_step()
-ggplot(df1, aes(x = t, y = H))+geom_step()
-ggplot(df2, aes(x = t, y = s0))+geom_step()
-ggplot(df2, aes(x = t, y = H))+geom_step()
 
 ```
 
+## Rozwiązanie
+
+```{r zad4}
+
+model<-prop.odds(Event(time, cause = status) ~ age + factor(sex) + factor(ph.ecog) + ph.karno,
+             data = dane,n.sim=500,profile=1)
+
+z1 <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
+z2 <- c(70 - mean_wiek, 1, 0, 1, 0, 90 - mean_ph_karno)
+
+nd <- data.frame(
+  age = c(70, 70)-mean_wiek,
+  sex = factor(c(2, 2), levels = levels(factor(dane$sex))),     
+  ph.ecog = factor(c(1, 2), levels = levels(factor(dane$ph.ecog))),
+  ph.karno = c(90, 90)-mean_ph_karno
+)
+
+
+
+s1 <-  predict(model, Z = z1)
+s2 <-  predict(model, Z = z2) 
+
+s_l10 <- survfit(model_l10,nd)
+
+t_10 <- s_l10$time
+S_l10 <- as.matrix(s_l10$surv)   
+
+H_l10 <- -log(S_l10)              
+
+df1_l10 <- data.frame(
+  t = t_10,
+  S0 = S_l10[,1],
+  H = H_l10[,1]
+)
+df2_l10 <- data.frame(
+  t = t_10,
+  S0 = S_l10[,2],
+  H = H_l10[,2]
+)
+
+df1 <- data.frame(
+  t = s1$time,
+  S0  = c(s1$S0),
+  H = -log(c(s1$S0))
+)
+
+df2 <- data.frame(
+  t = s2$time,
+  S0  = c(s2$S0),
+  H =  -log(c(s2$S0)) 
+)
+
+
+p1_H <- ggplot() +
+  geom_step(data = df1,    aes(x = t, y = H, color = "H (model 1)"),linewidth = 1.1) +
+  geom_step(data = df1_l10, aes(x = t, y = H, color = "H (model l10)"),linewidth = 1.1)+
+  ggtitle("Funkcja H dla pacjenta 1")
+
+p1_logH <- ggplot() +
+  geom_step(data = df1,    aes(x = t, y = log(H), color = "log(H) (model 1)"),linewidth = 1.1) +
+  geom_step(data = df1_l10, aes(x = t, y = log(H), color = "log(H) (model l10)"),linewidth = 1.1)+
+  ggtitle("Funkcja log(H) dla pacjenta 1")
+
+
+p2_H <- ggplot() +
+  geom_step(data = df2,    aes(x = t, y = H, color = "H (model 1)"),linewidth = 1.1) +
+  geom_step(data = df2_l10, aes(x = t, y = H, color = "H (model l10)"),linewidth = 1.1)+
+  ggtitle("Funkcja H dla pacjenta 2")
+
+p2_logH <-ggplot() +
+  geom_step(data = df2,    aes(x = t, y = log(H), color = "log(H) (model 1)"),linewidth = 1.1) +
+  geom_step(data = df2_l10, aes(x = t, y = log(H), color = "log(H) (model l10)"),linewidth = 1.1)+
+  ggtitle("Funkcja log(H) dla pacjenta 2")
+
+(p1_H | p2_H) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+
+```
+Widzimy, że w przypadku pacjenta 1 skumulowany hazard rośnie wyraźnie szybciej, gdy użyjemy modelu proporcjonalnych szans, niż wtedy, gdy korzystamy z modelu proporcjonalnych hazardów Coxa. Oznacza to, że model proporcjonalnych szans przewiduje dla tego pacjenta gorsze przeżycie (większe skumulowane ryzyko w czasie) niż model Coxa.
+
+W przypadku pacjenta 2 krzywe są bardzo podobne mniej więcej do 625 dnia, a później zaczynają się rozjeżdżać. W dalszej części obserwacji różnice między modelami rosną, jednak interpretację samej końcówki należy traktować ostrożnie, ponieważ w ogonie czasu często zostaje niewiele obserwacji i pojedyncze zdarzenia potrafią powodować wyraźne „skoki” krzywej.
+
+```{r logarytmy_funkcji}
+
+(p1_logH | p2_logH)+
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+```
+Analogiczne wnioski możemy wysnuć także na podstawie wykresów logarytmów tych funkcji, ponieważ logarytm jest funkcją ściśle rosnącą i dla dodatnich wartości zachowuje relacje.
 # Zadanie 5
 
 ## Treść
+Wyznaczyć oszacowanie funkcji przeżycia (w dniach) odpowiadającej rozkładowi czasu życia
 
 ## Rozwiążanie
+
+```{r wykresy_przeżycia}
+
+ggplot()+
+  geom_step(data = df1, aes(x = t, y = S0, color = "S01"),linewidth = 1.1)+
+  geom_step(data = df2, aes(x = t, y = S0, color = "S02"),linewidth = 1.1)
+
+
+```
+Z wykresów widać, że funkcja przeżycia dla pacjenta 2 maleje znacznie szybciej, co jest zgodne z charakterystyką danych.
+
+Prawdopodobieństwa tego ,że czas życia będzie większy od 300 , to $$S_{0}2(300)$$ i $$S_{0}1(300)$$
+
+Dla pacjenta 1 to prawdopodobieństwo wynosi:
+
+```{r dzielny_pacjent_1}
+i <- findInterval(300, s1$time)   
+S_300 <- if (i == 0) 1 else s1$S0[i]
+S_300
+
+
+```
+Jest to spora szansa.
+
+A na liście 10 otrzymaliśmy:
+
+```{r dzielny_pacjent_1_l10}
+
+i <- findInterval(300, t_10)   
+S_300 <- if (i == 0) 1 else S_l10[,1][i]
+S_300
+
+```
+Prawdopodobieństwo dla modelu proporcjonalnych hazardów coxa jest większe.
+
+Dla pacjenta 2 to prawdopodobieństwo wynosi:
+
+```{r dzielny_pacjent_2}
+
+i <- findInterval(300, s2$time)   
+S_300 <- if (i == 0) 1 else s2$S0[i]
+S_300
+
+```
+W stosunku do pacjenta pierwszego widać spadek aż o 20 punktów procentowych na liście 11.
+
+
+
+```{r dzielny_pacjent_2_l10}
+
+i <- findInterval(300, t_10)   
+S_300 <- if (i == 0) 1 else S_l10[,2][i]
+S_300
+
+```
+Prawdopodobieństwo dla modelu proporcjonalnych hazardów coxa jest większe.
 
 # Zadanie 6
 
 ## Treść
 
+ Narysować wykres oszacowanej w zadaniu 5 punkt (a) funkcji przeżycia i porównać go z wykresem
+z zadania 6 z listy 10.
+
 ## Rozwiązanie
+
+
+```{r zad6}
+
+ggplot()+
+  geom_step(data = df1, aes(x = t, y = S0, color = "S01"),linewidth = 1.1)+
+  geom_step(data = df1_l10, aes(x = t, y = S0, color = "S01_l10"),linewidth = 1.1)
+
+```
+Widać, że funkcja przeżycia jest większa dla modelu proporcjonalnych hazardów coxa, niż w obecnym modelu
+proporcjonalnych szans.
