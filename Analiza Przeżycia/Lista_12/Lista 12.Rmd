@@ -54,20 +54,15 @@ library(nltm)
 
 ```{r dane}
 
-
-# data import
 data("lung")
 
-# avoiding columns [inst, pat.karno, meal.cal, wt.loss] 
 dane <- lung[, 2:7]
 
-# deleting rows with missing values
 dane <- dane[complete.cases(dane), ]
 
 mean_wiek <- mean(dane[, 3])
 mean_ph_karno <- mean(dane[, 6])
 
-# centering continuous data
 dane[, 3] <- dane[, 3] - mean_wiek
 dane[, 6] <- dane[, 6] - mean_ph_karno
 
@@ -92,7 +87,11 @@ age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.
 
 #### Rozwiązanie
 
-```{r zad1a}
+
+##### Wald
+P value dla testu Walda wynosi:
+
+```{r zad1a_Wald}
 
 # parameter estimation (based on example in lecture)
 model <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
@@ -102,32 +101,52 @@ model <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + 
 
 tab <- summary(model)$table
 
-print(tab["age", ])
+print(tab["age", ]["p"])
 
+```
+Widać, że p > 0.05
 
+Nie odrzucamy $$H_0$$, więc uznajemy zmienną age za nieistotną
+
+##### IW
+P value dla testu największej wiarygodności wynosi:
+```{r zad1a_Anova}
 
 #noage
 model_noage <- update(model, . ~ . - age)
-anova(model_noage, model)$"Pr(>Chi)"
+anova(model_noage, model)$"Pr(>Chi)"[2]
 
 ```
-Age nie jest istotia z IW i Walda
+Widać, że p > 0.05
+Nie odrzucamy $$H_0$$, więc uznajym zmienną age za nieistotną
 
 ### b)
 
-```{r zad2a}
+##### Wald
+P value dla testu Walda wynosi:
 
-tab["as.factor(sex)2",]
+```{r zad1b_wald}
 
+tab["as.factor(sex)2",]["p"]
+
+```
+Odrzucamy $$H_0$$, więc uznajemy zmienną sex za istotną
+
+
+##### IW
+P value dla testu największej wiarygodności wynosi:
+
+```{zad1b_IW}
 #nosex
 model_nosex <- update(model, . ~ . - as.factor(sex))
-anova(model_nosex, model)$"Pr(>Chi)"
+anova(model_nosex, model)$"Pr(>Chi)"[2]
 
 
 ```
-Dla zmiennej sex mamy p < 0.05, czyli możemy przyjąc hipotezę H0, że zmienna sex jest istotna.
 
-Dla testu IW mamy p<0.05, co potwierdza tezę o istotności zmiennej sex
+Widać, że p < 0.05
+Odrzucamy $$H_0$$, więc uznajemy zmienną sex za istotną
+
 
 ### c)
 
@@ -141,29 +160,32 @@ danych mamy tylko wartości od 0 do 3)
 
 #### Rozwiązanie
 
+##### IW
+
+P value dla testu największej wiarygodności wynosi:
 
 ```{r rozwc}
 
 
 #noage
 model_noecog <- update(model, . ~ . - as.factor(ph.ecog))
-anova(model_noecog, model)$"Pr(>Chi)"
+anova(model_noecog, model)$"Pr(>Chi)"[2]
 
 ```
-W teście ilorazu wiarygodności otrzymano p = 0.00214 < 0.05, więc odrzucamy hipotezę H_0, że rozkład czasu życia jest taki sam dla pacjentów z ECOG 0,1,2,3. Oznacza to, że zmienna ph.ecog jest istotna w przyjętym modelu
+W teście ilorazu wiarygodności otrzymano p = 0.00214 < 0.05, więc odrzucamy hipotezę $$H_0$$, że rozkład czasu życia jest taki sam dla pacjentów z ECOG 0,1,2,3. Oznacza to, że zmienna ph.ecog jest istotna w przyjętym modelu
 
 # Zadanie 2
 
 ## Treść 
 
- Przyjmując model proporcjonalnych hazardów Coxa ze zmienną zależną time, a za charakterystyki
-zmienne: age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.
+Przyjmując model proporcjonalnych hazardów Coxa ze zmienną zależną time, i z charakterystykami:
+age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.
 
 ## Rozwiązanie
 
 ```{r model_podst_coxph}
 # parameter estimation (based on example in lecture)
-model_podst <- coxph(Surv(time, status==2)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+model_podst <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,)
 
 ```
@@ -175,24 +197,34 @@ model_podst <- coxph(Surv(time, status==2)~age + as.factor(sex) + as.factor(ph.e
  Korzystając z testu Walda oraz z testu IW, na poziomie istotności 0.05, zweryfikować hipotezę,
 że zmienna age nie jest istotna w przyjętym modelu
 
-#### Rozwiązanie
+#### Rozwiąza
+
+##### Wald 
+P value dla testu największej wiarygodności wynosi:
 
 ```{r ageWald}
 
 tab <- summary(model_podst)$coefficients
-tab
+
+tab["age",][5]
 
 ```
+Widać, że p > 0.05
+Nie odrzucamy $$H_0$$, więc uznajemy zmienną age za nieistotną
 
-Dla age p > 0.05 więc nieistotna zmienna
+##### IW
+
+P value dla testu największej wiarygodności wynosi:
 
 ```{r ageIW}
 m0 <- update(model_podst, . ~ . - age)
 
-print(anova(m0, model_podst, test = "LRT"))   
+print(anova(m0, model_podst, test = "LRT")["Pr(>|Chi|)"])   
 
 ```
-Dla testu mamy p > 0.05, nie ma podstaw przyjęcia hipotezy o istotności ( zmienna jest nieistotna)
+Widać, że p > 0.05
+Nie odrzucamy $$H_0$$, więc uznajemy zmienną age za nieistotną
+
 ### b)
 
 #### Treść
@@ -202,20 +234,27 @@ Korzystając z testu Walda oraz testu IW, na poziomie istotności 0.05, zweryfik
 
 #### Rozwiązanie
 
+##### Wald 
+P value dla testu największej wiarygodności wynosi:
+
 ```{r sexWald}
-tab
+tab["as.factor(sex)2",]["Pr(>|z|)"]
 ```
+Widać, że p < 0.05
+Odrzucamy $$H_0$$, więc uznajemy zmienną sex za istotną
 
-Dla sex p<0.05 więc ta zmienna jest istotna
+##### IW
 
+P value dla testu największej wiarygodności wynosi:
 
 ```{r sexIW}
 m0 <- update(model_podst, . ~ . - as.factor(sex))
 
-print(anova(m0, model_podst, test = "LRT"))  
+print(anova(m0, model_podst, test = "LRT")["Pr(>|Chi|)"])  
 
 ```
-Dla testu IW mamy p < 0.05, co oznacza, że zmienna age ma istotny wpływ na rozkład przeżycia
+Widać, że p < 0.05
+Odrzucamy $$H_0$$, więc uznajemy zmienną sex za istotną
 
 ### c)
 
@@ -228,13 +267,17 @@ danych mamy tylko wartości od 0 do 3)
 
 #### Rozwiązanie
 
+P value dla testu największej wiarygodności wynosi:
+
 ```{r ecogIW}
 
 m0 <- update(model_podst, . ~ . - as.factor(ph.ecog))
 
-print(anova(m0, model_podst, test = "LRT"))  
+print(anova(m0, model_podst, test = "LRT")["Pr(>|Chi|)"]) 
+
 ```
-p<0.05, więc zmienna ph.ecog ma istotny wpływ na rozkład przeżycia jednostek
+
+W teście ilorazu wiarygodności otrzymano p < 0.05, więc odrzucamy hipotezę $$H_0$$, że rozkład czasu życia jest taki sam dla pacjentów z ECOG 0,1,2,3. Oznacza to, że zmienna ph.ecog jest istotna w przyjętym modelu
 
 # Zadanie 3
 
@@ -255,26 +298,35 @@ zmiennych do modelu przyspieszonego czasu awarii.
 
 #### Rozwiązanie
 
-```{r mEliminacji_krk1}
+Korzystając z metody eliminacji wybierzemy modelprzyspiezonego czasu awarii
+
+
+KROK 1
+```{r mEliminacji_krkk1}
 
 m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,
                  dist = "weibull")
 
-anova(update(m, . ~ . - age), m)  # IW dla age
-anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
-anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
-anova(update(m, . ~ . - ph.karno), m)  # IW dla ph.karn
+p_age     <- anova(update(m, . ~ . - age), m)["Pr(>Chi)"][2,]
+p_sex     <- anova(update(m, . ~ . - as.factor(sex)), m)["Pr(>Chi)"][2,]
+p_phecog  <- anova(update(m, . ~ . - as.factor(ph.ecog)), m)["Pr(>Chi)"][2,]
+p_phkarno <- anova(update(m, . ~ . - ph.karno), m)["Pr(>Chi)"][2,]
 
 
+df <- data.frame(
+  zmienna = c("age","sex","ph.ecog","ph.karno"),
+  p_value = c(p_age, p_sex, p_phecog, p_phkarno)
+)
 
+knitr::kable(df, digits = 4)
 
 ```
 Usuwamy age bo ma najwięszke p > 0.05
 
-Usuwamy age, ph.karno bo mają największe p >0.05
+KROK 2
 
-```{r krkr2}
+```{r krkkk2}
 
 
 
@@ -282,25 +334,40 @@ m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,
                  dist = "weibull")
 
-anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
-anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
-anova(update(m, . ~ . - ph.karno), m)  # IW dla ph.karn
+p_sex     <- anova(update(m, . ~ . - as.factor(sex)), m)["Pr(>Chi)"][2,]
+p_phecog  <- anova(update(m, . ~ . - as.factor(ph.ecog)), m)["Pr(>Chi)"][2,]
+p_phkarno <- anova(update(m, . ~ . - ph.karno), m)["Pr(>Chi)"][2,]
 
+
+df <- data.frame(
+  zmienna = c("sex","ph.ecog","ph.karno"),
+  p_value = c( p_sex, p_phecog, p_phkarno)
+)
+
+knitr::kable(df, digits = 4)
 ```
 
 Usuwamy zmienną ph.karno bo ma największe p > 0.05
 
-```{r krkr3}
+KROK 3
+
+```{r krkrk3}
 
 
 m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
                  data = dane,
                  dist = "weibull")
 
-anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
-anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  #
+p_sex     <- anova(update(m, . ~ . - as.factor(sex)), m)["Pr(>Chi)"][2,]
+p_phecog  <- anova(update(m, . ~ . - as.factor(ph.ecog)), m)["Pr(>Chi)"][2,]
 
 
+df <- data.frame(
+  zmienna = c("sex","ph.ecog"),
+  p_value = c( p_sex, p_phecog)
+)
+
+knitr::kable(df, digits = 4)
 ```
 Dla teraz wszystkie p < 0.05 więc mamy już gotowy model AIC.
 W modelu końcowym zakłada się , że jedynymi znaczącymi zmiennymi są sex i ph.ecog
@@ -312,67 +379,29 @@ W modelu końcowym zakłada się , że jedynymi znaczącymi zmiennymi są sex i 
 Korzystając z kryterium informacyjnego Akaike’a (AIC), dokonać wyboru najlepszego modelu
 przyspieszonego czasu awarii, korzystając z funkcji step.
 
-```{r krk1AIC}
-
-m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
-                 data = dane,
-                 dist = "weibull")
-AIC(m) 
-
-```
-
-```{r krk1AIC}
-
-AIC(update(m, . ~ . - age), m)  
-AIC(update(m, . ~ . - as.factor(sex)),      m)  
-AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)  
-AIC(update(m, . ~ . - ph.karno), m)
-
-```
-AIC przyjmuje najmniejszą wartośc po usunięciu zmiennej age, więc ją usuwamy
-
-```{r krk2AIC}
-
-m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
-                 data = dane,
-                 dist = "weibull")
-
-AIC(update(m, . ~ . - as.factor(sex)),      m)  
-AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)  
-AIC(update(m, . ~ . - ph.karno), m)
-
-```
-Najmniejsza wartość AIC po usunięciu ph.karno, więc je usuwamy
-
-```{r krk3ACI}
-
-
-m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
-                 data = dane,
-                 dist = "weibull")
-AIC(m)
-AIC(update(m, . ~ . - as.factor(sex)),      m)  
-AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)  
-
-
-
-```
-Usunięcie którejkolwiek z pozostałych zmiennych zmniejsza wskaźnik AIC, więc uznajemy nasz model za końcowy.
-
+#### Rozwiązanie
 
 ```{r z_funkcją_step}
 m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,
                  dist = "weibull")
 m_aic <- step(m, direction = "backward", trace = 1)
-summary(m_aic)
-AIC(m_aic)
-formula(m_aic)
 
 ```
 
-Ten sam efekt dla funkcji step
-#### Rozwiązanie
+KROK 1
+Z funkcji step widzimy, że wskażnik AIC
+był najmniejszy dla zmiennej ph.karno, więc została ona usunięta.
+
+KROK 2
+Z funkcji step widzimy, że wskażnik AIC  
+był najmniejszy dla zmiennej age, więc została ona usunięta.
+
+KROK 3
+Z funkcji step widzimy, że wskażnik AIC  
+zwiększa sie w każdym możliwym kroku, więc nie ma sensu usuwać już żadnych zmiennych.
+
+
 
 ### c)
 
@@ -382,9 +411,6 @@ Korzystając z bayesowskiego kryterium informacyjnego (BIC), dokonać wyboru naj
 modelu przyspieszonego czasu awarii, korzystając z funkcji step.
 
 #### Rozwiązanie
-
-Tutaj już tylko funckja step
-
 
 ```{r BICsteps}
 
@@ -396,16 +422,29 @@ n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 1)
 
-summary(m_bic)
-formula(m_bic)
-BIC(m_bic)
 
 ```
 
+KROK 1
+Z funkcji step widzimy, że wskażnik BIC
+był najmniejszy dla zmiennej ph.karno, więc została ona usunięta.
 
-Według kryterium bayesowskiego mamy ten sam efekt co w każdej poprzedniej metodzie. Zostają zmienne sex i ph.ecog
+KROK 2
+Z funkcji step widzimy, że wskażnik BIC 
+był najmniejszy dla zmiennej age, więc została ona usunięta.
+
+KROK 3
+Z funkcji step widzimy, że wskażnik BIC 
+zwiększa sie w każdym możliwym kroku, więc nie ma sensu usuwać już żadnych zmiennych.
+
+Nasz końcowy model zawiera zmienne sex oraz ph.ecoh ponieważ możemy uznać je za istotnie znaczące.
 
 # Zadanie 4
+
+## Treść
+
+ Przyjmując model proporcjonalnych hazardów Coxa ze zmienną zależną time, a za charakterystyki
+zmienne: age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.
 
 ## Rozwiązanie
 
@@ -418,51 +457,64 @@ zmiennych do modelu przyspieszonego czasu awarii.
 
 #### Rozwiązanie
 
-```{r mEliminacji_krk1_coxph}
+```{r mEliminacjik_krk1_coxph}
 
 m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane)
+df <- data.frame(
+  "age" = anova(update(m, . ~ . - age), m)[["Pr(>|Chi|)"]][2],
+  "sex" = anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>|Chi|)"]][2],
+  "ph.ecog" = anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>|Chi|)"]][2],
+  "ph.karno" = anova(update(m, . ~ . - ph.karno), m)[["Pr(>|Chi|)"]][2]
+)
 
-anova(update(m, . ~ . - age), m)  
-anova(update(m, . ~ . - as.factor(sex)),      m)
-anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  
-anova(update(m, . ~ . - ph.karno), m)  
+rownames(df) <- c("P_value")
 
-
-
+kable(df)
 
 ```
 Usuwamy ph.karno bo ma najwięszke p > 0.05
 
-Usuwamy age, ph.karno bo mają największe p >0.05
 
-```{r krkr2coxph}
-
-
+```{r krkr2coxkph}
 
 m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) ,
                  data = dane)
 
-anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
-anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
-anova(update(m, . ~ . - age), m)  # IW dla ph.karn
+df <- data.frame(
+  "age" = anova(update(m, . ~ . - age), m)[["Pr(>|Chi|)"]][2],
+  "sex" = anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>|Chi|)"]][2],
+  "ph.ecog" = anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>|Chi|)"]][2]
+)
+
+
+rownames(df) <- c("P_value")
+
+kable(df)
 
 ```
 
-Usuwamy zmienną ph.age bo ma największe p > 0.05
+Usuwamy zmienną age bo ma największe p > 0.05
 
-```{r krkr3coxph}
+```{r krkr3cokxph}
 
 
 m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) ,
                  data = dane)
 
-anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
-anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
+
+df <- data.frame(
+  "sex" = anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>|Chi|)"]][2],
+  "ph.ecog" = anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>|Chi|)"]][2]
+)
 
 
+rownames(df) <- c("P_value")
+
+kable(df)
 ```
-Dla teraz wszystkie p < 0.05 więc mamy już gotowy model AIC.
+Teraz wszystkie p < 0.05 więc mamy już gotowy model AIC.
+
 W modelu końcowym zakłada się , że jedynymi znaczącymi zmiennymi są sex i ph.ecog
 
 ### b)
@@ -472,20 +524,31 @@ W modelu końcowym zakłada się , że jedynymi znaczącymi zmiennymi są sex i 
 Korzystając z kryterium informacyjnego Akaike’a (AIC), dokonać wyboru najlepszego modelu
 przyspieszonego czasu awarii, korzystając z funkcji step.
 
+#### Rozwiązanie
+```{r z_funkcją_step_cokxph}
 
-```{r z_funkcją_step_coxph}
 m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane)
 
 m_aic <- step(m, direction = "backward", trace = 1)
-summary(m_aic)
-AIC(m_aic)
-formula(m_aic)
+
 
 ```
+KROK 1
+Z funkcji step widzimy, że wskażnik AIC
+był najmniejszy dla zmiennej ph.karno, więc została ona usunięta.
 
-Ten sam efekt dla funkcji step
-#### Rozwiązanie
+KROK 2
+Z funkcji step widzimy, że wskażnik AIC  
+był najmniejszy dla zmiennej age, więc została ona usunięta.
+
+KROK 3
+Z funkcji step widzimy, że wskażnik AIC  
+zwiększa sie w każdym możliwym kroku, więc nie ma sensu usuwać już żadnych zmiennych.
+
+Nasz końcowy model zawiera zmienne sex oraz ph.ecoh ponieważ możemy uznać je za istotnie znaczące.
+
+
 
 ### c)
 
@@ -496,10 +559,9 @@ modelu przyspieszonego czasu awarii, korzystając z funkcji step.
 
 #### Rozwiązanie
 
-Tutaj już tylko funckja step
 
 
-```{r BICsteps}
+```{r BICstepks}
 
 
 m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
@@ -509,11 +571,19 @@ n <- nrow(dane)
 m_bic <- step(m, direction = "backward", k = log(n), trace = 1)
 
 
-summary(m_bic)
-formula(m_bic)
-BIC(m_bic)
-
 
 ```
 
-Znowu ten sam efekt. Dobra teraz to do kupy i koniec. 
+KROK 1
+Z funkcji step widzimy, że wskażnik BIC
+był najmniejszy dla zmiennej ph.karno, więc została ona usunięta.
+
+KROK 2
+Z funkcji step widzimy, że wskażnik BIC 
+był najmniejszy dla zmiennej age, więc została ona usunięta.
+
+KROK 3
+Z funkcji step widzimy, że wskażnik BIC 
+zwiększa sie w każdym możliwym kroku, więc nie ma sensu usuwać już żadnych zmiennych.
+
+Nasz końcowy model zawiera zmienne sex oraz ph.ecoh ponieważ możemy uznać je za istotnie znaczące.
