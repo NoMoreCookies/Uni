@@ -71,6 +71,8 @@ mean_ph_karno <- mean(dane[, 6])
 dane[, 3] <- dane[, 3] - mean_wiek
 dane[, 6] <- dane[, 6] - mean_ph_karno
 
+dane$status <-  dane$status-1
+
 
 ```
 ## Treść
@@ -109,8 +111,7 @@ model_noage <- update(model, . ~ . - age)
 anova(model_noage, model)$"Pr(>Chi)"
 
 ```
-Dla testu walda mamy 0.2 > 0.05 brak podstaw do odrzucenia hipotezy o niestotności age (age istotna)
-Dla testu IW mamy p = 0.045 < 0.05. Według testu IW zmienna age jest istotna
+Age nie jest istotia z IW i Walda
 
 ### b)
 
@@ -183,7 +184,7 @@ tab
 
 ```
 
-Dla testu Walda dla zmiennej age p < 0.05 nie ma dowodó aby odrzucić hipotezę o jej istotności (jest nieistotna)
+Dla age p > 0.05 więc nieistotna zmienna
 
 ```{r ageIW}
 m0 <- update(model_podst, . ~ . - age)
@@ -215,6 +216,7 @@ print(anova(m0, model_podst, test = "LRT"))
 
 ```
 Dla testu IW mamy p < 0.05, co oznacza, że zmienna age ma istotny wpływ na rozkład przeżycia
+
 ### c)
 
 #### Treść
@@ -240,7 +242,7 @@ p<0.05, więc zmienna ph.ecog ma istotny wpływ na rozkład przeżycia jednostek
 
 Przyjmując model przyspieszonego czasu awarii, w którym bazowa funkcja przeżycia odpowiada
 rozkładowi Weibulla, przyjmując za zmienną zależną zmienną time, a za charakterystyki zmienne:
-age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.d
+age, sex, ph.ecog, ph.karno, wykonać poniższe zadania.
 
 ## Rozwiązanie
 
@@ -296,7 +298,7 @@ m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
                  dist = "weibull")
 
 anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
-anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
+anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  #
 
 
 ```
@@ -315,7 +317,7 @@ przyspieszonego czasu awarii, korzystając z funkcji step.
 m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,
                  dist = "weibull")
-AIC(m)
+AIC(m) 
 
 ```
 
@@ -389,7 +391,9 @@ Tutaj już tylko funckja step
 m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,
                  dist = "weibull")
-n <- nrow(dane)
+
+n <- sum(dane$status)
+
 m_bic <- step(m, direction = "backward", k = log(n), trace = 1)
 
 summary(m_bic)
@@ -419,10 +423,10 @@ zmiennych do modelu przyspieszonego czasu awarii.
 m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane)
 
-anova(update(m, . ~ . - age), m)  # IW dla age
-anova(update(m, . ~ . - as.factor(sex)),      m)  # IW dla sex (usuwa cały faktor naraz)
-anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  # IW dla ph.ecog (globalnie)
-anova(update(m, . ~ . - ph.karno), m)  # IW dla ph.karn
+anova(update(m, . ~ . - age), m)  
+anova(update(m, . ~ . - as.factor(sex)),      m)
+anova(update(m, . ~ . - as.factor(ph.ecog)),  m)  
+anova(update(m, . ~ . - ph.karno), m)  
 
 
 
@@ -497,14 +501,18 @@ Tutaj już tylko funckja step
 
 ```{r BICsteps}
 
+
 m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane)
+
 n <- nrow(dane)
 m_bic <- step(m, direction = "backward", k = log(n), trace = 1)
+
 
 summary(m_bic)
 formula(m_bic)
 BIC(m_bic)
+
 
 ```
 

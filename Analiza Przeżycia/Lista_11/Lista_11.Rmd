@@ -1,0 +1,207 @@
+---
+title: "Lista 11"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \n Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}[section]
+   - \usepackage{draftwatermark}
+   - \SetWatermarkText{{\rmfamily\bfseries KACPER SZMIGIELSKI \\ \rmfamily\bfseries MARTA STANKIEWICZ}}
+   - \SetWatermarkScale{2}
+   - \SetWatermarkColor[gray]{0.9}
+   - \SetWatermarkFontSize{26pt}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+```
+
+```{r libraries}
+
+library(survival)
+library(eha)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+library(timereg)
+library(nltm)
+
+```
+
+
+```{r data_import_and_processing}
+
+# data import
+data("lung")
+
+# avoiding columns [inst, pat.karno, meal.cal, wt.loss] 
+dane <- lung[, 2:7]
+
+# deleting rows with missing values
+dane <- dane[complete.cases(dane), ]
+
+mean_wiek <- mean(dane[, 3])
+mean_ph_karno <- mean(dane[, 6])
+
+# centering continuous data
+dane[, 3] <- dane[, 3] - mean_wiek
+dane[, 6] <- dane[, 6] - mean_ph_karno
+dane$status <- dane$status -1
+```
+
+# Zadanie 1
+
+## Treść
+
+Oszacować parametry modelu proporcjonalnych szans, przyjmując za zmienną zależną zmienną
+time, a za charakterystyki zmienne: age, sex, ph.ecog, ph.karno.
+Uwaga. Zadanie to można wykonać korzystając np. z funkcji prop.odds biblioteki timereg lub funkcji
+nltm biblioteki o tej samej nazwie pakietu R. Należy jednak zwrócić uwagę na inną definicję modelu
+proporcjonalnych szans niż była podana na wykładzie wykorzystywaną w tej drugiej funkcji.
+
+
+## Rozwiązanie
+
+```{r rozw1}
+
+model<-prop.odds(Event(time, cause = status) ~ age + factor(sex) + factor(ph.ecog) + ph.karno,
+             data = dane,n.sim=500,profile=1)
+
+
+
+```
+
+# Zadanie 2
+
+## Treść
+
+Podać interpretację współczynników modelu z zadania 1
+
+## Rozwiązanie
+
+
+```{r rozw2}
+
+kable(model$gamma)
+
+
+```
+
+Korzystając z powyższych wzorów możemy podać interpretację:
+
+$$
+\theta_0(t) = \frac{1 - S_0(t)}{S_0(t)}
+$$
+
+$$
+\ln\!\left(\frac{\theta_{z_1}(t)}{\theta_{z_2}(t)}\right) = \beta^{T}(z_1 - z_2)
+$$
+
+- Zmienna \texttt{age} ma współczynnik $$\gamma>0,$$ co oznacza, że wraz ze wzrostem wieku rosną \textbf{szanse (odds) wystąpienia zdarzenia do czasu $$t$$} (przy stałych pozostałych zmiennych). Równoważnie: $$\exp(\gamma)>1.$$
+
+- Zmienna \texttt{sex} (kategoryczna) ma współczynnik $$\gamma<0$$ dla poziomu porównywanego do poziomu referencyjnego (bazowego). Oznacza to, że w tej grupie \textbf{szanse (odds) zajścia zdarzenia do czasu $$t$$} są mniejsze niż w grupie bazowej, tj. $$\exp(\gamma)<1.$$
+
+- Zmienna \texttt{ph.ecog} (kategoryczna) ma współczynniki $$\gamma>0$$ dla poszczególnych poziomów w porównaniu do poziomu referencyjnego (np. $$1 \text{ vs } 0,\ 2 \text{ vs } 0,\ 3 \text{ vs } 0$$). Wskazuje to, że osoby z wyższym \texttt{ph.ecog} mają \textbf{większe szanse (odds) wystąpienia zdarzenia do czasu $$t$$} niż osoby z poziomu bazowego, czyli $$\exp(\gamma)>1.$$
+
+- Dla zmiennej ciągłej \texttt{ph.karno} otrzymano $$\gamma<0,$$ co oznacza, że wraz ze wzrostem \texttt{ph.karno} \textbf{maleją szanse (odds) zajścia zdarzenia do czasu $$t$$} (tj. $$\exp(\gamma)<1$$). Jeśli jednak w poprzedniej analizie (Lista 10) współczynnik dla \texttt{ph.karno} był \textbf{nieistotny statystycznie}, to również tutaj wniosek o kierunku efektu należy traktować ostrożnie: przy braku istotności znak współczynnika może zmieniać się między dopasowaniami/modelami i nie powinien być interpretowany jako stabilny efekt.
+
+
+
+# Zadanie 3
+
+## Treść
+
+Wyznaczyć oszacowanie bazowej skumulowanej funkcji hazardu i bazowej funkcji przeżycia odpowiadającej rozkładowi czasu życia (przyjmując model opisany w zadaniu 1).
+Uwaga. To zadanie można wykonać korzystając np. z funkcji nltm biblioteki o tej samej nazwie.
+
+
+## Rozwiązanie
+
+```{r rozw3}
+
+
+s <-  predict(model, Z = c(0,0,0,0,0,0))
+
+df <- data.frame(
+  t <- s$time,
+  s0 <-c(s$S0)
+)
+
+
+ggplot(df, aes(x = t, y = s0))+geom_step()
+
+
+
+
+
+```
+
+
+# Zadanie 4
+
+## Treść
+
+## Rozwiązanie
+
+```{r zad4}
+z1 <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
+z2 <- c(70 - mean_wiek, 1, 0, 1, 0, 90 - mean_ph_karno)
+
+s1 <-  predict(model, Z = z1)
+s2 <-  predict(model, Z = z2)     
+
+H1 <- -log(c(s1$S0))              # skumulowany hazard
+H2 <- -log(c(s2$S0))              # skumulowany hazard
+
+df1 <- data.frame(
+  t = s1$time,
+  S0  = (s1$S0),
+  H <- H1
+)
+df2 <- data.frame(
+  t = s2$time,
+  S0  = (s2$S0),
+  H <-  H2
+)
+
+
+ggplot(df1, aes(x = t, y = s0))+geom_step()
+ggplot(df1, aes(x = t, y = H))+geom_step()
+ggplot(df2, aes(x = t, y = s0))+geom_step()
+ggplot(df2, aes(x = t, y = H))+geom_step()
+
+```
+
+# Zadanie 5
+
+## Treść
+
+## Rozwiążanie
+
+# Zadanie 6
+
+## Treść
+
+## Rozwiązanie
