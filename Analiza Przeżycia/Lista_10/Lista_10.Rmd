@@ -309,7 +309,10 @@ knitr::kable(S300_tab, caption = "Prawdopodobieństwo przeżycia > 300 dni")
 
 ```
 
-Prawdopodobiestwo przeżycia przez pacjentkę z ph.ecog = 1 conajmniej 300 dni wynosi $$4%$$ a przez pacjentkę z ph.ecog = 2 wynosi $$0.2%$$
+Prawdopodobiestwo przeżycia przez pacjentkę z ph.ecog = 1 conajmniej 300 dni wynosi $$59%$$ a przez pacjentkę z ph.ecog = 2 wynosi $$36%$$. Wyniki te są bliskie wynikom z poprzedniej listy, gdzie prawodopodobieństwa wynosiły odpowiednio: 58% i 35%. Co świadczy o prawidłowości oszacowania.
 
 \newpage
+
 # Zadanie 6
+
+Tutaj jeszcze te wykresy trzeba porównać, ale to już zrobię na jednym sprawku.
