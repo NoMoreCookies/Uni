@@ -238,7 +238,7 @@ p_values <- data.frame(
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 1 AFT")
 
 ```
 
@@ -264,7 +264,7 @@ p_values <- data.frame(
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW kork 2 AFT")
 ```
 
 Usuwamy zmienną \textit{ph.karno}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
@@ -285,7 +285,7 @@ p_values <- data.frame(
   ph.ecog = ph.ecog
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok3 AFT")
 
 
 ```
@@ -314,7 +314,7 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC")
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 1 AFT")
 
 ```
 
@@ -335,7 +335,7 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC")
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 2 AFT")
 
 ```
 
@@ -356,7 +356,7 @@ bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],
 bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC") 
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 3 AFT") 
 
 
 
@@ -381,7 +381,7 @@ n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
 
-kable(m_bic$anova)
+kable(m_bic$anova, caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu AFT")
 
 
 ```
@@ -419,7 +419,7 @@ p_values <- data.frame(
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 1 coxph")
 
 ```
 
@@ -444,7 +444,7 @@ p_values <- data.frame(
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 2 coxph")
 ```
 
 Usuwamy zmienną \textit{ph.karno}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
@@ -464,7 +464,7 @@ p_values <- data.frame(
   ph.ecog = ph.ecog
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 3 coxph")
 
 
 ```
@@ -492,7 +492,7 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC")
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 1 coxph")
 
 ```
 
@@ -512,7 +512,7 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC")
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 2 coxph")
 
 ```
 
@@ -532,7 +532,7 @@ bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],
 bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC") 
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 3 coxph") 
 
 
 
@@ -556,7 +556,7 @@ n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
 
-kable(m_bic$anova)
+kable(m_bic$anova, caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu propocjonalnych hazardów Coxa")
 
 
 ```
