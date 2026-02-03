@@ -43,6 +43,7 @@ library(tidyr)
 library(patchwork)
 library(timereg)
 library(nltm)
+
 ```
 
 ```{r preparing data}
@@ -276,7 +277,6 @@ alpha <- sigma
 ## Zadanie 6
 
 ```{r wsp.PH}
-
 wsp.PH <- data.frame(
   "alpha" = alpha,
   "beta" = beta,
@@ -292,7 +292,7 @@ rownames(wsp.PH) <- c("age", "sex", "ph.ecog = 1", "ph.ecog = 2", "ph.ecog= 3", 
 kable(wsp.PH, caption = "Współczynniki w modelu PH \\label{tab:wsp.PH.tab}", digits = 5, col.names = c("Zmienne", "$\\alpha$","$\\beta$", "$\\lambda$", "$\\mu$" , "$\\sigma$"),  align = c('l', 'c'))
 ```
 
-Obserwując wyniki w tabeli \ref{tab:wsp.PH.tab} jedynym zidentyfikowanym czynnikiem redukującym ryzyko jest płeć żeńska, dla której współczynnik $\beta$ wynosi `r beta['sex']`. Na jego podstawie można obliczyć wartość $\exp(\beta) \approx$ `r round(exp(beta['sex']), 3)`, oznaczający ryzyko zgonu niższe o `r round((1 - exp(beta['sex'])) * 100, 1)`% w stosunku do mężczyzn. W przypadku zmiennej jakościowej $ph.ecog$, dodatnie wartości współczynników $\beta$ dla poziomów 1, 2 oraz 3 (wynoszące odpowiednio: `r beta['ph.ecog = 1']`, `r beta['ph.ecog = 2']` oraz `r beta['ph.ecog= 3']` wskazują na wzrost ryzyka wraz z pogarszającym się stanem sprawności pacjenta — dla $ph.ecog = 3$ hazard jest aż `r round(exp(beta['ph.ecog= 3']), 2)`-krotnie wyższy niż w grupie referencyjnej. Pozostałe zmienne ciągłe, $age$ oraz $ph.karno$, również charakteryzują się dodatnimi wartościami $\beta$ (odpowiednio `r beta['age']` oraz `r beta['ph.karno']`), co interpretujemy jako wzrost hazardu wraz ze zwiększaniem się wartości tych parametrów, co w konsekwencji prowadzi do skrócenia prognozowanego czasu przeżycia.
+Obserwując wyniki w tabeli \ref{tab:wsp.PH.tab} jedynym zidentyfikowanym czynnikiem redukującym ryzyko jest płeć żeńska, dla której współczynnik $\beta$ wynosi `r beta[["as.factor(sex)2"]]`. Na jego podstawie można obliczyć wartość $\exp(\beta) \approx$ `r round(exp(beta[["as.factor(sex)2"]]), 3)`, oznaczający ryzyko zgonu niższe o `r round((1 - exp(beta[["as.factor(sex)2"]])) * 100, 1)`% w stosunku do mężczyzn. W przypadku zmiennej jakościowej $ph.ecog$, dodatnie wartości współczynników $\beta$ dla poziomów 1, 2 oraz 3 (wynoszące odpowiednio: `r beta[["as.factor(ph.ecog)1"]]`, `r beta[["as.factor(ph.ecog)2"]]` oraz `r beta[["as.factor(ph.ecog)3"]]` wskazują na wzrost ryzyka wraz z pogarszającym się stanem sprawności pacjenta — dla $ph.ecog = 3$ hazard jest aż `r round(exp(beta[["as.factor(ph.ecog)3"]]), 2)`-krotnie wyższy niż w grupie referencyjnej. Pozostałe zmienne ciągłe, $age$ oraz $ph.karno$, również charakteryzują się dodatnimi wartościami $\beta$ (odpowiednio `r beta[["age"]]` oraz `r beta[["ph.karno"]]`), co interpretujemy jako wzrost hazardu wraz ze zwiększaniem się wartości tych parametrów, co w konsekwencji prowadzi do skrócenia prognozowanego czasu przeżycia.
 
 ## Zadanie 7
 
@@ -339,7 +339,7 @@ grid()
 
 
 ```
-Weryfikacja założeń modelu, przeprowadzona poprzez analizę wyników przedstawionych na wykresach \ref(fig:hazard_plot) i \ref(fig:log_plot), potwierdza słuszność przyjęcia modelu proporcjonalnych hazardów. Stały odstęp między krzywymi $\log(h(t))$ dla różnych poziomów zmiennej $ph.ecog$ dowodzi, że iloraz hazardu pozostaje stały w czasie.
+Weryfikacja założeń modelu, przeprowadzona poprzez analizę wyników przedstawionych na wykresach \ref{fig:hazard_plot} i \ref{fig:log_plot}, potwierdza słuszność przyjęcia modelu proporcjonalnych hazardów. Stały odstęp między krzywymi $\log(h(t))$ dla różnych poziomów zmiennej $ph.ecog$ dowodzi, że iloraz hazardu pozostaje stały w czasie.
 
 ## Zadanie 8
 
@@ -371,11 +371,13 @@ plot(t, S(t, z1), type = "l", lwd = 2, col = "blue", ylim = c(0,1),
 
 ```
 
-Porównując wykresy \ref(fig:wykres_AFT) oraz \ref(fig:wykres_PH) można zauważyć różnicę w tempie spadku oszacowanej funkcji przeżycia. Krzywa odpowiadająca modelowi proporcjonalnych hazardów (PH) maleje wolniej niż w przypadku modelu przyspieszonego czasu życia (AFT). W rezultacie dla tych samych punktów czasowych model PH generuje systematycznie wyższe prawdopodobieństwa przeżycia, co skutkuje uzyskaniem bardziej optymistycznych prognoz w porównaniu do modelu AFT.
+Porównując wykresy \ref{fig:wykres_AFT} oraz \ref{fig:wykres_PH) można zauważyć różnicę w tempie spadku oszacowanej funkcji przeżycia. Krzywa odpowiadająca modelowi proporcjonalnych hazardów (PH) maleje wolniej niż w przypadku modelu przyspieszonego czasu życia (AFT). W rezultacie dla tych samych punktów czasowych model PH generuje systematycznie wyższe prawdopodobieństwa przeżycia, co skutkuje uzyskaniem bardziej optymistycznych prognoz w porównaniu do modelu AFT.
+
 
 # Lista 10
 
-W poniższych zadaniach, nie przyjęto żadnego konkretnego rozkładu czasu życia.
+W poniższych z
+adaniach, nie przyjęto żadnego konkretnego rozkładu czasu życia.
 
 ## Zadanie 1
 
@@ -484,6 +486,7 @@ $$
 Oznacza to, że na wykresie logarytmicznym krzywe dla różnych grup powinny być przesunięte względem siebie o stałą wartość, a odległość między nimi odpowiada różnicy w ryzyku $\beta^{T}(z_1 - z_2)$.
 
 ```{r skum_haz_cox}
+
 nd <- data.frame(
   age = c(70, 70)-mean_wiek,
   sex = factor(c(2, 2), levels = levels(factor(dane$sex))),     
@@ -491,13 +494,13 @@ nd <- data.frame(
   ph.karno = c(90, 90)-mean_ph_karno
 )
 
-#obliczanie nowych funkcji
+
 sf <- survfit(model, newdata = nd) 
 
 t <- sf$time
 S <- as.matrix(sf$surv)   
 
-H <- -log(S)              # skumulowany hazard
+H <- -log(S)            
 
 dfH <- data.frame(
   time = t,
@@ -554,7 +557,7 @@ prob_b <- wynik$surv[2]
 
 ```
 
-Analiza uzyskanych wyników wskazuje na istotne różnice w rokowaniach zależne od stanu sprawności. Szacowane prawdopodobieństwo, że czas życia kobiety o charakterystyce $ph.ecog=1$ (i $ph.karno=90$) przekroczy 300 dni, wynosi r round(prob_a, 4). W przypadku pacjentki o gorszym stanie sprawności ($ph.ecog = 2$), prawdopodobieństwo to ulega wyraźnemu obniżeniu i wynosi r round(prob_b, 4).
+Analiza uzyskanych wyników wskazuje na istotne różnice w rokowaniach zależne od stanu sprawności. Szacowane prawdopodobieństwo, że czas życia kobiety o charakterystyce $ph.ecog=1$ (i $ph.karno=90$) przekroczy 300 dni, wynosi `r round(prob_a, 4)`. W przypadku pacjentki o gorszym stanie sprawności ($ph.ecog = 2$), prawdopodobieństwo to ulega wyraźnemu obniżeniu i wynosi `r round(prob_b, 4)`.
 
 
 ## Zadanie 6
@@ -581,13 +584,299 @@ print(p1)
 ```
 Zestawienie funkcji przeżycia na wykresach \ref{fig:wykres_PH} i \ref{fig:surv_cox_plot} wykazuje różnicę w charakterze estymacji: model Coxa generuje funkcję schodkową, zmieniającą się wyłącznie w momentach wystąpienia zdarzeń, co wynika z braku założeń co do kształtu hazardu bazowego. Z kolei model parametryczny PH prezentuje gładką aproksymację tego procesu, wynikającą z przyjęcia teoretycznego rozkładu czasu życia - rozkładu Weibulla. Zbliżony przebieg obu krzywych (trend spadkowy) świadczyłby o tym, że przyjęty rozkład parametryczny dobrze odzwierciedla rzeczywistą strukturę danych empirycznych.
 
+
+# Lista 11
+
+## Zadanie 1
+
+**Dopasowanie modelu(oszacowanie parametrów)**
+
+```{r rozw1, echo = TRUE}
+
+model<-prop.odds(Event(time, cause = status) ~ age +
+                 factor(sex) +
+                 factor(ph.ecog) + 
+                 ph.karno,
+                 data = dane,n.sim=500,profile=1)
+
+```
+
+## Zadanie 2
+
+
+
+Korzystając z poniższych wzorów możemy podać interpretację:
+
+$$
+\theta_0(t) = \frac{1 - S_0(t)}{S_0(t)}
+$$
+
+$$
+\ln\!\left(\frac{\theta_{z_1}(t)}{\theta_{z_2}(t)}\right) = \beta^{T}(z_1 - z_2)
+$$
+$$
+\ln\left({\theta_{z_1}(t)}\right)=\beta^{T}(z_1).
+$$
+
+
+```{r rozw2}
+
+
+b_age = model$gamma["age",]
+b_sex = model$gamma["factor(sex)2",]
+b_karno = model$gamma["ph.karno",]
+
+
+kable(model$gamma, caption = "Tabela otrzymanych $\\beta$ dla modelu
+      proporcjonalnych szans\\label{tab:wsp_propszan}", digits = 5, ,
+      col.names = c("Zmienne",
+                    "$\\beta$"),
+          align = c('l', 'c')
+      )
+
+```
+
+- Zmienna \texttt{age} ma współczynnik $\beta$ = `r b_age`>0, co oznacza, że wraz ze wzrostem wieku rosną \textbf{szanse (odds) wystąpienia zdarzenia do czasu $$t$$} (przy stałych pozostałych zmiennych). Równoważnie: $$\exp(\beta)>1.$$
+
+- Zmienna \texttt{sex} (kategoryczna) ma współczynnik $\beta$ = `r b_sex`>0 dla poziomu porównywanego do poziomu referencyjnego (bazowego). Oznacza to, że w tej grupie \textbf{szanse (odds) zajścia zdarzenia do czasu $$t$$} są mniejsze niż w grupie bazowej, tj. $$\exp(\beta)<1.$$
+
+- Zmienna \texttt{ph.ecog} (kategoryczna) ma współczynniki $$\beta>0$$ dla poszczególnych poziomów w porównaniu do poziomu referencyjnego (np. $$1 \text{ vs } 0,\ 2 \text{ vs } 0,\ 3 \text{ vs } 0$$). Wskazuje to, że osoby z wyższym \texttt{ph.ecog} mają \textbf{większe szanse (odds) wystąpienia zdarzenia do czasu $$t$$} niż osoby z poziomu bazowego, czyli $$\exp(\beta)>1.$$
+
+- Dla zmiennej ciągłej \texttt{ph.karno} otrzymano $\beta$ = `r b_karno`<0 co oznacza, że wraz ze wzrostem \texttt{ph.karno} \textbf{maleją szanse (odds) zajścia zdarzenia do czasu $$t$$} (tj. $$\exp(\beta)<1$$). Jeśli jednak w poprzedniej analizie (Lista 10) współczynnik dla \texttt{ph.karno} był \textbf{nieistotny statystycznie}, to również tutaj wniosek o kierunku efektu należy traktować ostrożnie: przy braku istotności znak współczynnika może zmieniać się między dopasowaniami/modelami i nie powinien być interpretowany jako stabilny efekt.
+
+## Zadanie 3
+
+```{r rozw, fig.cap="Podstawowa funkcja przeżycia i skumulowanego hazardu"}
+
+s <-  predict(model, Z = c(0,0,0,0,0,0))
+
+df <- data.frame(
+  t <- s$time,
+  s0 <- c(s$S0),
+  H0 <- -log(c(s$S0))
+)
+
+
+p1 <- ggplot() +
+  geom_step(data = df, aes(x = t, y = s0,     color = "S0")) +
+  labs(color = "Legenda")+
+  ggtitle("Oszacowanie podstawowej funkcji przeżycia")
+
+p2 <- ggplot() +
+  geom_step(data = df, aes(x = t, y = H0, color = "hazard")) +
+  labs(color = "Legenda")+
+  ggtitle("Oszacowanie podstawowego skumulowanego Hazardu")
+
+p1 / p2
+
+```
+
+
+## Zadanie 4
+
+```{r model_z_listy_10}
+
+model_l10 <- coxph(Surv(time, status) ~ age + factor(sex) + factor(ph.ecog) + ph.karno,
+             data = dane, ties = "efron")
+
+
+```
+
+
+```{r zad4}
+
+model<-prop.odds(Event(time, cause = status) ~ age + factor(sex) + factor(ph.ecog) + ph.karno,
+             data = dane,n.sim=500,profile=1)
+
+z1 <- c(70 - mean_wiek, 1, 1, 0, 0, 90 - mean_ph_karno)
+z2 <- c(70 - mean_wiek, 1, 0, 1, 0, 90 - mean_ph_karno)
+
+nd <- data.frame(
+  age = c(70, 70)-mean_wiek,
+  sex = factor(c(2, 2), levels = levels(factor(dane$sex))),     
+  ph.ecog = factor(c(1, 2), levels = levels(factor(dane$ph.ecog))),
+  ph.karno = c(90, 90)-mean_ph_karno
+)
+
+
+s1 <-  predict(model, Z = z1)
+s2 <-  predict(model, Z = z2) 
+
+s_l10 <- survfit(model_l10,nd)
+
+t_10 <- s_l10$time
+S_l10 <- as.matrix(s_l10$surv)   
+
+H_l10 <- -log(S_l10)              
+
+df1_l10 <- data.frame(
+  t = t_10,
+  S0 = S_l10[,1],
+  H = H_l10[,1]
+)
+df2_l10 <- data.frame(
+  t = t_10,
+  S0 = S_l10[,2],
+  H = H_l10[,2]
+)
+
+df1 <- data.frame(
+  t = s1$time,
+  S0  = c(s1$S0),
+  H = -log(c(s1$S0))
+)
+
+df2 <- data.frame(
+  t = s2$time,
+  S0  = c(s2$S0),
+  H =  -log(c(s2$S0)) 
+)
+```
+
+
+```{r  wykres_hazardu_p1}
+p1_H <- ggplot() +
+  geom_step(data = df1,    aes(x = t, y = H, color = "H (model 1)"),linewidth = 1.1) +
+  geom_step(data = df1_l10, aes(x = t, y = H, color = "H (model l10)"),linewidth = 1.1)+
+  ggtitle("Funkcja H dla pacjenta 1")
+```
+
+```{r  wykres_loghazardu_p1}
+p1_logH <- ggplot() +
+  geom_step(data = df1,    aes(x = t, y = log(H), color = "log(H) (model 1)"),linewidth = 1.1) +
+  geom_step(data = df1_l10, aes(x = t, y = log(H), color = "log(H) (model lista_10)"),linewidth = 1.1)+
+  ggtitle("Funkcja log(H) \n dla pacjenta 1")
+```
+
+```{r  wykres_hazardu_p2}
+p2_H <- ggplot() +
+  geom_step(data = df2,    aes(x = t, y = H, color = "H (model 1)"),linewidth = 1.1) +
+  geom_step(data = df2_l10, aes(x = t, y = H, color = "H (model l10)"),linewidth = 1.1)+
+  ggtitle("Funkcja H dla pacjenta 2")
+```
+
+```{r  wykres_loghazardu, fig.cap="wykresy-skumulowanego-hazardu"}
+p2_logH <-ggplot() +
+  geom_step(data = df2,    aes(x = t, y = log(H), color = "log(H) (model 1)"),linewidth = 1.1) +
+  geom_step(data = df2_l10, aes(x = t, y = log(H), color = "log(H) (model lista_10)"),linewidth = 1.1)+
+  ggtitle("Funkcja log(H) \n dla pacjenta 2")
+
+(p1_H | p2_H) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+
+```
+
+W przypadku pacjenta 1  widać, że skumulowany hazard \ref{fig:wykres_loghazardu} estymowany w modelu proporcjonalnych szans rośnie wyraźnie szybciej niż w modelu proporcjonalnych hazardów Coxa. W konsekwencji model proporcjonalnych szans implikuje dla tego pacjenta mniej korzystną prognozę przeżycia, tj. większe narastające ryzyko zdarzenia w czasie, w porównaniu z modelem Coxa.
+
+Dla pacjenta 2 krzywe \ref{fig:wykres_loghazardu} skumulowanego hazardu są do około 625 dnia bardzo zbliżone, natomiast w dalszej części obserwacji zaczynają się rozchodzić. Różnice między predykcjami modeli narastają wraz z upływem czasu, jednak interpretację końcowego fragmentu należy traktować z ostrożnością — w ogonie rozkładu zwykle pozostaje niewiele obserwacji, a pojedyncze zdarzenia mogą powodować relatywnie duże, skokowe zmiany estymowanych krzywych.
+
+```{r logarytmy_funkcji,fig.cap="wykresy-log(skumulowany hazard)"}
+
+(p1_logH | p2_logH)+
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+```
+Analogiczne wnioski możemy wysnuć także na podstawie wykresu \ref{fig:logarytmy_funkcji} logarytmów  tych funkcji, ponieważ logarytm jest funkcją ściśle rosnącą i dla dodatnich wartości zachowuje relacje.
+
+## Zadanie 5
+
+
+```{r wykresy_przeżycia, fig.cap="wykresy funkcji przeżycia dla pacjentów"}
+
+ggplot()+
+  geom_step(data = df1, aes(x = t, y = S0, color = "S01"),linewidth = 1.1)+
+  geom_step(data = df2, aes(x = t, y = S0, color = "S02"),linewidth = 1.1)
+
+
+```
+Z wykresu \ref{fig:wykresy_przeżycia} widać, że funkcja przeżycia dla pacjenta 2 maleje znacznie szybciej, co jest zgodne z charakterystyką danych.
+
+Prawdopodobieństwa tego ,że czas życia będzie większy od 300 , to $$S_{0}2(300)$$ i $$S_{0}1(300)$$
+
+Dla pacjenta 1 to prawdopodobieństwo wynosi:
+
+```{r dzielny_pacjent_1}
+
+i <- findInterval(300, s1$time)   
+S_300 <- if (i == 0) 1 else s1$S0[i]
+
+
+
+```
+**`r round(S_300,4)`**
+
+Jest to spora szansa.
+
+A na liście 10 otrzymaliśmy:
+
+```{r dzielny_pacjent_1_l10}
+
+i <- findInterval(300, t_10)   
+S_300 <- if (i == 0) 1 else S_l10[,1][i]
+
+
+```
+
+**`r round(S_300,4)`**
+
+Prawdopodobieństwo dla modelu proporcjonalnych hazardów coxa jest większe.
+
+Dla pacjenta 2 to prawdopodobieństwo wynosi:
+
+```{r dzielny_pacjent_2}
+
+i <- findInterval(300, s2$time)   
+S_300 <- if (i == 0) 1 else s2$S0[i]
+
+
+```
+
+**`r round(S_300,4)`**
+
+W stosunku do pacjenta pierwszego widać spadek aż o 20 punktów procentowych na liście 11.
+
+
+
+```{r dzielny_pacjent_2_l10}
+
+i <- findInterval(300, t_10)   
+S_300 <- if (i == 0) 1 else S_l10[,2][i]
+
+
+```
+
+**`r round(S_300,4)`**
+Prawdopodobieństwo dla modelu proporcjonalnych hazardów coxa jest większe.
+
+## Zadanie 6
+
+```{r zad6, fig.cap="wykresy funkcji przeżycia"}
+
+ggplot()+
+  geom_step(data = df1, aes(x = t, y = S0, color = "S01"),linewidth = 1.1)+
+  geom_step(data = df1_l10, aes(x = t, y = S0, color = "S01_l10"),linewidth = 1.1)
+
+```
+
+Z wykresu \ref{fig:zad6} wynika, że estymowana funkcja przeżycia w modelu proporcjonalnych hazardów Coxa przyjmuje wyższe wartości niż w rozważanym modelu proporcjonalnych szans. Oznacza to, że model Coxa przewiduje korzystniejsze rokowanie (większe prawdopodobieństwo przeżycia od czasu 
+t) w porównaniu z modelem proporcjonalnych szans.
+
+
+
+
+\newpage
+
 # Lista 12
 
 ## Zadanie 1
 
 W tym zadaniu omawiamy model **przyspieszonego czasu awarii**
 
-```{r dane}
+```{r dane_lista12}
+
+
 # data import
 data("lung")
 
@@ -606,9 +895,10 @@ dane[, 6] <- dane[, 6] - mean_ph_karno
 
 dane$status <-  dane$status-1
 
+
 ```
 
-```{r model, echo = TRUE}
+```{r model12, echo = TRUE}
 model <- survreg(Surv(time, status)~age +
                  as.factor(sex) +
                  as.factor(ph.ecog) +
@@ -621,7 +911,9 @@ model <- survreg(Surv(time, status)~age +
 ### a)
 
 
-```{r zad1a}
+```{r zad1a12}
+
+
 
 tab <- summary(model)$table
 
@@ -634,13 +926,13 @@ p_val2 <- anova(model_noage, model)$"Pr(>Chi)"[[2]]
 
 ```
 
-Dla zmiennej \textit{age} w teście Walda otrzymujemy $p_{value}$ = `r p_val1` $> 0.05$, co oznacza, że przy poziomie istotności $\alpha = 0.05$ nie ma podstaw do odrzucenia hipotezy $H_0:\beta_{\textit{age}}=0$, a więc zmienna jest nieistotna statystycznie.
+Dla zmiennej \textit{age} w teście Walda otrzymujemy $p_{value}$ = `r p_val1` $> 0.05$, co oznacza, że przy poziomie istotności $\alpha = 0.05$ nie ma podstaw do odrzucenia hipotezy $H_0:\beta_{\textit{age}}=0$, a więc brak jest dowodów na istotność tej zmiennej w modelu.
 
 Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ =`r p_val2`, również $> 0.05$, co wskazuje, że uwzględnienie zmiennej \textit{age} nie powoduje istotnej zmiany w dopasowanym modelu.
 
 ### b)
 
-```{r zad2a}
+```{r zad2a12}
 
 p_val1 <- tab["as.factor(sex)2",]["p"]
 
@@ -658,24 +950,24 @@ Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ = `r p_val2` $< 0.05$
 ### c)
 
 
-```{r rozwc}
+```{r rozwc12}
 
 model_noecog <- update(model, . ~ . - as.factor(ph.ecog))
 p_val <- anova(model_noecog, model)$"Pr(>Chi)"[[2]]
 
 ```
 
-W teście ilorazu wiarygodności otrzymano $p_{value}$ = `r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
+W teście ilorazu wiarygodności otrzymano $p_{value}$ =`r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
 $H_0:\beta_{\textit{ph.ecog}=1}=\beta_{\textit{ph.ecog}=2}=\beta_{\textit{ph.ecog}=3}=0$
 
-(tj. brak wpływu poziomu ECOG na czas do zdarzenia względem poziomu bazowego, np. ECOG = 0). Oznacza to, że zmienna \textit{ph.ecog} jest istotna w przyjętym modelu AFT, a poziom sprawności (ECOG) istotnie różnicuje czas przeżycia pacjentów.
+(tj. brak wpływu poziomu ECOG na czas do zdarzenia względem poziomu bazowego, np. ECOG = 0). Oznacza to, że zmienna \textit{ph.ecog} jest istotna w przyjętym modelu AFT, a poziom sprawności (ECOG) istotnie różnicuje czas przeżycia/czas awarii pacjentów.
 
 \newpage
 
 ## Zadanie 2
 
 
-```{r model_podst_coxph,echo = TRUE}
+```{r model_podst_coxph12,echo = TRUE}
 
 model_podst <- coxph(Surv(time, status)~age +
                        as.factor(sex) +
@@ -688,7 +980,7 @@ model_podst <- coxph(Surv(time, status)~age +
 ### a)
 
 
-```{r ageWald}
+```{r ageWald12}
 
 tab <- summary(model_podst)$coefficients
 
@@ -707,7 +999,7 @@ Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ =`r p_val2`, równie�
 ### b)
 
 
-```{r sexWald}
+```{r sexWald12}
 
 tab <- summary(model_podst)$coefficients
 
@@ -725,14 +1017,14 @@ Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ = `r p_val2` $< 0.05$
 
 ### c)
 
-```{r rozwc2}
+```{r rozwc212}
 
 model_noecog <- update(model, . ~ . - as.factor(ph.ecog))
 p_val <- anova(model_noecog, model)$"Pr(>Chi)"[[2]]
 
 ```
 
-W teście ilorazu wiarygodności otrzymano $p_{value}$ = `r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
+W teście ilorazu wiarygodności otrzymano $p_{value}$ =`r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
 $H_0:\beta_{\textit{ph.ecog}=1}=\beta_{\textit{ph.ecog}=2}=\beta_{\textit{ph.ecog}=3}=0$
 
 (tj. brak wpływu poziomu ECOG na czas do zdarzenia względem poziomu bazowego, np. ECOG = 0). Oznacza to, że zmienna \textit{ph.ecog} jest istotna w przyjętym modelu proporcjonalnych hazardów Coxa, a poziom sprawności (ECOG) istotnie różnicuje czas przeżycia/czas awarii pacjentów.
@@ -741,7 +1033,7 @@ $H_0:\beta_{\textit{ph.ecog}=1}=\beta_{\textit{ph.ecog}=2}=\beta_{\textit{ph.eco
 
 ## Zadanie 3
 
-```{r model_przysp,echo = TRUE}
+```{r model_przysp12,echo = TRUE}
 
 m <- survreg(Surv(time, status)~age +
              as.factor(sex) +
@@ -751,19 +1043,18 @@ m <- survreg(Surv(time, status)~age +
              dist = "weibull")
 
 ```
+
 ### a)
 
 
 **KROK 1**
 
-```{r mEliminacji_krk1,echo = TRUE}
+```{r mEliminacji_krk112,echo = TRUE}
 age <- anova(update(m, . ~ . - age), m)[["Pr(>Chi)"]][2]  
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
 ph.karno <- anova(update(m, . ~ . - ph.karno), m)[["Pr(>Chi)"]][2]
-```
 
-```{r p_test_iw_1}
 p_values <- data.frame(
   age = age,
   sex = sex,
@@ -771,14 +1062,15 @@ p_values <- data.frame(
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model AFT) - krok 1 \\label{tab:p_test_iw_1}")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 1 AFT")
+
 ```
 
-Po przeanalizowaniu wyników zawartych w tabeli \ref{tab:p_test_iw_1} zauważamy, że zmienna \textit{age} ma najwyższe $p$-value spośród rozważanych zmiennych ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu. Z tego powodu usuwamy ją.
+Usuwamy zmienną \textit{age}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
 
 
 **KROK 2**
-```{r krkr2, echo = TRUE}
+```{r krkr212, echo = TRUE}
 
 m <- survreg(Surv(time, status)~as.factor(sex) +
                   as.factor(ph.ecog) +
@@ -789,22 +1081,20 @@ m <- survreg(Surv(time, status)~as.factor(sex) +
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
 ph.karno <- anova(update(m, . ~ . - ph.karno), m)[["Pr(>Chi)"]][2]
-```
 
-```{r p_test_IW_2}
 p_values <- data.frame(
   sex = sex,
   ph.ecog = ph.ecog,
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model AFT) - krok 2 \\label{tab:p_test_iw_2}")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW kork 2 AFT")
 ```
 
-Po przeanalizowaniu wyników zawartych w tabeli \ref{tab:p_test_iw_2} zauważamy, że zmienna \textit{ph.karno} ma najwyższe $p$-value spośród rozważanych zmiennych ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu. Z tego powodu usuwamy ją.
+Usuwamy zmienną \textit{ph.karno}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
 
 **KROK 3**
-```{r krkr3}
+```{r krkr312}
 
 
 m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
@@ -813,22 +1103,21 @@ m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
 
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
-```
 
-```{r p_test_iw_3}
 p_values <- data.frame(
   sex = sex,
   ph.ecog = ph.ecog
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model AFT) - krok 3 \\label{tab:p_test_iw_3}")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok3 AFT")
+
 
 ```
-Z tabeli \ref{tab:p_test_iw_3} można odczytać, że dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy.
+Dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy
 
 ### b)
 
-```{r krk1AIC,echo = TRUE}
+```{r krk1AIC12,echo = TRUE}
 
 m <- survreg(Surv(time, status)~age +
                   as.factor(sex) + 
@@ -839,7 +1128,7 @@ m <- survreg(Surv(time, status)~age +
  
 ```
 **KROK 1**
-```{r aic_1}
+```{r krk11AIC12}
 
 dt <- data.frame(
 wszystko = AIC(m),
@@ -849,15 +1138,15 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC (model AFT) - krok 1 \\label{tab:aic_1}")
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 1 AFT")
 
 ```
 
-Obserwując wyniki zawarte w tabeli \ref{tab:aic_1} zauważamy, że po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
+Ponieważ po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
 
 **KROK 2**
 
-```{r krk2AIC}
+```{r krk2AIC12}
 
 m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,
@@ -870,15 +1159,15 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC (model AFT) - krok 2 \\label{tab:krk2AIC}")
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 2 AFT")
 
 ```
 
-Obserwując wyniki zawarte w tabeli \ref{tab:krk2AIC} zauważamy, że po usunięciu zmiennej \textit{ph.karno} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{ph.karno} za lepiej dopasowany i dlatego \textit{ph.karno} zostaje usunięta z modelu.
+Ponieważ po usunięciu zmiennej \textit{ph.karno} kryterium AIC osiąga najniższą wartość, wybieramy model bez \textit{ph.karno} jako lepszy.
 
 **KROK 3**
 
-```{r krk3ACI}
+```{r krk3ACI12}
 
 
 m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
@@ -891,40 +1180,42 @@ bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],
 bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC (model AFT)  - krok 3 \\label{tab:krk3AIC}") 
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 3 AFT") 
+
 
 
 ```
 
-Analizując wyniki zawarte w tabeli \ref{tab:krk3AIC} dochodzimy do wniosku, że usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
+Usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
 
 
 ### c)
 
-Tutaj korzystamy z funkcji step, która automatyzuje proces przedstawiony powyżej.
+Tutaj już korzystam z funkcji step, która autmatyzuje proces przedstawiony powyżej.
 
-```{r BICsteps,echo = TRUE}
 
-m <- survreg(Surv(time, status)~age + as.factor(sex) + 
-               as.factor(ph.ecog) + ph.karno,
+
+```{r BICsteps12,echo = TRUE}
+
+m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,
                  dist = "weibull")
 
 n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
+
+kable(m_bic$anova, caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu AFT")
+
+
 ```
 
-```{r bic_aft_tab}
-kable(m_bic$anova)
-```
 
-
-Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku, jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie, jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony \textit{age}, a następnie \textit{ph.karno}.
+Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony age a potem ph.karno.
 
 ## Zadanie 4
 
-```{r model_coxph,echo = TRUE}
+```{r model_coxph12,echo = TRUE}
 
 m <- coxph(Surv(time, status)~age +
              as.factor(sex) +
@@ -939,14 +1230,12 @@ m <- coxph(Surv(time, status)~age +
 
 **KROK 1**
 
-```{r mEliminacji_krk1_coxph,echo = TRUE}
+```{r mEliminacji_krk1_coxph12,echo = TRUE}
 age <- anova(update(m, . ~ . - age), m)$"Pr(>|Chi|)"[2]  
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2]   
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2]  
 ph.karno <- anova(update(m, . ~ . - ph.karno), m)$"Pr(>|Chi|)"[2] 
-```
 
-```{r p_cox_iw_1}
 p_values <- data.frame(
   age = age,
   sex = sex,
@@ -954,15 +1243,15 @@ p_values <- data.frame(
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model Coxa) - krok 1 \\label{tab:p_cox_iw_1}")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 1 coxph")
 
 ```
 
-Po przeanalizowaniu wyników zawartych w tabeli \ref{tab:p_cox_iw_1} zauważamy, że zmienna \textit{age} ma najwyższe $p$-value spośród rozważanych zmiennych ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu. Z tego powodu usuwamy ją.
+Usuwamy zmienną \textit{age}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
 
 
 **KROK 2**
-```{r krkr2_cpph, echo = TRUE}
+```{r krkr2_cpph12, echo = TRUE}
 
 m <- coxph(Surv(time, status)~as.factor(sex) +
                   as.factor(ph.ecog) +
@@ -972,46 +1261,42 @@ m <- coxph(Surv(time, status)~as.factor(sex) +
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2]  
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2]  
 ph.karno <- anova(update(m, . ~ . - ph.karno), m)$"Pr(>|Chi|)"[2] 
-```
 
-```{r p_cox_iw_2}
 p_values <- data.frame(
   sex = sex,
   ph.ecog = ph.ecog,
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model Coxa) - krok 2 \\label{tab:p_cox_iw_2}")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 2 coxph")
 ```
 
-Po przeanalizowaniu wyników zawartych w tabeli \ref{tab:p_cox_iw_2} zauważamy, że zmienna \textit{ph.karno} ma najwyższe $p$-value spośród rozważanych zmiennych ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu. Z tego powodu usuwamy ją.
+Usuwamy zmienną \textit{ph.karno}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
 
 **KROK 3**
-```{r krkr3_coxph, echo = TRUE}
+```{r krkr3_coxph12}
+
+
 m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
                  data = dane)
 
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2] 
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2] 
-
-```
-
-```{r p_cox_iw_3}
+print(sex)
 p_values <- data.frame(
   sex = sex,
   ph.ecog = ph.ecog
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model Coxa) - krok 3 \\label{tab:p_cox_iw_3}")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 3 coxph")
 
 
 ```
-
-Analizując wyniki zawarte w tabeli \ref{tab:p_cox_iw_3} zauważamy, że dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy.
+Dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy
 
 ### b)
 
-```{r krk1AIC_coxph,echo = TRUE}
+```{r krk1AIC_coxph12,echo = TRUE}
 
 m <- coxph(Surv(time, status)~age +
                   as.factor(sex) + 
@@ -1021,7 +1306,7 @@ m <- coxph(Surv(time, status)~age +
  
 ```
 **KROK 1**
-```{r krk11AIC_coxph}
+```{r krk11AIC_coxph12}
 
 dt <- data.frame(
 wszystko = AIC(m),
@@ -1031,15 +1316,15 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC (model Coxa)  - krok 1 \\label{tab:krk11AIC_coxph}")
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 1 coxph")
 
 ```
 
-Obserwując wyniki zawarte w tabeli \ref{tab:krk11AIC_coxph} zauważamy, że po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
+Ponieważ po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
 
 **KROK 2**
 
-```{r krk2AIC_ccoxph}
+```{r krk2AIC_ccoxph12}
 
 m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane)
@@ -1051,15 +1336,15 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC (model Coxa)  - krok 2 \\label{tab:krk2AIC_ccoxph}")
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 2 coxph")
 
 ```
 
-Obserwując wyniki zawarte w tabeli \ref{tab:krk2AIC_ccoxph} zauważamy, że po usunięciu zmiennej \textit{ph.karno} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{ph.karno} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
+Ponieważ po usunięciu zmiennej \textit{ph.karno} kryterium AIC osiąga najniższą wartość, wybieramy model bez \textit{ph.karno} jako lepszy.
 
 **KROK 3**
 
-```{r krk3AIC_coxph}
+```{r krk3ACI_coxph12}
 
 
 m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
@@ -1071,20 +1356,22 @@ bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],
 bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 , caption = "Wartości AIC (model Coxa)  - krok 3 \\label{tab:krk3AIC_coxph}") 
+kable(dt,digits = 3 ,caption = "Wartości AIC krok 3 coxph") 
 
 
 
 ```
 
-Analizując wyniki zawarte w tabeli \ref{tab:krk3AIC_coxph} dochodzimy do wniosku, że usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
+Usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
 
 
 ### c)
 
-Tutaj korzystamy z funkcji step, która automatyzuje proces przedstawiony powyżej.
+Tutaj już korzystam z funkcji step, która autmatyzuje proces przedstawiony powyżej.
 
-```{r BICstep_coxphs,echo = TRUE}
+
+
+```{r BICstep_coxphs12,echo = TRUE}
 
 m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane)
@@ -1093,10 +1380,10 @@ n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
 
-kable(m_bic$anova)
+kable(m_bic$anova, caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu propocjonalnych hazardów Coxa")
 
 
 ```
 
 
-Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony \textit{age} a potem \textit{ph.karno}
+Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony age a potem ph.karno.
