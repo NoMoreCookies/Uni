@@ -1189,7 +1189,7 @@ m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
 ```
 
 ```{r bic_aft_tab}
-kable(m_bic$anova)
+kable(m_bic$anova, caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu AFT")
 ```
 
 
@@ -1365,11 +1365,13 @@ m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.kar
 n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
+```
 
-kable(m_bic$anova)
-
+```{r tab_bic_cox}
+kable(m_bic$anova, 
+      caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu propocjonalnych hazardów Coxa")
 
 ```
 
 
-Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony \textit{age} a potem \textit{ph.karno}
+Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony \textit{age} a potem \textit{ph.karno}.
