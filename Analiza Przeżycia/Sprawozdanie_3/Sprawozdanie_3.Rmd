@@ -860,9 +860,7 @@ t) w porównaniu z modelem proporcjonalnych szans.
 
 W tym zadaniu omawiamy model **przyspieszonego czasu awarii**
 
-```{r dane_lista12}
-
-
+```{r dane}
 # data import
 data("lung")
 
@@ -881,10 +879,9 @@ dane[, 6] <- dane[, 6] - mean_ph_karno
 
 dane$status <-  dane$status-1
 
-
 ```
 
-```{r model12, echo = TRUE}
+```{r model, echo = TRUE}
 model <- survreg(Surv(time, status)~age +
                  as.factor(sex) +
                  as.factor(ph.ecog) +
@@ -897,9 +894,7 @@ model <- survreg(Surv(time, status)~age +
 ### a)
 
 
-```{r zad1a12}
-
-
+```{r zad1a}
 
 tab <- summary(model)$table
 
@@ -912,13 +907,13 @@ p_val2 <- anova(model_noage, model)$"Pr(>Chi)"[[2]]
 
 ```
 
-Dla zmiennej \textit{age} w teście Walda otrzymujemy $p_{value}$ = `r p_val1` $> 0.05$, co oznacza, że przy poziomie istotności $\alpha = 0.05$ nie ma podstaw do odrzucenia hipotezy $H_0:\beta_{\textit{age}}=0$, a więc brak jest dowodów na istotność tej zmiennej w modelu.
+Dla zmiennej \textit{age} w teście Walda otrzymujemy $p_{value}$ = `r p_val1` $> 0.05$, co oznacza, że przy poziomie istotności $\alpha = 0.05$ nie ma podstaw do odrzucenia hipotezy $H_0:\beta_{\textit{age}}=0$, a więc zmienna jest nieistotna statystycznie.
 
 Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ =`r p_val2`, również $> 0.05$, co wskazuje, że uwzględnienie zmiennej \textit{age} nie powoduje istotnej zmiany w dopasowanym modelu.
 
 ### b)
 
-```{r zad2a12}
+```{r zad2a}
 
 p_val1 <- tab["as.factor(sex)2",]["p"]
 
@@ -936,24 +931,24 @@ Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ = `r p_val2` $< 0.05$
 ### c)
 
 
-```{r rozwc12}
+```{r rozwc}
 
 model_noecog <- update(model, . ~ . - as.factor(ph.ecog))
 p_val <- anova(model_noecog, model)$"Pr(>Chi)"[[2]]
 
 ```
 
-W teście ilorazu wiarygodności otrzymano $p_{value}$ =`r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
+W teście ilorazu wiarygodności otrzymano $p_{value}$ = `r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
 $H_0:\beta_{\textit{ph.ecog}=1}=\beta_{\textit{ph.ecog}=2}=\beta_{\textit{ph.ecog}=3}=0$
 
-(tj. brak wpływu poziomu ECOG na czas do zdarzenia względem poziomu bazowego, np. ECOG = 0). Oznacza to, że zmienna \textit{ph.ecog} jest istotna w przyjętym modelu AFT, a poziom sprawności (ECOG) istotnie różnicuje czas przeżycia/czas awarii pacjentów.
+(tj. brak wpływu poziomu ECOG na czas do zdarzenia względem poziomu bazowego, np. ECOG = 0). Oznacza to, że zmienna \textit{ph.ecog} jest istotna w przyjętym modelu AFT, a poziom sprawności (ECOG) istotnie różnicuje czas przeżycia pacjentów.
 
 \newpage
 
 ## Zadanie 2
 
 
-```{r model_podst_coxph12,echo = TRUE}
+```{r model_podst_coxph,echo = TRUE}
 
 model_podst <- coxph(Surv(time, status)~age +
                        as.factor(sex) +
@@ -966,7 +961,7 @@ model_podst <- coxph(Surv(time, status)~age +
 ### a)
 
 
-```{r ageWald12}
+```{r ageWald}
 
 tab <- summary(model_podst)$coefficients
 
@@ -985,7 +980,7 @@ Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ =`r p_val2`, równie�
 ### b)
 
 
-```{r sexWald12}
+```{r sexWald}
 
 tab <- summary(model_podst)$coefficients
 
@@ -1003,14 +998,14 @@ Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ = `r p_val2` $< 0.05$
 
 ### c)
 
-```{r rozwc212}
+```{r rozwc2}
 
 model_noecog <- update(model, . ~ . - as.factor(ph.ecog))
 p_val <- anova(model_noecog, model)$"Pr(>Chi)"[[2]]
 
 ```
 
-W teście ilorazu wiarygodności otrzymano $p_{value}$ =`r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
+W teście ilorazu wiarygodności otrzymano $p_{value}$ = `r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
 $H_0:\beta_{\textit{ph.ecog}=1}=\beta_{\textit{ph.ecog}=2}=\beta_{\textit{ph.ecog}=3}=0$
 
 (tj. brak wpływu poziomu ECOG na czas do zdarzenia względem poziomu bazowego, np. ECOG = 0). Oznacza to, że zmienna \textit{ph.ecog} jest istotna w przyjętym modelu proporcjonalnych hazardów Coxa, a poziom sprawności (ECOG) istotnie różnicuje czas przeżycia/czas awarii pacjentów.
@@ -1019,7 +1014,7 @@ $H_0:\beta_{\textit{ph.ecog}=1}=\beta_{\textit{ph.ecog}=2}=\beta_{\textit{ph.eco
 
 ## Zadanie 3
 
-```{r model_przysp12,echo = TRUE}
+```{r model_przysp,echo = TRUE}
 
 m <- survreg(Surv(time, status)~age +
              as.factor(sex) +
@@ -1029,18 +1024,19 @@ m <- survreg(Surv(time, status)~age +
              dist = "weibull")
 
 ```
-
 ### a)
 
 
 **KROK 1**
 
-```{r mEliminacji_krk112,echo = TRUE}
+```{r mEliminacji_krk1,echo = TRUE}
 age <- anova(update(m, . ~ . - age), m)[["Pr(>Chi)"]][2]  
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
 ph.karno <- anova(update(m, . ~ . - ph.karno), m)[["Pr(>Chi)"]][2]
+```
 
+```{r p_test_iw_1}
 p_values <- data.frame(
   age = age,
   sex = sex,
@@ -1048,15 +1044,14 @@ p_values <- data.frame(
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 1 AFT")
-
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model AFT) - krok 1 \\label{tab:p_test_iw_1}")
 ```
 
-Usuwamy zmienną \textit{age}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
+Po przeanalizowaniu wyników zawartych w tabeli \ref{tab:p_test_iw_1} zauważamy, że zmienna \textit{age} ma najwyższe $p$-value spośród rozważanych zmiennych ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu. Z tego powodu usuwamy ją.
 
 
 **KROK 2**
-```{r krkr212, echo = TRUE}
+```{r krkr2, echo = TRUE}
 
 m <- survreg(Surv(time, status)~as.factor(sex) +
                   as.factor(ph.ecog) +
@@ -1067,20 +1062,22 @@ m <- survreg(Surv(time, status)~as.factor(sex) +
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
 ph.karno <- anova(update(m, . ~ . - ph.karno), m)[["Pr(>Chi)"]][2]
+```
 
+```{r p_test_IW_2}
 p_values <- data.frame(
   sex = sex,
   ph.ecog = ph.ecog,
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW kork 2 AFT")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model AFT) - krok 2 \\label{tab:p_test_iw_2}")
 ```
 
-Usuwamy zmienną \textit{ph.karno}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
+Po przeanalizowaniu wyników zawartych w tabeli \ref{tab:p_test_iw_2} zauważamy, że zmienna \textit{ph.karno} ma najwyższe $p$-value spośród rozważanych zmiennych ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu. Z tego powodu usuwamy ją.
 
 **KROK 3**
-```{r krkr312}
+```{r krkr3}
 
 
 m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
@@ -1089,21 +1086,22 @@ m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
 
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
+```
 
+```{r p_test_iw_3}
 p_values <- data.frame(
   sex = sex,
   ph.ecog = ph.ecog
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok3 AFT")
-
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model AFT) - krok 3 \\label{tab:p_test_iw_3}")
 
 ```
-Dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy
+Z tabeli \ref{tab:p_test_iw_3} można odczytać, że dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy.
 
 ### b)
 
-```{r krk1AIC12,echo = TRUE}
+```{r krk1AIC,echo = TRUE}
 
 m <- survreg(Surv(time, status)~age +
                   as.factor(sex) + 
@@ -1114,7 +1112,7 @@ m <- survreg(Surv(time, status)~age +
  
 ```
 **KROK 1**
-```{r krk11AIC12}
+```{r aic_1}
 
 dt <- data.frame(
 wszystko = AIC(m),
@@ -1124,15 +1122,15 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC krok 1 AFT")
+kable(dt,digits = 3 ,caption = "Wartości AIC (model AFT) - krok 1 \\label{tab:aic_1}")
 
 ```
 
-Ponieważ po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
+Obserwując wyniki zawarte w tabeli \ref{tab:aic_1} zauważamy, że po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
 
 **KROK 2**
 
-```{r krk2AIC12}
+```{r krk2AIC}
 
 m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane,
@@ -1145,15 +1143,15 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC krok 2 AFT")
+kable(dt,digits = 3 ,caption = "Wartości AIC (model AFT) - krok 2 \\label{tab:krk2AIC}")
 
 ```
 
-Ponieważ po usunięciu zmiennej \textit{ph.karno} kryterium AIC osiąga najniższą wartość, wybieramy model bez \textit{ph.karno} jako lepszy.
+Obserwując wyniki zawarte w tabeli \ref{tab:krk2AIC} zauważamy, że po usunięciu zmiennej \textit{ph.karno} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{ph.karno} za lepiej dopasowany i dlatego \textit{ph.karno} zostaje usunięta z modelu.
 
 **KROK 3**
 
-```{r krk3ACI12}
+```{r krk3ACI}
 
 
 m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
@@ -1166,42 +1164,40 @@ bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],
 bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC krok 3 AFT") 
-
+kable(dt,digits = 3 ,caption = "Wartości AIC (model AFT)  - krok 3 \\label{tab:krk3AIC}") 
 
 
 ```
 
-Usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
+Analizując wyniki zawarte w tabeli \ref{tab:krk3AIC} dochodzimy do wniosku, że usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
 
 
 ### c)
 
-Tutaj już korzystam z funkcji step, która autmatyzuje proces przedstawiony powyżej.
+Tutaj korzystamy z funkcji step, która automatyzuje proces przedstawiony powyżej.
 
+```{r BICsteps,echo = TRUE}
 
-
-```{r BICsteps12,echo = TRUE}
-
-m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+m <- survreg(Surv(time, status)~age + as.factor(sex) + 
+               as.factor(ph.ecog) + ph.karno,
                  data = dane,
                  dist = "weibull")
 
 n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
+```
 
-kable(m_bic$anova, caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu AFT")
-
-
+```{r bic_aft_tab}
+kable(m_bic$anova)
 ```
 
 
-Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony age a potem ph.karno.
+Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku, jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie, jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony \textit{age}, a następnie \textit{ph.karno}.
 
 ## Zadanie 4
 
-```{r model_coxph12,echo = TRUE}
+```{r model_coxph,echo = TRUE}
 
 m <- coxph(Surv(time, status)~age +
              as.factor(sex) +
@@ -1216,12 +1212,14 @@ m <- coxph(Surv(time, status)~age +
 
 **KROK 1**
 
-```{r mEliminacji_krk1_coxph12,echo = TRUE}
+```{r mEliminacji_krk1_coxph,echo = TRUE}
 age <- anova(update(m, . ~ . - age), m)$"Pr(>|Chi|)"[2]  
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2]   
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2]  
 ph.karno <- anova(update(m, . ~ . - ph.karno), m)$"Pr(>|Chi|)"[2] 
+```
 
+```{r p_cox_iw_1}
 p_values <- data.frame(
   age = age,
   sex = sex,
@@ -1229,15 +1227,15 @@ p_values <- data.frame(
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 1 coxph")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model Coxa) - krok 1 \\label{tab:p_cox_iw_1}")
 
 ```
 
-Usuwamy zmienną \textit{age}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
+Po przeanalizowaniu wyników zawartych w tabeli \ref{tab:p_cox_iw_1} zauważamy, że zmienna \textit{age} ma najwyższe $p$-value spośród rozważanych zmiennych ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu. Z tego powodu usuwamy ją.
 
 
 **KROK 2**
-```{r krkr2_cpph12, echo = TRUE}
+```{r krkr2_cpph, echo = TRUE}
 
 m <- coxph(Surv(time, status)~as.factor(sex) +
                   as.factor(ph.ecog) +
@@ -1247,42 +1245,46 @@ m <- coxph(Surv(time, status)~as.factor(sex) +
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2]  
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2]  
 ph.karno <- anova(update(m, . ~ . - ph.karno), m)$"Pr(>|Chi|)"[2] 
+```
 
+```{r p_cox_iw_2}
 p_values <- data.frame(
   sex = sex,
   ph.ecog = ph.ecog,
   ph.karno = ph.karno
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 2 coxph")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model Coxa) - krok 2 \\label{tab:p_cox_iw_2}")
 ```
 
-Usuwamy zmienną \textit{ph.karno}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
+Po przeanalizowaniu wyników zawartych w tabeli \ref{tab:p_cox_iw_2} zauważamy, że zmienna \textit{ph.karno} ma najwyższe $p$-value spośród rozważanych zmiennych ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu. Z tego powodu usuwamy ją.
 
 **KROK 3**
-```{r krkr3_coxph12}
-
-
+```{r krkr3_coxph, echo = TRUE}
 m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
                  data = dane)
 
 sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2] 
 ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2] 
-print(sex)
+
+```
+
+```{r p_cox_iw_3}
 p_values <- data.frame(
   sex = sex,
   ph.ecog = ph.ecog
 )
 
-kable(p_values,digits = 3 ,caption = "Wartości p testu IW krok 3 coxph")
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW (model Coxa) - krok 3 \\label{tab:p_cox_iw_3}")
 
 
 ```
-Dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy
+
+Analizując wyniki zawarte w tabeli \ref{tab:p_cox_iw_3} zauważamy, że dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy.
 
 ### b)
 
-```{r krk1AIC_coxph12,echo = TRUE}
+```{r krk1AIC_coxph,echo = TRUE}
 
 m <- coxph(Surv(time, status)~age +
                   as.factor(sex) + 
@@ -1292,7 +1294,7 @@ m <- coxph(Surv(time, status)~age +
  
 ```
 **KROK 1**
-```{r krk11AIC_coxph12}
+```{r krk11AIC_coxph}
 
 dt <- data.frame(
 wszystko = AIC(m),
@@ -1302,15 +1304,15 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC krok 1 coxph")
+kable(dt,digits = 3 ,caption = "Wartości AIC (model Coxa)  - krok 1 \\label{tab:krk11AIC_coxph}")
 
 ```
 
-Ponieważ po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
+Obserwując wyniki zawarte w tabeli \ref{tab:krk11AIC_coxph} zauważamy, że po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
 
 **KROK 2**
 
-```{r krk2AIC_ccoxph12}
+```{r krk2AIC_ccoxph}
 
 m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
                  data = dane)
@@ -1322,15 +1324,15 @@ bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
 bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC krok 2 coxph")
+kable(dt,digits = 3 ,caption = "Wartości AIC (model Coxa)  - krok 2 \\label{tab:krk2AIC_ccoxph}")
 
 ```
 
-Ponieważ po usunięciu zmiennej \textit{ph.karno} kryterium AIC osiąga najniższą wartość, wybieramy model bez \textit{ph.karno} jako lepszy.
+Obserwując wyniki zawarte w tabeli \ref{tab:krk2AIC_ccoxph} zauważamy, że po usunięciu zmiennej \textit{ph.karno} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{ph.karno} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
 
 **KROK 3**
 
-```{r krk3ACI_coxph12}
+```{r krk3AIC_coxph}
 
 
 m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
@@ -1342,32 +1344,32 @@ bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],
 bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1]
 )
 
-kable(dt,digits = 3 ,caption = "Wartości AIC krok 3 coxph") 
+kable(dt,digits = 3 , caption = "Wartości AIC (model Coxa)  - krok 3 \\label{tab:krk3AIC_coxph}") 
 
 
 
 ```
 
-Usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
+Analizując wyniki zawarte w tabeli \ref{tab:krk3AIC_coxph} dochodzimy do wniosku, że usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
 
 
 ### c)
 
 Tutaj korzystamy z funkcji step, która automatyzuje proces przedstawiony powyżej.
 
-```{r BICstep_coxphs12,echo = TRUE}
+```{r BICstep_coxphs,echo = TRUE}
 
-m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno, data = dane)
+m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane)
 
 n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
 
-kable(m_bic$anova, 
-      caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu propocjonalnych hazardów Coxa")
+kable(m_bic$anova)
 
 
 ```
 
 
-Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony age a potem \textit{ph.karno}.
+Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony \textit{age} a potem \textit{ph.karno}
