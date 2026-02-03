@@ -171,7 +171,7 @@ W modelu przyspieszonego czasu życia (AFT) zakłada się, że funkcja przeżyci
 jednostki o wektorze charakterystyk $z$ może zostać zapisana jako przeskalowanie
 czasu w bazowej funkcji przeżycia:
 \begin{equation}
-S(t \mid z) = S_0\!\left( \exp\!\left(\beta^{\top} z\right)\, t \right),
+S_z(t) = S_0\!\left( \exp\!\left(\beta^{T} z\right)\, t \right),
 \label{eq:aft_definition}
 \end{equation}
 gdzie $S_0(t)$ oznacza funkcję przeżycia jednostki bazowej, tj. odpowiadającej
@@ -187,7 +187,7 @@ S_0(t) = \exp\!\left( -\lambda\, t^{\alpha} \right), \qquad t \geq 0.
 Podstawiając \eqref{eq:weibull_survival} do definicji \eqref{eq:aft_definition},
 otrzymujemy funkcję przeżycia jednostki o wektorze charakterystyk $z$ w postaci
 \begin{equation}
-S(t \mid z)
+S_z(t)
 = \exp\!\left(
 -\lambda\, \exp\!\left(\alpha\, \beta^{\top} z\right)\, t^{\alpha}
 \right).
@@ -242,7 +242,7 @@ losowej $X$, odpowiadającej jednostce o zerowym wektorze charakterystyk.
 Wówczas model, w którym funkcja hazardu jednostki o wektorze charakterystyk
 $z$ ma postać
 \begin{equation}
-h(x \mid z) = h_0(x)\,\exp\!\left(\beta^{\top} z\right),
+h_z(x) = h_0(x)\,\exp\!\left(\beta^{T} z\right),
 \label{eq:ph_definition}
 \end{equation}
 nazywamy (parametrycznym) modelem proporcjonalnych hazardów (PH).
@@ -253,7 +253,7 @@ Model proporcjonalnych hazardów charakteryzuje się prostą własnością
 interpretacyjną. Jeżeli $z_1$ oraz $z_2$ są dwoma wektorami charakterystyk,
 to na podstawie \eqref{eq:ph_definition} otrzymujemy
 \begin{equation}
-\frac{h(x \mid z_1)}{h(x \mid z_2)}
+\frac{hz_1(x)}{hz_2(x)}
 = \exp\!\left(\beta^{\top}(z_1 - z_2)\right),
 \label{eq:ph_ratio}
 \end{equation}
@@ -359,7 +359,7 @@ praw1 <- S(300, z1)
 praw2 <- S(300, z2)
 ```
 
-Prawdopodobieństwo, że czas życia kobiety w wieku 70 lat o charakterystyce $ph.ecog$ = 1 i $ph.karno$ = 90 będzie większy niż 300 dni wynosi `r praw1`. Natomiast prawdopodobieństwo, że czas życia kobiety w wieku 70 lat o charakterystyce $ph.ecog$ = 2 i $ph.karno$ = 90 będzie większy niż 300 dni wynosi `r praw2`. Porównując wynik dla kobiety o charakterystykach opisanych w punkcie (a) z tym otrzymanym w zadaniu 3 możemy zauważyć, że oszacowane prawdopodobieństwo jest większe, gdy korzystamy z modelu PH zamiast AFT.
+Prawdopodobieństwo, że czas życia kobiety w wieku 70 lat o charakterystyce $ph.ecog$ = 1 i $ph.karno$ = 90 będzie większy niż 300 dni wynosi `r round(praw1, digits = 5)`. Natomiast prawdopodobieństwo, że czas życia kobiety w wieku 70 lat o charakterystyce $ph.ecog$ = 2 i $ph.karno$ = 90 będzie większy niż 300 dni wynosi `r round(praw2, digits = 5)`. Porównując wynik dla kobiety o charakterystykach opisanych w punkcie (a) z tym otrzymanym w zadaniu 3 możemy zauważyć, że oszacowane prawdopodobieństwo jest większe, gdy korzystamy z modelu PH zamiast AFT.
 
 
 ## Zadanie 9
@@ -371,7 +371,7 @@ plot(t, S(t, z1), type = "l", lwd = 2, col = "blue", ylim = c(0,1),
 
 ```
 
-Porównując wykresy \ref{fig:wykres_AFT} oraz \ref{fig:wykres_PH) można zauważyć różnicę w tempie spadku oszacowanej funkcji przeżycia. Krzywa odpowiadająca modelowi proporcjonalnych hazardów (PH) maleje wolniej niż w przypadku modelu przyspieszonego czasu życia (AFT). W rezultacie dla tych samych punktów czasowych model PH generuje systematycznie wyższe prawdopodobieństwa przeżycia, co skutkuje uzyskaniem bardziej optymistycznych prognoz w porównaniu do modelu AFT.
+Porównując wykresy \ref{fig:wykres_AFT} oraz \ref{fig:wykres_PH} można zauważyć różnicę w tempie spadku oszacowanej funkcji przeżycia. Krzywa odpowiadająca modelowi proporcjonalnych hazardów (PH) maleje wolniej niż w przypadku modelu przyspieszonego czasu życia (AFT). W rezultacie dla tych samych punktów czasowych model PH generuje systematycznie wyższe prawdopodobieństwa przeżycia, co skutkuje uzyskaniem bardziej optymistycznych prognoz w porównaniu do modelu AFT.
 
 
 # Lista 10
@@ -557,7 +557,8 @@ prob_b <- wynik$surv[2]
 
 ```
 
-Analiza uzyskanych wyników wskazuje na istotne różnice w rokowaniach zależne od stanu sprawności. Szacowane prawdopodobieństwo, że czas życia kobiety o charakterystyce $ph.ecog=1$ (i $ph.karno=90$) przekroczy 300 dni, wynosi `r round(prob_a, 4)`. W przypadku pacjentki o gorszym stanie sprawności ($ph.ecog = 2$), prawdopodobieństwo to ulega wyraźnemu obniżeniu i wynosi `r round(prob_b, 4)`.
+Analiza uzyskanych wyników wskazuje na istotne różnice w rokowaniach zależne od stanu sprawności. Szacowane prawdopodobieństwo, że czas życia kobiety o charakterystyce $ph.ecog=1$ (i $ph.karno=90$) przekroczy 300 dni, wynosi `r round(prob_a, 4)`. Wartość ta jest większa niż te otrzymane dla modeli AFT oraz PH.
+W przypadku pacjentki o gorszym stanie sprawności ($ph.ecog = 2$), prawdopodobieństwo ulega wyraźnemu obniżeniu i wynosi `r round(prob_b, 4)` dla modelu Coxa. Jest to wartość większa niż wynik otrzymany dla modelu PH.
 
 
 ## Zadanie 6
@@ -589,7 +590,7 @@ Zestawienie funkcji przeżycia na wykresach \ref{fig:wykres_PH} i \ref{fig:surv_
 
 ## Zadanie 1
 
-**Dopasowanie modelu(oszacowanie parametrów)**
+**Dopasowanie modelu (oszacowanie parametrów)**
 
 ```{r rozw1, echo = TRUE}
 
@@ -636,17 +637,17 @@ kable(model$gamma, caption = "Tabela otrzymanych $\\beta$ dla modelu
 
 ```
 
-- Zmienna \texttt{age} ma współczynnik $\beta$ = `r b_age`>0, co oznacza, że wraz ze wzrostem wieku rosną \textbf{szanse (odds) wystąpienia zdarzenia do czasu $$t$$} (przy stałych pozostałych zmiennych). Równoważnie: $$\exp(\beta)>1.$$
+- Zmienna \texttt{age} ma współczynnik $\beta$ = `r b_age`>0, co oznacza, że wraz ze wzrostem wieku rosną szanse (odds) wystąpienia zdarzenia do czasu $t$ (przy stałych pozostałych zmiennych). Równoważnie: $$\exp(\beta)>1$$
 
-- Zmienna \texttt{sex} (kategoryczna) ma współczynnik $\beta$ = `r b_sex`>0 dla poziomu porównywanego do poziomu referencyjnego (bazowego). Oznacza to, że w tej grupie \textbf{szanse (odds) zajścia zdarzenia do czasu $$t$$} są mniejsze niż w grupie bazowej, tj. $$\exp(\beta)<1.$$
+- Zmienna \texttt{sex} (kategoryczna) ma współczynnik $\beta$ = `r b_sex`>0 dla poziomu porównywanego do poziomu referencyjnego (bazowego). Oznacza to, że w tej grupie szanse (odds) zajścia zdarzenia do czasu $t$ są mniejsze niż w grupie bazowej, tj. $$\exp(\beta)<1$$
 
-- Zmienna \texttt{ph.ecog} (kategoryczna) ma współczynniki $$\beta>0$$ dla poszczególnych poziomów w porównaniu do poziomu referencyjnego (np. $$1 \text{ vs } 0,\ 2 \text{ vs } 0,\ 3 \text{ vs } 0$$). Wskazuje to, że osoby z wyższym \texttt{ph.ecog} mają \textbf{większe szanse (odds) wystąpienia zdarzenia do czasu $$t$$} niż osoby z poziomu bazowego, czyli $$\exp(\beta)>1.$$
+- Zmienna \texttt{ph.ecog} (kategoryczna) ma współczynniki $\beta>0$ dla poszczególnych poziomów w porównaniu do poziomu referencyjnego (np. $1 \text{ vs } 0,\ 2 \text{ vs } 0,\ 3 \text{ vs } 0$). Wskazuje to, że osoby z wyższym \texttt{ph.ecog} mają większe szanse (odds) wystąpienia zdarzenia do czasu $t$ niż osoby z poziomu bazowego, czyli $$\exp(\beta)>1$$
 
-- Dla zmiennej ciągłej \texttt{ph.karno} otrzymano $\beta$ = `r b_karno`<0 co oznacza, że wraz ze wzrostem \texttt{ph.karno} \textbf{maleją szanse (odds) zajścia zdarzenia do czasu $$t$$} (tj. $$\exp(\beta)<1$$). Jeśli jednak w poprzedniej analizie (Lista 10) współczynnik dla \texttt{ph.karno} był \textbf{nieistotny statystycznie}, to również tutaj wniosek o kierunku efektu należy traktować ostrożnie: przy braku istotności znak współczynnika może zmieniać się między dopasowaniami/modelami i nie powinien być interpretowany jako stabilny efekt.
+- Dla zmiennej ciągłej \texttt{ph.karno} otrzymano $\beta$ = `r b_karno`<0 co oznacza, że wraz ze wzrostem \texttt{ph.karno} maleją szanse (odds) zajścia zdarzenia do czasu $t$, tj. $$\exp(\beta)<1$$ Jeśli jednak w poprzedniej analizie (Lista 10) współczynnik dla \texttt{ph.karno} był nieistotny statystycznie, to również tutaj wniosek o kierunku efektu należy traktować ostrożnie: przy braku istotności znak współczynnika może zmieniać się między dopasowaniami/modelami i nie powinien być interpretowany jako stabilny efekt.
 
 ## Zadanie 3
 
-```{r rozw, fig.cap="Podstawowa funkcja przeżycia i skumulowanego hazardu"}
+```{r rozw, fig.cap="Bazowa funkcja przeżycia i skumulowanego hazardu", fig.height=6}
 
 s <-  predict(model, Z = c(0,0,0,0,0,0))
 
@@ -659,13 +660,15 @@ df <- data.frame(
 
 p1 <- ggplot() +
   geom_step(data = df, aes(x = t, y = s0,     color = "S0")) +
-  labs(color = "Legenda")+
-  ggtitle("Oszacowanie podstawowej funkcji przeżycia")
+  labs(color = "Legenda", y = expression(S[0](t)))+
+  ggtitle("Oszacowanie bazowej funkcji przeżycia") +
+  scale_color_manual(values = c("S0" = "red"), 
+                     labels = expression(S[0]))
 
 p2 <- ggplot() +
-  geom_step(data = df, aes(x = t, y = H0, color = "hazard")) +
+  geom_step(data = df, aes(x = t, y = H0, color = "Hazard")) +
   labs(color = "Legenda")+
-  ggtitle("Oszacowanie podstawowego skumulowanego Hazardu")
+  ggtitle("Oszacowanie bazowego skumulowanego hazardu")
 
 p1 / p2
 
@@ -675,10 +678,8 @@ p1 / p2
 ## Zadanie 4
 
 ```{r model_z_listy_10}
-
 model_l10 <- coxph(Surv(time, status) ~ age + factor(sex) + factor(ph.ecog) + ph.karno,
              data = dane, ties = "efron")
-
 
 ```
 
@@ -736,30 +737,30 @@ df2 <- data.frame(
 
 ```{r  wykres_hazardu_p1}
 p1_H <- ggplot() +
-  geom_step(data = df1,    aes(x = t, y = H, color = "H (model 1)"),linewidth = 1.1) +
-  geom_step(data = df1_l10, aes(x = t, y = H, color = "H (model l10)"),linewidth = 1.1)+
-  ggtitle("Funkcja H dla pacjenta 1")
+  geom_step(data = df1,    aes(x = t, y = H, color = "H(t) (model prop.szans)"),linewidth = 1.1) +
+  geom_step(data = df1_l10, aes(x = t, y = H, color = "H(t) (model Coxa)"),linewidth = 1.1)+
+  ggtitle("Funkcja H(t) dla pacjenta 1")
 ```
 
 ```{r  wykres_loghazardu_p1}
 p1_logH <- ggplot() +
-  geom_step(data = df1,    aes(x = t, y = log(H), color = "log(H) (model 1)"),linewidth = 1.1) +
-  geom_step(data = df1_l10, aes(x = t, y = log(H), color = "log(H) (model lista_10)"),linewidth = 1.1)+
-  ggtitle("Funkcja log(H) \n dla pacjenta 1")
+  geom_step(data = df1,    aes(x = t, y = log(H), color = "log(H(t)) (model prop.szans)"),linewidth = 1.1) +
+  geom_step(data = df1_l10, aes(x = t, y = log(H), color = "log(H(t)) (model Coxa)"),linewidth = 1.1)+
+  ggtitle("Funkcja log(H(t)) \n dla pacjenta 1")
 ```
 
 ```{r  wykres_hazardu_p2}
 p2_H <- ggplot() +
-  geom_step(data = df2,    aes(x = t, y = H, color = "H (model 1)"),linewidth = 1.1) +
-  geom_step(data = df2_l10, aes(x = t, y = H, color = "H (model l10)"),linewidth = 1.1)+
-  ggtitle("Funkcja H dla pacjenta 2")
+  geom_step(data = df2,    aes(x = t, y = H, color = "H(t) (model prop.szans)"),linewidth = 1.1) +
+  geom_step(data = df2_l10, aes(x = t, y = H, color = "H(t) (model Coxa)"),linewidth = 1.1)+
+  ggtitle("Funkcja H(t) dla pacjenta 2")
 ```
 
-```{r  wykres_loghazardu, fig.cap="wykresy-skumulowanego-hazardu"}
+```{r  wykres_loghazardu, fig.cap="Porównanie oszacowania skumulowanej funkcji hazardu dla dwóch pacjentek", fig.width=6}
 p2_logH <-ggplot() +
-  geom_step(data = df2,    aes(x = t, y = log(H), color = "log(H) (model 1)"),linewidth = 1.1) +
-  geom_step(data = df2_l10, aes(x = t, y = log(H), color = "log(H) (model lista_10)"),linewidth = 1.1)+
-  ggtitle("Funkcja log(H) \n dla pacjenta 2")
+  geom_step(data = df2,    aes(x = t, y = log(H), color = "log(H(t)) (model prop.szans)"),linewidth = 1.1) +
+  geom_step(data = df2_l10, aes(x = t, y = log(H), color = "log(H(t)) (model Coxa)"),linewidth = 1.1)+
+  ggtitle("Funkcja log(H(t)) \n dla pacjenta 2")
 
 (p1_H | p2_H) +
   plot_layout(guides = "collect") &
@@ -768,11 +769,11 @@ p2_logH <-ggplot() +
 
 ```
 
-W przypadku pacjenta 1  widać, że skumulowany hazard \ref{fig:wykres_loghazardu} estymowany w modelu proporcjonalnych szans rośnie wyraźnie szybciej niż w modelu proporcjonalnych hazardów Coxa. W konsekwencji model proporcjonalnych szans implikuje dla tego pacjenta mniej korzystną prognozę przeżycia, tj. większe narastające ryzyko zdarzenia w czasie, w porównaniu z modelem Coxa.
+W przypadku pacjenta 1 widać, że skumulowany hazard przedstawiony na wykresie \ref{fig:wykres_loghazardu} (po lewejj stronie) estymowany w modelu proporcjonalnych szans rośnie wyraźnie szybciej niż w modelu proporcjonalnych hazardów Coxa. W konsekwencji model proporcjonalnych szans implikuje dla tego pacjenta mniej korzystną prognozę przeżycia, tj. większe narastające ryzyko zdarzenia w czasie, w porównaniu z modelem Coxa.
 
-Dla pacjenta 2 krzywe \ref{fig:wykres_loghazardu} skumulowanego hazardu są do około 625 dnia bardzo zbliżone, natomiast w dalszej części obserwacji zaczynają się rozchodzić. Różnice między predykcjami modeli narastają wraz z upływem czasu, jednak interpretację końcowego fragmentu należy traktować z ostrożnością — w ogonie rozkładu zwykle pozostaje niewiele obserwacji, a pojedyncze zdarzenia mogą powodować relatywnie duże, skokowe zmiany estymowanych krzywych.
+Dla pacjenta 2 krzywe (przedstawione po prawej stronie rysunku \ref{fig:wykres_loghazardu}) skumulowanego hazardu są do około 625 dnia bardzo zbliżone, natomiast w dalszej części obserwacji zaczynają się rozchodzić. Różnice między predykcjami modeli narastają wraz z upływem czasu, jednak interpretację końcowego fragmentu należy traktować z ostrożnością — w ogonie rozkładu zwykle pozostaje niewiele obserwacji, a pojedyncze zdarzenia mogą powodować relatywnie duże, skokowe zmiany estymowanych krzywych.
 
-```{r logarytmy_funkcji,fig.cap="wykresy-log(skumulowany hazard)"}
+```{r logarytmy_funkcji,fig.cap="Porównanie logarytmów z skumulowanej funkcji hazardu dla dwóch pacjentek", fig.width=6}
 
 (p1_logH | p2_logH)+
   plot_layout(guides = "collect") &
@@ -785,74 +786,59 @@ Analogiczne wnioski możemy wysnuć także na podstawie wykresu \ref{fig:logaryt
 
 ```{r wykresy_przeżycia, fig.cap="wykresy funkcji przeżycia dla pacjentów"}
 
-ggplot()+
-  geom_step(data = df1, aes(x = t, y = S0, color = "S01"),linewidth = 1.1)+
-  geom_step(data = df2, aes(x = t, y = S0, color = "S02"),linewidth = 1.1)
-
-
+ggplot() +
+  geom_step(data = df1, aes(x = t, y = S0, color = "grupa1"), linewidth = 1.1) +
+  geom_step(data = df2, aes(x = t, y = S0, color = "grupa2"), linewidth = 1.1) +
+  labs(x = "Czas (t)", 
+       y = expression(S(t)), 
+       color = "Legenda") +
+  scale_color_manual(
+    values = c("grupa1" = "red", "grupa2" = "turquoise"),
+    labels = c(expression(S[1](t)), expression(S[2](t)))
+  ) +
+  ggtitle("Porównanie funkcji przeżycia") +
+  theme_minimal()
 ```
 Z wykresu \ref{fig:wykresy_przeżycia} widać, że funkcja przeżycia dla pacjenta 2 maleje znacznie szybciej, co jest zgodne z charakterystyką danych.
-
-Prawdopodobieństwa tego ,że czas życia będzie większy od 300 , to $$S_{0}2(300)$$ i $$S_{0}1(300)$$
-
-Dla pacjenta 1 to prawdopodobieństwo wynosi:
 
 ```{r dzielny_pacjent_1}
 
 i <- findInterval(300, s1$time)   
-S_300 <- if (i == 0) 1 else s1$S0[i]
-
-
+S_300_1 <- if (i == 0) 1 else s1$S0[i]
 
 ```
-**`r round(S_300,4)`**
-
-Jest to spora szansa.
-
-A na liście 10 otrzymaliśmy:
 
 ```{r dzielny_pacjent_1_l10}
 
 i <- findInterval(300, t_10)   
-S_300 <- if (i == 0) 1 else S_l10[,1][i]
-
+S_300_1_10 <- if (i == 0) 1 else S_l10[,1][i]
 
 ```
-
-**`r round(S_300,4)`**
-
-Prawdopodobieństwo dla modelu proporcjonalnych hazardów coxa jest większe.
-
-Dla pacjenta 2 to prawdopodobieństwo wynosi:
 
 ```{r dzielny_pacjent_2}
 
 i <- findInterval(300, s2$time)   
-S_300 <- if (i == 0) 1 else s2$S0[i]
-
+S_300_2 <- if (i == 0) 1 else s2$S0[i]
 
 ```
-
-**`r round(S_300,4)`**
-
-W stosunku do pacjenta pierwszego widać spadek aż o 20 punktów procentowych na liście 11.
-
-
 
 ```{r dzielny_pacjent_2_l10}
 
 i <- findInterval(300, t_10)   
-S_300 <- if (i == 0) 1 else S_l10[,2][i]
-
+S_300_2_10 <- if (i == 0) 1 else S_l10[,2][i]
 
 ```
 
-**`r round(S_300,4)`**
-Prawdopodobieństwo dla modelu proporcjonalnych hazardów coxa jest większe.
+Prawdopodobieństwo tego, że czas życia pacjenta 1 będzie większy od 300 dni wynosi `r round(S_300_1,4)`.
+Na liście 10 otrzymane prawdopodobieństwo wynosiło `r round(S_300_1_10,4)`.
+Prawdopodobieństwo dla modelu proporcjonalnych hazardów Coxa jest zatem większe niż dla modelu proporcjonalnych szans.
+
+Prawdopodobieństwo tego, że czas życia pacjenta 2 będzie większy od 300 dni wynosi `r round(S_300_2,4)` - model proporcjonalnych szans oraz `r round(S_300_2_10,4)` - model Coxa.
+Prawdopodobieństwo dla modelu proporcjonalnych hazardów Coxa jest zatem większe niż dla modelu proporcjonalnych szans.
 
 ## Zadanie 6
 
-```{r zad6, fig.cap="wykresy funkcji przeżycia"}
+```{r zad6, fig.cap="Porównanie wykresów oszacowanej funkcji przeżycia w modelu proporcjonalnych szans oraz modelu Coxa"}
 
 ggplot()+
   geom_step(data = df1, aes(x = t, y = S0, color = "S01"),linewidth = 1.1)+
@@ -1367,23 +1353,21 @@ Usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obni
 
 ### c)
 
-Tutaj już korzystam z funkcji step, która autmatyzuje proces przedstawiony powyżej.
-
-
+Tutaj korzystamy z funkcji step, która automatyzuje proces przedstawiony powyżej.
 
 ```{r BICstep_coxphs12,echo = TRUE}
 
-m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
-                 data = dane)
+m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno, data = dane)
 
 n <- sum(dane$status)
 
 m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
 
-kable(m_bic$anova, caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu propocjonalnych hazardów Coxa")
+kable(m_bic$anova, 
+      caption = "Tabela kroków funkcji step kryterium BIC \n dla modelu propocjonalnych hazardów Coxa")
 
 
 ```
 
 
-Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony age a potem ph.karno.
+Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony age a potem \textit{ph.karno}.
