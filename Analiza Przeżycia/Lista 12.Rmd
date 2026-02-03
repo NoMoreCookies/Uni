@@ -1,0 +1,565 @@
+---
+title: "Lista 11"
+subtitle: "Analiza przeżycia"
+author: "Marta Stankiewicz (282244) \n Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}[section]
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+```
+
+```{r libraries}
+
+library(survival)
+library(eha)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+library(timereg)
+library(nltm)
+
+```
+
+\newpage
+
+# Zadanie 1
+
+W tym zadaniu omawiamy model **przyspieszonego czasu awarii**
+
+```{r dane}
+
+
+# data import
+data("lung")
+
+# avoiding columns [inst, pat.karno, meal.cal, wt.loss] 
+dane <- lung[, 2:7]
+
+# deleting rows with missing values
+dane <- dane[complete.cases(dane), ]
+
+mean_wiek <- mean(dane[, 3])
+mean_ph_karno <- mean(dane[, 6])
+
+# centering continuous data
+dane[, 3] <- dane[, 3] - mean_wiek
+dane[, 6] <- dane[, 6] - mean_ph_karno
+
+dane$status <-  dane$status-1
+
+
+```
+
+```{r model, echo = TRUE}
+model <- survreg(Surv(time, status)~age +
+                 as.factor(sex) +
+                 as.factor(ph.ecog) +
+                 ph.karno,
+                 data = dane,
+                 dist = "weibull")
+
+```
+
+## a)
+
+
+```{r zad1a}
+
+
+
+tab <- summary(model)$table
+
+p_val1 <- tab["age", ][["p"]]
+
+
+#noage
+model_noage <- update(model, . ~ . - age)
+p_val2 <- anova(model_noage, model)$"Pr(>Chi)"[[2]]
+
+```
+
+Dla zmiennej \textit{age} w teście Walda otrzymujemy $p_{value}$ = `r p_val1` $> 0.05$, co oznacza, że przy poziomie istotności $\alpha = 0.05$ nie ma podstaw do odrzucenia hipotezy $H_0:\beta_{\textit{age}}=0$, a więc brak jest dowodów na istotność tej zmiennej w modelu.
+
+Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ =`r p_val2`, również $> 0.05$, co wskazuje, że uwzględnienie zmiennej \textit{age} nie powoduje istotnej zmiany w dopasowanym modelu.
+
+## b)
+
+```{r zad2a}
+
+p_val1 <- tab["as.factor(sex)2",]["p"]
+
+#nosex
+model_nosex <- update(model, . ~ . - as.factor(sex))
+p_val2 <- anova(model_nosex, model)$"Pr(>Chi)"[2]
+
+
+```
+
+Dla zmiennej \textit{sex} w teście Walda otrzymujemy $p_{value}$ = `r p_val1` $< 0.05$, co oznacza, że przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę $H_0:\beta_{\textit{sex}}=0$. Wskazuje to, że zmienna \textit{sex} ma istotny wpływ na czas do zdarzenia w modelu AFT, tzn. istotnie przyspiesza lub spowalnia czas awarii względem poziomu bazowego.
+
+Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ = `r p_val2` $< 0.05$, co wskazuje, że uwzględnienie zmiennej \textit{sex} ma istotny wpływ na dopasowany model.
+
+## c)
+
+
+```{r rozwc}
+
+model_noecog <- update(model, . ~ . - as.factor(ph.ecog))
+p_val <- anova(model_noecog, model)$"Pr(>Chi)"[[2]]
+
+```
+
+W teście ilorazu wiarygodności otrzymano $p_{value}$ =`r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
+$H_0:\beta_{\textit{ph.ecog}=1}=\beta_{\textit{ph.ecog}=2}=\beta_{\textit{ph.ecog}=3}=0$
+
+(tj. brak wpływu poziomu ECOG na czas do zdarzenia względem poziomu bazowego, np. ECOG = 0). Oznacza to, że zmienna \textit{ph.ecog} jest istotna w przyjętym modelu AFT, a poziom sprawności (ECOG) istotnie różnicuje czas przeżycia/czas awarii pacjentów.
+
+\newpage
+
+# Zadanie 2
+
+
+```{r model_podst_coxph,echo = TRUE}
+
+model_podst <- coxph(Surv(time, status)~age +
+                       as.factor(sex) +
+                       as.factor(ph.ecog) +
+                       ph.karno,
+                       data = dane,)
+
+```
+
+## a)
+
+
+```{r ageWald}
+
+tab <- summary(model_podst)$coefficients
+
+p_val1 <- tab["age",]["Pr(>|z|)"]
+
+m0 <- update(model_podst, . ~ . - age)
+
+p_val2 <- anova(m0, model_podst, test = "LRT")[["Pr(>|Chi|)"]][2]
+
+```
+
+Dla zmiennej \textit{age} w teście Walda otrzymujemy $p_{value}$ = `r p_val1` $> 0.05$, co oznacza, że przy poziomie istotności $\alpha = 0.05$ nie ma podstaw do odrzucenia hipotezy $H_0:\beta_{\textit{age}}=0$, a więc brak jest dowodów na istotność tej zmiennej w modelu.
+
+Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ =`r p_val2`, również $> 0.05$, co wskazuje, że uwzględnienie zmiennej \textit{age} nie powoduje istotnej zmiany dopasowanego modelu.
+
+## b)
+
+
+```{r sexWald}
+
+tab <- summary(model_podst)$coefficients
+
+p_val1 <- tab["as.factor(sex)2",]["Pr(>|z|)"]
+
+m0 <- update(model_podst, . ~ . - sex)
+
+p_val2 <- anova(m0, model_podst, test = "LRT")[["Pr(>|Chi|)"]][2]
+
+```
+
+Dla zmiennej \textit{sex} w teście Walda otrzymujemy $p_{value}$ = `r p_val1` $< 0.05$, co oznacza, że przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę $H_0:\beta_{\textit{sex}}=0$. Wskazuje to, że zmienna \textit{sex} ma istotny wpływ na czas do zdarzenia w modelu AFT, tzn. istotnie przyspiesza lub spowalnia czas awarii względem poziomu bazowego.
+
+Dla testu Ilorazu Wiarygodności otrzymaliśmy $p_{value}$ = `r p_val2` $< 0.05$, co wskazuje, że uwzględnienie zmiennej \textit{sex} istotnie poprawia dopasowanie modelu w porównaniu z modelem bez tej zmiennej. Zatem \textit{sex} jest istotnym predyktorem w modelu przyspieszonego czasu awarii, wpływając na skalę czasu przeżycia względem poziomu bazowego.
+
+## c)
+
+```{r rozwc2}
+
+model_noecog <- update(model, . ~ . - as.factor(ph.ecog))
+p_val <- anova(model_noecog, model)$"Pr(>Chi)"[[2]]
+
+```
+
+W teście ilorazu wiarygodności otrzymano $p_{value}$ =`r p_val` $< 0.05$, więc przy poziomie istotności $\alpha=0.05$ odrzucamy hipotezę zerową
+$H_0:\beta_{\textit{ph.ecog}=1}=\beta_{\textit{ph.ecog}=2}=\beta_{\textit{ph.ecog}=3}=0$
+
+(tj. brak wpływu poziomu ECOG na czas do zdarzenia względem poziomu bazowego, np. ECOG = 0). Oznacza to, że zmienna \textit{ph.ecog} jest istotna w przyjętym modelu proporcjonalnych hazardów Coxa, a poziom sprawności (ECOG) istotnie różnicuje czas przeżycia/czas awarii pacjentów.
+
+\newpage
+
+# Zadanie 3
+
+```{r model_przysp,echo = TRUE}
+
+m <- survreg(Surv(time, status)~age +
+             as.factor(sex) +
+             as.factor(ph.ecog) +
+             ph.karno,
+             data = dane,
+             dist = "weibull")
+
+```
+## a)
+
+
+**KROK 1**
+
+```{r mEliminacji_krk1,echo = TRUE}
+age <- anova(update(m, . ~ . - age), m)[["Pr(>Chi)"]][2]  
+sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
+ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
+ph.karno <- anova(update(m, . ~ . - ph.karno), m)[["Pr(>Chi)"]][2]
+
+p_values <- data.frame(
+  age = age,
+  sex = sex,
+  ph.ecog = ph.ecog,
+  ph.karno = ph.karno
+)
+
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+
+```
+
+Usuwamy zmienną \textit{age}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
+
+
+**KROK 2**
+```{r krkr2, echo = TRUE}
+
+m <- survreg(Surv(time, status)~as.factor(sex) +
+                  as.factor(ph.ecog) +
+                  ph.karno,
+                  data = dane,
+                  dist = "weibull")
+
+sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
+ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
+ph.karno <- anova(update(m, . ~ . - ph.karno), m)[["Pr(>Chi)"]][2]
+
+p_values <- data.frame(
+  sex = sex,
+  ph.ecog = ph.ecog,
+  ph.karno = ph.karno
+)
+
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+```
+
+Usuwamy zmienną \textit{ph.karno}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
+
+**KROK 3**
+```{r krkr3}
+
+
+m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
+                 data = dane,
+                 dist = "weibull")
+
+sex <- anova(update(m, . ~ . - as.factor(sex)),      m)[["Pr(>Chi)"]][2]  
+ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)[["Pr(>Chi)"]][2] 
+
+p_values <- data.frame(
+  sex = sex,
+  ph.ecog = ph.ecog
+)
+
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+
+
+```
+Dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy
+
+## b)
+
+```{r krk1AIC,echo = TRUE}
+
+m <- survreg(Surv(time, status)~age +
+                  as.factor(sex) + 
+                  as.factor(ph.ecog) +
+                  ph.karno,
+                  data = dane,
+                  dist = "weibull")
+ 
+```
+**KROK 1**
+```{r krk11AIC}
+
+dt <- data.frame(
+wszystko = AIC(m),
+bez_age = AIC(update(m, . ~ . - age), m)[["AIC"]][1],  
+bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],  
+bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
+bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
+)
+
+kable(dt,digits = 3 ,caption = "Wartości AIC")
+
+```
+
+Ponieważ po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
+
+**KROK 2**
+
+```{r krk2AIC}
+
+m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+
+dt <- data.frame(
+wszystko = AIC(m),
+bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],  
+bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
+bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
+)
+
+kable(dt,digits = 3 ,caption = "Wartości AIC")
+
+```
+
+Ponieważ po usunięciu zmiennej \textit{ph.karno} kryterium AIC osiąga najniższą wartość, wybieramy model bez \textit{ph.karno} jako lepszy.
+
+**KROK 3**
+
+```{r krk3ACI}
+
+
+m <- survreg(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
+                 data = dane,
+                 dist = "weibull")
+
+dt <- data.frame(
+wszystko = AIC(m),
+bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],  
+bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1]
+)
+
+kable(dt,digits = 3 ,caption = "Wartości AIC") 
+
+
+
+```
+
+Usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
+
+
+## c)
+
+Tutaj już korzystam z funkcji step, która autmatyzuje proces przedstawiony powyżej.
+
+
+
+```{r BICsteps,echo = TRUE}
+
+m <- survreg(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane,
+                 dist = "weibull")
+
+n <- sum(dane$status)
+
+m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
+
+kable(m_bic$anova)
+
+
+```
+
+
+Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony age a potem ph.karno.
+
+# Zadanie 4
+
+```{r model_coxph,echo = TRUE}
+
+m <- coxph(Surv(time, status)~age +
+             as.factor(sex) +
+             as.factor(ph.ecog) +
+             ph.karno,
+             data = dane)
+
+```
+
+## a)
+
+
+**KROK 1**
+
+```{r mEliminacji_krk1_coxph,echo = TRUE}
+age <- anova(update(m, . ~ . - age), m)$"Pr(>|Chi|)"[2]  
+sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2]   
+ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2]  
+ph.karno <- anova(update(m, . ~ . - ph.karno), m)$"Pr(>|Chi|)"[2] 
+
+p_values <- data.frame(
+  age = age,
+  sex = sex,
+  ph.ecog = ph.ecog,
+  ph.karno = ph.karno
+)
+
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+
+```
+
+Usuwamy zmienną \textit{age}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r age` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
+
+
+**KROK 2**
+```{r krkr2_cpph, echo = TRUE}
+
+m <- coxph(Surv(time, status)~as.factor(sex) +
+                  as.factor(ph.ecog) +
+                  ph.karno,
+                  data = dane)
+
+sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2]  
+ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2]  
+ph.karno <- anova(update(m, . ~ . - ph.karno), m)$"Pr(>|Chi|)"[2] 
+
+p_values <- data.frame(
+  sex = sex,
+  ph.ecog = ph.ecog,
+  ph.karno = ph.karno
+)
+
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+```
+
+Usuwamy zmienną \textit{ph.karno}, ponieważ ma ona najwyższe $p$-value spośród rozważanych predyktorów ($p$ = `r ph.karno` $> 0.05$), co oznacza brak podstaw do uznania jej wpływu za istotny statystycznie w przyjętym modelu.
+
+**KROK 3**
+```{r krkr3_coxph}
+
+
+m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
+                 data = dane)
+
+sex <- anova(update(m, . ~ . - as.factor(sex)),      m)$"Pr(>|Chi|)"[2] 
+ph.ecog <- anova(update(m, . ~ . - as.factor(ph.ecog)),  m)$"Pr(>|Chi|)"[2] 
+print(sex)
+p_values <- data.frame(
+  sex = sex,
+  ph.ecog = ph.ecog
+)
+
+kable(p_values,digits = 3 ,caption = "Wartości p testu IW")
+
+
+```
+Dla wszystkich pozostałych predyktorów otrzymano wartości $p < 0.05$, dlatego procedura selekcji (w oparciu o test IW) została zakończona i przyjęto model końcowy
+
+## b)
+
+```{r krk1AIC_coxph,echo = TRUE}
+
+m <- coxph(Surv(time, status)~age +
+                  as.factor(sex) + 
+                  as.factor(ph.ecog) +
+                  ph.karno,
+                  data = dane)
+ 
+```
+**KROK 1**
+```{r krk11AIC_coxph}
+
+dt <- data.frame(
+wszystko = AIC(m),
+bez_age = AIC(update(m, . ~ . - age), m)[["AIC"]][1],  
+bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],  
+bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
+bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
+)
+
+kable(dt,digits = 3 ,caption = "Wartości AIC")
+
+```
+
+Ponieważ po usunięciu zmiennej \textit{age} kryterium AIC przyjmuje najmniejszą wartość, uznajemy model bez \textit{age} za lepiej dopasowany i dlatego \textit{age} zostaje usunięta z modelu.
+
+**KROK 2**
+
+```{r krk2AIC_ccoxph}
+
+m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane)
+
+dt <- data.frame(
+wszystko = AIC(m),
+bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],  
+bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1],
+bez_ph.karno = AIC(update(m, . ~ . - ph.karno), m)[["AIC"]][1]
+)
+
+kable(dt,digits = 3 ,caption = "Wartości AIC")
+
+```
+
+Ponieważ po usunięciu zmiennej \textit{ph.karno} kryterium AIC osiąga najniższą wartość, wybieramy model bez \textit{ph.karno} jako lepszy.
+
+**KROK 3**
+
+```{r krk3ACI_coxph}
+
+
+m <- coxph(Surv(time, status)~as.factor(sex) + as.factor(ph.ecog),
+                 data = dane)
+
+dt <- data.frame(
+wszystko = AIC(m),
+bez_sex = AIC(update(m, . ~ . - as.factor(sex)),      m)[["AIC"]][1],  
+bez_ph.ecoh = AIC(update(m, . ~ . - as.factor(ph.ecog)),  m)[["AIC"]][1]
+)
+
+kable(dt,digits = 3 ,caption = "Wartości AIC") 
+
+
+
+```
+
+Usunięcie którejkolwiek z pozostałych zmiennych nie prowadzi do dalszego obniżenia wartości kryterium AIC, dlatego przyjmujemy uzyskany model jako model końcowy.
+
+
+## c)
+
+Tutaj już korzystam z funkcji step, która autmatyzuje proces przedstawiony powyżej.
+
+
+
+```{r BICstep_coxphs,echo = TRUE}
+
+m <- coxph(Surv(time, status)~age + as.factor(sex) + as.factor(ph.ecog) + ph.karno,
+                 data = dane)
+
+n <- sum(dane$status)
+
+m_bic <- step(m, direction = "backward", k = log(n), trace = 0)
+
+kable(m_bic$anova)
+
+
+```
+
+
+Według kryterium bayesowskiego (BIC) procedura selekcji prowadzi do takiego samego wniosku jak w poprzednich metodach: w modelu końcowym pozostają zmienne \textit{sex} oraz \textit{ph.ecog}. Eliminacja predyktorów przebiega analogicznie jak w przypadku selekcji opartej na AIC, przy czym decyzje podejmowane są na podstawie minimalizacji wartości BIC. Najpierw został odrzucony age a potem ph.karno.
