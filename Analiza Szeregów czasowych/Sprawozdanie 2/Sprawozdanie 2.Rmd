@@ -305,7 +305,7 @@ Z porównania wartości kryterium (AIC/FPE) dla kolejnych rzędów \(p\) wynika,
 ```{r model_EFT_dla_reszt}
 
 # dla tslm() tj. szeregu [dane.reszty.2]
-dane.reszty <- resx
+dane.reszty <- res
 #dane.reszty <- dane.diff.1
 
 # Długość [N] badanego szeregu reszt [dane.reszty.2]

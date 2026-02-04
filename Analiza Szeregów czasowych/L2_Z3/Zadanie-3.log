@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.2)  4 FEB 2026 12:54
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.2)  4 FEB 2026 14:34
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -567,9 +567,7 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <8> on input line 2.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <6> on input line 2.
-[1
-
-{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}])
+)
 \tf@toc=\write3
 \openout3 = `Zadanie-3.toc'.
 
@@ -577,11 +575,14 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 \tf@lof=\write4
 \openout4 = `Zadanie-3.lof'.
 
-(./Zadanie-3.lot [2])
+(./Zadanie-3.lot)
 \tf@lot=\write5
 \openout5 = `Zadanie-3.lot'.
 
-<Zadanie-3_files/figure-latex/wykres_podstawowych_danych-1.pdf, id=89, 361.35pt x 289.08pt>
+[1
+
+{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}]
+<Zadanie-3_files/figure-latex/wykres_podstawowych_danych-1.pdf, id=44, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/wykres_podstawowych_danych-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/wykres_podstawowych_danych-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/wykres_podstawowych_danych-1.pdf  used on input line 114.
@@ -589,114 +590,129 @@ Package pdftex.def Info: Zadanie-3_files/figure-latex/wykres_podstawowych_danych
 LaTeX Font Info:    Trying to load font information for OT4+lmtt on input line 135.
 (c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/ot4lmtt.fd
 File: ot4lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [3{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rmtt.enc} <./Zadanie-3_files/figure-latex/wykres_podstawowych_danych-1.pdf>]
-<Zadanie-3_files/figure-latex/różnicowanie-1.pdf, id=105, 361.35pt x 289.08pt>
+) [2{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rmtt.enc} <./Zadanie-3_files/figure-latex/wykres_podstawowych_danych-1.pdf>]
+<Zadanie-3_files/figure-latex/różnicowanie-1.pdf, id=59, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/różnicowanie-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/różnicowanie-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/różnicowanie-1.pdf  used on input line 158.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-<Zadanie-3_files/figure-latex/różnicowanie2-1.pdf, id=106, 361.35pt x 289.08pt>
+<Zadanie-3_files/figure-latex/różnicowanie2-1.pdf, id=60, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/różnicowanie2-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/różnicowanie2-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/różnicowanie2-1.pdf  used on input line 170.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[4{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc} <./Zadanie-3_files/figure-latex/różnicowanie-1.pdf>]
-<Zadanie-3_files/figure-latex/wykres trendu pierwszego stopnia-1.pdf, id=117, 361.35pt x 289.08pt>
+[3{c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc} <./Zadanie-3_files/figure-latex/różnicowanie-1.pdf>]
+<Zadanie-3_files/figure-latex/wykres trendu pierwszego stopnia-1.pdf, id=71, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/wykres trendu pierwszego stopnia-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/wykres trendu pierwszego stopnia-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/wykres trendu pierwszego stopnia-1.pdf  used on input line 185.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[5 <./Zadanie-3_files/figure-latex/różnicowanie2-1.pdf>]
-<Zadanie-3_files/figure-latex/po_odjęciu_trendu-1.pdf, id=127, 361.35pt x 289.08pt>
+[4 <./Zadanie-3_files/figure-latex/różnicowanie2-1.pdf>]
+<Zadanie-3_files/figure-latex/po_odjęciu_trendu-1.pdf, id=81, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/po_odjęciu_trendu-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/po_odjęciu_trendu-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/po_odjęciu_trendu-1.pdf  used on input line 189.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[6 <./Zadanie-3_files/figure-latex/wykres trendu pierwszego stopnia-1.pdf> <./Zadanie-3_files/figure-latex/po_odjęciu_trendu-1.pdf>]
-<Zadanie-3_files/figure-latex/wykres trendu drugiego stopnia-1.pdf, id=142, 361.35pt x 289.08pt>
+[5 <./Zadanie-3_files/figure-latex/wykres trendu pierwszego stopnia-1.pdf> <./Zadanie-3_files/figure-latex/po_odjęciu_trendu-1.pdf>]
+<Zadanie-3_files/figure-latex/wykres trendu drugiego stopnia-1.pdf, id=96, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/wykres trendu drugiego stopnia-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/wykres trendu drugiego stopnia-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/wykres trendu drugiego stopnia-1.pdf  used on input line 203.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-<Zadanie-3_files/figure-latex/po_odjęciu_trendu2-1.pdf, id=143, 361.35pt x 289.08pt>
+<Zadanie-3_files/figure-latex/po_odjęciu_trendu2-1.pdf, id=97, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/po_odjęciu_trendu2-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/po_odjęciu_trendu2-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/po_odjęciu_trendu2-1.pdf  used on input line 212.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[7 <./Zadanie-3_files/figure-latex/wykres trendu drugiego stopnia-1.pdf>]
-<Zadanie-3_files/figure-latex/wykres trendu trzeciego stopnia-1.pdf, id=154, 361.35pt x 289.08pt>
+[6 <./Zadanie-3_files/figure-latex/wykres trendu drugiego stopnia-1.pdf>]
+<Zadanie-3_files/figure-latex/wykres trendu trzeciego stopnia-1.pdf, id=107, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/wykres trendu trzeciego stopnia-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/wykres trendu trzeciego stopnia-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/wykres trendu trzeciego stopnia-1.pdf  used on input line 228.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[8 <./Zadanie-3_files/figure-latex/po_odjęciu_trendu2-1.pdf>]
-<Zadanie-3_files/figure-latex/po_odjęciu_trendu3-1.pdf, id=164, 361.35pt x 289.08pt>
+[7 <./Zadanie-3_files/figure-latex/po_odjęciu_trendu2-1.pdf>]
+<Zadanie-3_files/figure-latex/po_odjęciu_trendu3-1.pdf, id=118, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/po_odjęciu_trendu3-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/po_odjęciu_trendu3-1.pdf>
 Package pdftex.def Info: Zadanie-3_files/figure-latex/po_odjęciu_trendu3-1.pdf  used on input line 237.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[9 <./Zadanie-3_files/figure-latex/wykres trendu trzeciego stopnia-1.pdf>]
+[8 <./Zadanie-3_files/figure-latex/wykres trendu trzeciego stopnia-1.pdf>]
 LaTeX Font Info:    Trying to load font information for OML+lmr on input line 258.
 (c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/omllmr.fd
 File: omllmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `OML/lmr/m/n' in size <12> not available
 (Font)              Font shape `OML/lmm/m/it' tried instead on input line 258.
-<Zadanie-3_files/figure-latex/pach_dla_reszt_diff-1.pdf, id=175, 361.35pt x 289.08pt>
+[9 <./Zadanie-3_files/figure-latex/po_odjęciu_trendu3-1.pdf>]
+<Zadanie-3_files/figure-latex/pach_dla_reszt_diff-1.pdf, id=137, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/pach_dla_reszt_diff-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/pach_dla_reszt_diff-1.pdf>
-Package pdftex.def Info: Zadanie-3_files/figure-latex/pach_dla_reszt_diff-1.pdf  used on input line 275.
+Package pdftex.def Info: Zadanie-3_files/figure-latex/pach_dla_reszt_diff-1.pdf  used on input line 277.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[10 <./Zadanie-3_files/figure-latex/po_odjęciu_trendu3-1.pdf>]
-<Zadanie-3_files/figure-latex/pacf_dla_reszt_wiel-1.pdf, id=185, 361.35pt x 289.08pt>
+<Zadanie-3_files/figure-latex/pacf_dla_reszt_wiel-1.pdf, id=138, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/pacf_dla_reszt_wiel-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/pacf_dla_reszt_wiel-1.pdf>
-Package pdftex.def Info: Zadanie-3_files/figure-latex/pacf_dla_reszt_wiel-1.pdf  used on input line 279.
+Package pdftex.def Info: Zadanie-3_files/figure-latex/pacf_dla_reszt_wiel-1.pdf  used on input line 281.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[11 <./Zadanie-3_files/figure-latex/pach_dla_reszt_diff-1.pdf> <./Zadanie-3_files/figure-latex/pacf_dla_reszt_wiel-1.pdf>]
-<Zadanie-3_files/figure-latex/AICdiff-1.pdf, id=202, 361.35pt x 289.08pt>
+[10 <./Zadanie-3_files/figure-latex/pach_dla_reszt_diff-1.pdf> <./Zadanie-3_files/figure-latex/pacf_dla_reszt_wiel-1.pdf>]
+<Zadanie-3_files/figure-latex/AICdiff-1.pdf, id=156, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/AICdiff-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/AICdiff-1.pdf>
-Package pdftex.def Info: Zadanie-3_files/figure-latex/AICdiff-1.pdf  used on input line 293.
+Package pdftex.def Info: Zadanie-3_files/figure-latex/AICdiff-1.pdf  used on input line 295.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-<Zadanie-3_files/figure-latex/dane_po_elim_trendu-1.pdf, id=203, 361.35pt x 289.08pt>
+<Zadanie-3_files/figure-latex/dane_po_elim_trendu-1.pdf, id=157, 361.35pt x 289.08pt>
 File: Zadanie-3_files/figure-latex/dane_po_elim_trendu-1.pdf Graphic file (type pdf)
 <use Zadanie-3_files/figure-latex/dane_po_elim_trendu-1.pdf>
-Package pdftex.def Info: Zadanie-3_files/figure-latex/dane_po_elim_trendu-1.pdf  used on input line 298.
+Package pdftex.def Info: Zadanie-3_files/figure-latex/dane_po_elim_trendu-1.pdf  used on input line 300.
 (pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
-[12 <./Zadanie-3_files/figure-latex/AICdiff-1.pdf>]
+[11 <./Zadanie-3_files/figure-latex/AICdiff-1.pdf>] [12 <./Zadanie-3_files/figure-latex/dane_po_elim_trendu-1.pdf>]
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[13 <./Zadanie-3_files/figure-latex/dane_po_elim_trendu-1.pdf>]
-LaTeX Font Info:    Trying to load font information for OMS+lmr on input line 392.
-(c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/omslmr.fd
-File: omslmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-)
-LaTeX Font Info:    Font shape `OMS/lmr/m/n' in size <12> not available
-(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 392.
-[14] [15] [16]
-Overfull \vbox (388.16368pt too high) has occurred while \output is active []
+[13] [14]
+<Zadanie-3_files/figure-latex/pełna_diagnostyka-1.pdf, id=185, 361.35pt x 289.08pt>
+File: Zadanie-3_files/figure-latex/pełna_diagnostyka-1.pdf Graphic file (type pdf)
+<use Zadanie-3_files/figure-latex/pełna_diagnostyka-1.pdf>
+Package pdftex.def Info: Zadanie-3_files/figure-latex/pełna_diagnostyka-1.pdf  used on input line 462.
+(pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
 
-[17] (./Zadanie-3.aux)
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+<Zadanie-3_files/figure-latex/pełna_diagnostyka_wielom-1.pdf, id=186, 361.35pt x 289.08pt>
+File: Zadanie-3_files/figure-latex/pełna_diagnostyka_wielom-1.pdf Graphic file (type pdf)
+<use Zadanie-3_files/figure-latex/pełna_diagnostyka_wielom-1.pdf>
+Package pdftex.def Info: Zadanie-3_files/figure-latex/pełna_diagnostyka_wielom-1.pdf  used on input line 494.
+(pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
+[15 <./Zadanie-3_files/figure-latex/pełna_diagnostyka-1.pdf>] [16 <./Zadanie-3_files/figure-latex/pełna_diagnostyka_wielom-1.pdf>]
+<Zadanie-3_files/figure-latex/prognoza-1.pdf, id=207, 361.35pt x 289.08pt>
+File: Zadanie-3_files/figure-latex/prognoza-1.pdf Graphic file (type pdf)
+<use Zadanie-3_files/figure-latex/prognoza-1.pdf>
+Package pdftex.def Info: Zadanie-3_files/figure-latex/prognoza-1.pdf  used on input line 504.
+(pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
+<Zadanie-3_files/figure-latex/trend_3-1.pdf, id=208, 361.35pt x 289.08pt>
+File: Zadanie-3_files/figure-latex/trend_3-1.pdf Graphic file (type pdf)
+<use Zadanie-3_files/figure-latex/trend_3-1.pdf>
+Package pdftex.def Info: Zadanie-3_files/figure-latex/trend_3-1.pdf  used on input line 510.
+(pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
+[17 <./Zadanie-3_files/figure-latex/prognoza-1.pdf>] [18 <./Zadanie-3_files/figure-latex/trend_3-1.pdf>] (./Zadanie-3.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 13341 strings out of 469479
- 212166 string characters out of 5467144
- 631714 words of memory out of 5000000
- 41687 multiletter control sequences out of 15000+600000
+ 13291 strings out of 469479
+ 212891 string characters out of 5467144
+ 623315 words of memory out of 5000000
+ 41659 multiletter control sequences out of 15000+600000
  668272 words of font info for 80 fonts, out of 8000000 for 9000
  34 hyphenation exceptions out of 8191
- 89i,10n,93p,1124b,525s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 89i,9n,93p,546b,521s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb><c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi12.pfb><c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb><c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb><c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb><c:/Users/egrac/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt12.pfb>
-Output written on Zadanie-3.pdf (17 pages, 283020 bytes).
+Output written on Zadanie-3.pdf (18 pages, 319070 bytes).
 PDF statistics:
- 374 PDF objects out of 1000 (max. 8388607)
- 313 compressed objects within 4 object streams
- 57 named destinations out of 1000 (max. 500000)
- 298 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 295 PDF objects out of 1000 (max. 8388607)
+ 226 compressed objects within 3 object streams
+ 38 named destinations out of 1000 (max. 500000)
+ 150 words of extra memory for PDF output out of 10000 (max. 10000000)
 
