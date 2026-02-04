@@ -1,0 +1,446 @@
+---
+title: "Sprawozdanie 2"
+subtitle: "Analiza Szeregów Czasowych"
+author: "Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}[section]
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+```
+
+# Zadanie 4
+
+```{r libraries}
+
+library(forecast) 
+library(ggplot2)  
+library(fpp2)   
+library(knitr)
+library(lmtest)
+
+```
+
+```{r załączenie_danych_eurotail}
+data(euretail)
+
+```
+
+## a)
+
+```{r podział_danych_na_część_uczącą_i_testową, echo = TRUE}
+euretail.learn <- window(euretail, end=c(2007,4))
+euretail.test <- window(euretail, start=c(2008,1))
+
+h <- length(euretail.test)
+```
+
+## b)
+
+```{r przekształcenia_1}
+
+autoplot(euretail.learn)+
+  ggtitle("Wykres danych uczących")
+
+```
+
+Wykres autoplot nie sugeruje znacznych wzrostów wariancji szeregu czasowego wraz z upływem czasu.
+
+```{r przekształćenia_2}
+
+box <- BoxCox.lambda(euretail.learn, "loglik") 
+
+```
+Sugerowana **lambda** dla transformacji boxa-coxa wynosi `r box`
+
+Zastosujemy tranformacje z tym parametrem żeby sprawdzić, czy ma ona istotny wpływ na dane
+
+```{r po_trans_boxa_coxa, fig.cap = "Dane po tranformacji boxa-coxa"}
+
+euretail.learn.bc <- BoxCox(euretail.learn, lambda=2)
+autoplot(euretail.learn.bc)+
+  ggtitle("euretail.learn po transformacji Box-Cox ($\\lambda$ = 2)")
+```
+Dane \ref{fig:po_trans_boxa_coxa} po tranformacji Boxa-Coxa wyglądają tak samo, co potwierdza jej zbędność.
+Dalszą analizę będziemy przeprowadzać na danych, bez tranformacji boxa-coxa.
+
+Teraz sprawdzamy sugerowane wartości różnicowań
+
+```{r różnicownia_z_op_1}
+
+
+z_1 <- ndiffs(euretail.learn) 
+
+ 
+```
+
+Funkcja ndiffs proponuje `r z_1` różnicowań z opóźnieniem 1.
+
+```{r różnicowania_z_op_s}
+
+z_2 <- nsdiffs(euretail.learn)
+s <- frequency(euretail)
+```
+
+Natomiast funkcja **nsdiffs** proponuje `r z_2` różnicowań z opóźnieniem sezonowym `r s`
+
+Wykonujemy proponowane różnicowania na danych
+
+```{r różnicowania, echo = TRUE}
+
+euretail.learn.4 <- diff(euretail.learn, lag=4)
+euretail.learn.4.1 <- diff(euretail.learn.4, lag=1)
+
+```
+
+Po zróżnicowaniu nasz szereg ma postać:
+
+```{r po_zróżnicowaniu, fig.cap= "Wykres danych euretail po zastosowaniu transformacji"}
+ggtsdisplay(euretail.learn.4.1)
+
+```
+Szereg \ref{fig:po_zróżnicowaniu} po zastosowanych tranformacjach ma charakter białoszumowy.
+Tylko jedna odstająca obserwacja funkcji ACF, brak regularności.
+
+**Średnia** uzyskanego szeregu wynosi: `r mean(euretail.learn.4.1)` 
+
+Wykres ACF \ref{fig:po_zróżnicowaniu} sugeruje dobór modeli AR(4)
+Wykres PACF \ref{fig:po_zróżnicowaniu} sugeruje dobór modelu MA(4)
+
+**AR(4)**
+```{r model_ar_4, echo = TRUE}
+
+model.ar <- Arima(euretail.learn,
+                  order=c(4,1,0),
+                  seasonal=c(0,1,0))
+```
+
+
+**MA(4)**
+```{r model_ma_4, echo = TRUE}
+
+model.ma <- Arima(euretail.learn,
+                  order=c(0,1,4),
+                  seasonal=c(0,1,0))
+```
+
+Uzyskana średnia nie wynosi 0, więc dla bezpieczeństwa warto jest też sprawdzić modele z dryfem
+
+**AR(4)** z dryfem
+```{r model_ar_4_ZDRYFEM, echo = TRUE}
+
+model.ar <- Arima(euretail.learn,
+                  order=c(4,1,0),
+                  seasonal=c(0,1,0),
+                  include.drift = TRUE)
+```
+
+**MA(4)** z dryfem
+
+```{r model_ma_4_ZDRYFEM, echo = TRUE}
+
+model.ma <- Arima(euretail.learn,
+                  order=c(0,1,4),
+                  seasonal=c(0,1,0),
+                  include.drift = TRUE)
+```
+
+Oprócz tego, warto jest również sprawdzić model automatyczny:
+
+```{r model_automatyczny, echo = TRUE}
+
+model.auto <- auto.arima(euretail.learn,
+                         stepwise=FALSE,
+                         approximation=FALSE)
+print(model.auto)
+```
+
+
+```{r test_ist_wsp}
+
+t_ist <-  coeftest(model.auto)
+
+```
+
+```{r wartosci_p}
+
+
+p_value <- data.frame(
+  parametr = rownames(t_ist),
+  p_value  = t_ist[, 4],
+  row.names = NULL
+)
+kable(p_value,
+      col.names = c("wsp.","$p_{value}$"),
+      caption = "Tabela p_value dla każdego współczynnika")
+
+```
+ 
+Z tabeli \ref{tab:wartosci_p} wynika ,że wszystkie współczynniki otrzymanego modelu są istotne
+
+
+### dopasowanie modeli tslm()
+
+**trend wielomioanowy stopnia 1**
+```{r trend1, echo = TRUE}
+
+model.tslm.0 <- tslm(euretail.learn ~ trend)
+
+res1 <- residuals(model.tslm.0)
+
+
+```
+
+**trend wielomioanowy stopnia 2**
+
+```{r trend2, echo = TRUE}
+
+model.tslm.1 <- tslm(euretail.learn ~ season + trend)
+
+res2 <- residuals(model.tslm.1)
+
+```
+
+**trend wielomioanowy stopnia 3**
+```{r trend3}
+
+model.tslm.2 <- tslm(euretail.learn ~ season + trend + I(trend^2))
+
+res3 <- residuals(model.tslm.2)
+
+
+```
+
+
+### Identyfikacja modeli algorytmów wygładzania wykładniczego (modele ETS)
+
+
+**model SES**
+```{r ses, echo = TRUE}
+model.ses <- ses(euretail.learn, h=h, initial="simple")
+```
+
+**model Holta**
+```{r holt oraz holt damped, echo = TRUE}
+
+model.holt <- holt(euretail.learn, h=h)
+model.holt.damped <- holt(euretail.learn, h=h, damped=TRUE)
+```
+
+**model Holta-Wintersa**
+```{r holt_winters_mult_i_nie, echo = TRUE}
+
+model.hw.add <- hw(euretail.learn, seasonal="additive")
+model.hw.mult <- hw(euretail.learn, seasonal="multiplicative")
+```
+
+**model ets**
+```{r ets, echo = TRUE}
+
+model.ets <- ets(euretail.learn)
+model.ets1 <- ets(euretail.learn, model="ZZZ") 
+model.ets2 <- ets(euretail.learn, model="MAZ") 
+
+```
+
+
+## Zadanie 3
+
+```{r dopasowanie_prognoz}
+
+forecast.model.ar <- forecast(model.ar, h=h)
+
+forecast.model.ma <- forecast(model.ma, h=h)
+
+
+forecast.model.auto <- forecast(model.auto, h=h)
+
+
+forecast.model.tslm0 <- forecast(model.tslm.0, h=h)
+
+
+forecast.model.tslm1 <- forecast(model.tslm.1, h=h)
+
+
+forecast.model.tslm2 <- forecast(model.tslm.2, h=h)
+
+forecast.model.tslm3 <- forecast(model.tslm.3, h=h)
+
+forecast.model.ses <- forecast(model.ses, h=h)
+
+
+forecast.model.holt <- forecast(model.holt, h=h)
+forecast.model.holt.damped <- forecast(model.holt.damped, h=h)
+
+
+forecast.model.hw.add <- forecast(model.hw.add, h=h)
+forecast.model.hw.mult <- forecast(model.hw.mult, h=h)
+
+
+forecast.model.ets <- forecast(model.ets, h=h)
+forecast.model.ets.1 <- forecast(model.ets1, h=h)
+forecast.model.ets.2 <- forecast(model.ets2, h=h)
+
+
+
+forecast.mean <- meanf(x=euretail.learn, h=8)
+
+
+forecast.naive <- naive(x=euretail.learn, h=8)
+
+
+forecast.snaive <- snaive(x=euretail.learn, h=8)
+
+forecast.rwf <- rwf(x=euretail.learn, h=8, drift=TRUE)
+
+```
+
+
+## Zadanie 4
+
+
+```{r prognoza_1}
+autoplot(forecast.model.ar) + autolayer(euretail.test)
+```
+
+
+```{r prognoza_2}
+autoplot(forecast.model.ma) + autolayer(euretail.test)
+```
+
+
+```{r prognoza_3}
+autoplot(forecast.model.auto) + autolayer(euretail.test)
+```
+
+```{r prognoza_4}
+autoplot(forecast.model.tslm0) + autolayer(euretail.test)
+```
+
+
+```{r prognoza_5}
+autoplot(forecast.model.tslm1) + autolayer(euretail.test)
+```
+
+```{r prognoza_6}
+autoplot(forecast.model.tslm2) + autolayer(euretail.test)
+```
+
+```{r prognoza_6}
+autoplot(forecast.model.tslm3) + autolayer(euretail.test)
+```
+
+```{r prognoza_7}
+autoplot(forecast.model.ses) + autolayer(euretail.test)
+```
+
+```{r prognoza_8}
+autoplot(forecast.model.holt) + autolayer(euretail.test)
+autoplot(forecast.model.holt.damped) + autolayer(euretail.test)
+```
+
+```{r prognoza_9}
+autoplot(forecast.model.hw.add) + autolayer(euretail.test)
+autoplot(forecast.model.hw.mult) + autolayer(euretail.test)
+```
+
+```{r prognoza_10}
+autoplot(forecast.model.ets) + autolayer(euretail.test)
+autoplot(forecast.model.ets.1) + autolayer(euretail.test)
+```
+
+
+```{r prognoza_11}
+autoplot(forecast.mean) + autolayer(euretail.test)
+```
+
+```{r prognoza_12}
+autoplot(forecast.naive) + autolayer(euretail.test)
+```
+
+```{r prognoza_13}
+autoplot(forecast.snaive) + autolayer(euretail.test)
+```
+
+```{r prognoza_14}
+autoplot(forecast.rwf) + autolayer(euretail.test)
+```
+
+
+#_______________________________________________________________________________
+#
+#---------------------- 5 - Porównanie dokładności prognoz --------------
+#_______________________________________________________________________________
+# Porównanie dokładności prognoz dla zbioru testowego i uczącego 
+# z uwzględnieniem wybranych miar oceny dokładności, np. RMSE, MAE, MAPE i MASE.
+# 
+# Wskazówka: można wykorzystać funkcję accuracy() z pakietu forecast.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -#
+
+
+# 1.1
+accuracy(forecast.model.ar, euretail.test)
+# 1.2
+accuracy(forecast.model.ma, euretail.test)
+# 1.3
+accuracy(forecast.model.auto, euretail.test)
+
+# 2.1
+accuracy(forecast.model.tslm0, euretail.test)
+# 2.2
+accuracy(forecast.model.tslm1, euretail.test)
+# 2.3
+accuracy(forecast.model.tslm2, euretail.test)
+
+# 3.1
+accuracy(forecast.model.ses, euretail.test)
+# 3.2
+accuracy(forecast.model.holt, euretail.test)
+accuracy(forecast.model.holt.damped, euretail.test)
+# 3.3
+accuracy(forecast.model.hw.add, euretail.test)
+accuracy(forecast.model.hw.mult, euretail.test)
+# 3.4
+accuracy(forecast.model.ets, euretail.test)
+accuracy(forecast.model.ets.1, euretail.test)
+
+# 4.1
+accuracy(forecast.mean, euretail.test)
+# 4.2
+accuracy(forecast.naive, euretail.test)
+# 4.3
+accuracy(forecast.snaive, euretail.test)
+# 4.4
+accuracy(forecast.rwf, euretail.test)
+
+#_______________________________________________________________________________
+#
+#----------- 6 - Wnioski dotyczące wyboru optymalnego modelu  ------------------
+#_______________________________________________________________________________
+# Wnioski dotyczące wyboru optymalnego modelu. 
+# Które podejście do modelowania wydaje się bardziej adekwatne 
+# dla rozważanego szeregu czasowego?
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -# 
+
+# Do samodzielnego wykonania.

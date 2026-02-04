@@ -1,0 +1,701 @@
+---
+title: "Sprawozdanie 2"
+subtitle: "Analiza Szeregów Czasowych"
+author: "Kacper Szmigielski (282255)"
+header-includes:
+   - \usepackage[OT4]{polski}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage{graphicx}
+   - \usepackage{float}
+   - \usepackage{amsthm}
+   - \newtheorem{definition}{Definicja}[section]
+   - \usepackage{placeins}
+   - \usepackage[table]{xcolor}
+output: 
+  pdf_document:
+    toc: true
+    fig_caption: true
+    fig_width: 5 
+    fig_height: 4 
+    number_sections: true
+fontsize: 12pt 
+lof: true
+lot: true
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(fig.pos = "H", out.extra ='', fig.align = "center")
+```
+
+```{r libraries}
+
+library(astsa)
+library(forecast)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(randtests)
+library(tseries)
+
+
+```
+
+# Zadanie 1
+
+```{r wykres_podstawowych_danych, fig.cap="Wykres-podstawowych-danych"}
+df <- gtemp_both
+ggtsdisplay(df)
+
+```
+**Wstępne wnioski:**
+Na wykresie szeregu widoczny jest długoterminowy trend wzrostowy, co sugeruje niestacjonarność szeregu.
+Jednocześnie nie obserwuje się wyraźnego wzrostu wariancji w czasie, dlatego nie ma potrzeby stosowania transformacji stabilizującej wariancję.
+Powolne wygaszanie ACF jest objawem potwierdzającym niestacjonarność.
+
+**Czy stosować tranformację Boxa-Coxa**
+Z wykresu szeregu nie widać wyraźnej zmiany wariancji w czasie (brak efektu „lejka”, tj. rosnącej amplitudy wahań wraz z poziomem szeregu). W celu weryfikacji oszacowano parametr \(\lambda\) transformacji Boxa–Coxa.
+
+Wartość wsp. lambda
+```{r boxocx}
+lambda <- BoxCox.lambda(df)  
+lambda
+```
+Otrzymano \(\lambda \approx `r lambda`\), czyli wartość bliską 1. Oznacza to, że ewentualna transformacja byłaby zbliżona do braku transformacji, dlatego w dalszej analizie nie stosuje się transformacji Boxa–Coxa.
+
+## i)
+
+**Różnicowanie**
+
+Aby określić ilość potrzebnych różnicowań z opóźnieniem 1 posłużymy się funkcją **ndiffs**
+Jej wartość jest równa `r ndiffs(df)`.
+
+Analogicznie skorzystamy z funkcji **nsdiffs** aby określić okres różnicowania okresowego
+Jej wartość jest równa 0, czyli nie różnicujemy sezonowo. 
+
+Różnicujemy dane z opóźnieniem 1 jednokrotnie
+```{r różnicowanie, fig.cap="Dane po pojedynczym zróżnicowaniu"}
+df.diff.1 <- diff(df, lag=1)
+ggtsdisplay(df.diff.1)
+```
+
+Dane bo zrużnicowaniu przyjmują charakter bardzo bliski białemu szumowi.
+Sugerowane modele reszt to AR(4) i MA(12).
+
+**Czy dalsze różnicowanie coś wnosi?**
+
+```{r różnicowanie2}
+
+df.diff.2 <- diff(df, lag = 2)
+
+
+ggtsdisplay(df.diff.2, main = "Szereg po różnicowaniu (lag = 2)")
+
+```
+
+Porównanie wykresów ACF po różnicowaniu pierwszego i drugiego rzędu nie wskazuje na istotne zmiany w strukturze autokorelacji — przebieg ACF pozostaje bardzo podobny. Oznacza to, że dodatkowe różnicowanie nie wnosi istotnej poprawy i w dalszej analizie przyjęto \(d = 1\).
+
+## ii)
+
+**Trend stopnia 1**
+
+```{r trend1}
+
+df.trend.1 <- tslm(df ~ trend)
+
+```
+
+Dla trendu pierwszego stopnia wsp.BIC jest równy
+`r BIC(df.trend.1)`
+
+Wykres przedstawiający dopasowany model
+```{r wykres trendu pierwszego stopnia}
+
+res1 <- df - df.trend.1$fitted
+
+autoplot(cbind(df,df.trend.1$fitted))+
+  ggtitle("Dopasowanie trendu liniowego (stopień 1)")
+```
+
+Trend liniowy opisuje wyłącznie średni kierunek zmian w czasie.
+
+```{r po_odjęciu_trendu}
+
+ggtsdisplay(res1, main = "Reszty po usunięciu trendu liniowego (stopień 1)")
+
+```
+Natomiast w resztach nadal obserwuje się długookresowe zależności (widoczny wzorzec oraz istotne autokorelacje), co wskazuje, że stopień 1 jest niewystarczający.
+
+
+ 
+**Trend stopnia 2**
+
+```{r trend2}
+
+df.trend.2 <- tslm(df ~ poly(trend, 3))
+
+```
+
+Dla trendu drugiego stopnia wsp.BIC jest równy
+`r BIC(df.trend.2)`
+i jest on znacznie mniejszy niż dla trendu stopnia pierwszego, czyli dopasowanie jest lepsze
+
+Wykres przedstawiający dopasowany model
+```{r wykres trendu drugiego stopnia}
+res2 <- df - df.trend.2$fitted
+
+autoplot(cbind(df,df.trend.2$fitted))
+  ggtitle("Dopasowanie trendu liniowego (stopień 2)")
+```
+
+Widać znaczną poprawę opisywania średniego kierunku zmian w czasie
+
+```{r po_odjęciu_trendu2}
+
+ggtsdisplay(res2, main = "Reszty po usunięciu trendu liniowego (stopień 2)")
+
+```
+W resztach nie obserwuje się już trendu długookresowego, co wskazuje na skuteczne usunięcie składowej trendu.
+Jednocześnie na wykresie ACF widoczne są istotne autokorelacje (słupki znacznie przekraczające granice istotności), co sugeruje, że reszty nadal nie mają charakteru białego szumu.
+
+**Trend stopnia 3**
+
+```{r trend3}
+
+df.trend.x <- tslm(df ~ poly(trend, 3))
+
+```
+
+Dla trendu trzeciego stopnia wsp.BIC jest równy
+`r BIC(df.trend.2)`
+i jest on istotnie mniejszy niż dla trendu stopnia drugiego, czyli dopasowanie jest lepsze
+
+Wykres przedstawiający dopasowany model
+```{r wykres trendu trzeciego stopnia}
+res3 <- df - df.trend.x$fitted
+
+autoplot(cbind(df,df.trend.x$fitted))
+  ggtitle("Dopasowanie trendu liniowego (stopień 2)")
+```
+
+Widać poprawę opisywania średniego kierunku zmian w czasie
+
+```{r po_odjęciu_trendu3}
+
+ggtsdisplay(res3, main = "Reszty po usunięciu trendu liniowego (stopień 3)")
+
+```
+
+Na wykresie ACF nie obserwuje się już wyraźnie odstających wartości.
+Pojedynczy słupek przekraczający granice istotności nie musi jednak oznaczać braku białoszumowego charakteru reszt — przy skończonej liczbie opóźnień sporadyczne przekroczenia mogą wynikać z losowej zmienności.
+Kluczowe jest, że nie widać systematycznego wzorca autokorelacji.
+
+
+Aby to potwierdzić możemy wykonać jeszcze test Ljunga-Boxa
+
+Wynik:
+```{r Ljung-Box}
+Box.test(res3, lag = 20, type = "Ljung-Box")
+```
+p value > 0.05
+Więc nie ma dowodów na autokorelację, i reszty możemy uznać za biały szum.
+
+Trend wielomianowy stopnia 3 okazał się wystarczający. Dalsze zwiększanie stopnia wielomianu prowadziło do wzrostu wartości kryterium BIC, co wskazuje, że dodatkowa złożoność nie jest uzasadniona (ryzyko przeuczenia).
+
+Na wykresie ACF reszt obserwuje się co najwyżej pojedyncze przekroczenie granic istotności, które może wynikać z losowej zmienności przy skończonej liczbie opóźnień.
+Test Ljunga–Boxa nie daje podstaw do odrzucenia hipotezy o braku autokorelacji (dla rozważanego laga), dlatego reszty można uznać za nieskorelowane, a eliminację trendu stopnia 3 za adekwatną.
+
+# Zadanie 2
+
+```{r pach_dla_reszt_diff}
+Pacf(df.diff.1)
+```
+Reszty po różnicowaniu z opóźnieniem 1 sugeruję model AR(5)
+
+```{r pacf_dla_reszt_wiel}
+Pacf(res3)
+```
+
+Dla szeregu reszt po usunięciu trendu wielomianowego stopnia 3 wykres PACF sugeruje obecność istotnych zależności do około opóźnienia 12, 
+co wskazuje na kandydata na model autoregresyjny rzędu \(p \approx 12\). Ostateczny wybór rzędu zostanie zweryfikowany kryteriami informacyjnymi AIC oraz FPE.
+
+
+Teraz wykonamy analizę posługując się kryteriami AIC oraz FPE
+
+
+**Indentyfikacja rzędu na podstawie AIC**
+
+Dla różnicowania
+
+```{r AICdiff}
+
+library(ggplot2)
+library(patchwork)
+
+# ---------- Funkcje pomocnicze ----------
+make_aic_df <- function(x, title_txt) {
+  n <- length(x)
+  p_max <- floor(10 * log10(n))
+  aic <- ar(x, aic = TRUE, order.max = p_max)$aic
+  df <- data.frame(p = 0:p_max, val = aic)
+  df$min <- df$val == min(df$val, na.rm = TRUE)
+  list(df = df, title = title_txt, ylab = "AIC")
+}
+
+make_fpe_df <- function(x, title_txt) {
+  N <- length(x)
+  p_max <- floor(2 * sqrt(N))
+  fpe <- numeric(p_max)
+
+  for (p in 1:p_max) {
+    cMN <- (N + p) / (N - p)
+    vp <- ar(x, aic = FALSE, method = "yw", order.max = p)$var.pred
+    fpe[p] <- cMN * vp
+  }
+
+  df <- data.frame(p = 1:p_max, val = fpe)
+  df$min <- df$val == min(df$val, na.rm = TRUE)
+  list(df = df, title = title_txt, ylab = "FPE")
+}
+
+plot_crit <- function(obj) {
+  ggplot(obj$df, aes(x = p, y = val)) +
+    geom_line() +
+    geom_point(size = 2) +
+    geom_point(data = subset(obj$df, min), size = 3, color = "green4") +
+    labs(title = obj$title, x = "p", y = obj$ylab) +
+    theme_minimal()
+}
+
+# ---------- 1) AIC: dane zróżnicowane ----------
+a1 <- make_aic_df(df.diff.1, "AIC dla AR(p) (dane zróżnicowane)")
+p1 <- plot_crit(a1)
+
+# ---------- 2) AIC: reszty (trend / res3) ----------
+a2 <- make_aic_df(res3, "AIC dla AR(p) (reszty: trend)")
+p2 <- plot_crit(a2)
+
+# ---------- 3) FPE: reszty (trend / res3) ----------
+f1 <- make_fpe_df(res3, "FPE dla AR(p) (reszty: trend)")
+p3 <- plot_crit(f1)
+
+# ---------- 4) FPE: dane zróżnicowane ----------
+f2 <- make_fpe_df(df.diff.1, "FPE dla AR(p) (dane zróżnicowane)")
+p4 <- plot_crit(f2)
+
+# ---------- Układ 2x2 ----------
+(p1 | p4) +
+  plot_annotation(title = "Kryteria AIC i FPE dla modeli AR(p) dla danych po różnicowaniu")
+
+
+
+
+```
+
+Zarówno dla AIC jak i FPE minimum znajduje się w 5, co potwierdza wybór modelu AR(5)
+
+```{r dane_po_elim_trendu}
+
+(p2 | p3) +
+  plot_annotation(title = "Kryteria AIC i FPE dla modeli AR(p) dla danych po eliminacji trendu")
+
+```
+Natomiast dla danych po eliminacji trendu kryteria AIC oraz EFT jednoznacznie wskazują na wybór modelu AR(1), pomimo testu wizualnego wskazujacego na 
+wybór AR(12). Na podstawie powyższych kryteriów w dlaszej części analizy będzie posługiwać się modelem AR(1) w przypadku danych po eliminacji trendu.
+
+# Zadanie 3
+
+**Tabela otrzymanych współczynników dla modeli**
+```{r dla diff}
+
+library(knitr)
+library(kableExtra)
+
+p <- 5
+
+# Dopasowania
+ar.fit.diff.yw   <- ar(df.diff.1, order.max = p, aic = FALSE, method = "yule-walker")
+ar.fit.diff.mle  <- ar(df.diff.1, order.max = p, aic = FALSE, method = "mle")
+ar.fit.diff.burg <- ar(df.diff.1, order.max = p, aic = FALSE, method = "burg")
+ar.fit.diff.ols  <- ar.ols(df.diff.1, order.max = p, aic = FALSE)
+
+# Współczynniki
+coef.diff.yw   <- ar.fit.diff.yw$ar
+coef.diff.mle  <- ar.fit.diff.mle$ar
+coef.diff.burg <- ar.fit.diff.burg$ar
+coef.diff.ols  <- ar.fit.diff.ols$ar
+
+# Wariancje
+var.wn.diff.yw   <- ar.fit.diff.yw$var.pred
+var.wn.diff.mle  <- ar.fit.diff.mle$var.pred
+var.wn.diff.burg <- ar.fit.diff.burg$var.pred
+var.wn.diff.ols  <- ar.fit.diff.ols$var.pred
+
+fmt <- if (knitr::is_latex_output()) "latex" else "html"
+
+# =========================
+# 1) TABELA WARIANCJI
+# =========================
+var_df <- data.frame(
+  Metoda = c("yw", "mle", "burg", "ols"),
+  Wariancja = c(var.wn.diff.yw, var.wn.diff.mle, var.wn.diff.burg, var.wn.diff.ols)
+)
+
+i_min <- which.min(var_df$Wariancja)
+
+
+# =========================
+# 2) TABELA WSPÓŁCZYNNIKÓW
+# =========================
+coef_mat <- rbind(
+  yw   = coef.diff.yw,
+  mle  = coef.diff.mle,
+  burg = coef.diff.burg,
+  ols  = coef.diff.ols
+)
+
+coef_df <- data.frame(Metoda = rownames(coef_mat), coef_mat, check.names = FALSE)
+colnames(coef_df) <- c("Metoda", paste0("phi", 1:p))
+for (j in 2:ncol(coef_df)) coef_df[[j]] <- round(coef_df[[j]], 4)
+
+kable(coef_df, format = fmt, booktabs = TRUE,
+      caption = "Estymowane współczynniki AR(p) (porównanie metod)",
+      align = c("l", rep("r", ncol(coef_df) - 1)),,
+  row.names = FALSE) |>
+  kable_styling(full_width = FALSE, latex_options = "hold_position")
+
+```
+Widać, że dka lażdego z otrzymanych modeli współczynniki są dość podobne.
+Warto zauważyć, że w każdym przypadku wszystkie współczynniki są ujemne.
+
+**Tabela otrzymanych variancji otrzymanych modeli**
+
+```{r variancja}
+
+
+if (knitr::is_latex_output()) {
+  W <- sprintf("%.6f", var_df$Wariancja)
+  W[i_min] <- paste0("\\cellcolor{green!25}{", W[i_min], "}")
+  var_df$Wariancja <- W
+
+  kable(var_df, format = "latex", booktabs = TRUE, escape = FALSE,
+        caption = "Wariancja białego szumu (minimum na zielono)") |>
+    kable_styling(full_width = FALSE, latex_options = "hold_position")
+} else {
+  var_df$Wariancja <- cell_spec(
+    sprintf("%.6f", var_df$Wariancja),
+    background = ifelse(seq_len(nrow(var_df)) == i_min, "#b6f2b6", "")
+  )
+
+  kable(var_df, format = "html", escape = FALSE,
+        caption = "Wariancja białego szumu (minimum na zielono)") |>
+    kable_styling(full_width = FALSE)
+}
+
+
+
+```
+
+A najmniejszą wariancją odznacza się model mle.
+Co skłania ku jego wyborowi.
+
+
+**Tabela współczynników dla modelu mlte**
+
+```{r dla mlte}
+p <- 1
+ar.fit.diff.yw <- ar(res3, order.max=1, aic=FALSE, method="yule-walker")
+ar.fit.diff.mle <- ar(res3, order.max=1, aic=FALSE, method="mle")
+ar.fit.diff.burg <- ar(res3, order.max=1, aic=FALSE, method="burg")
+ar.fit.diff.ols <- ar(res3, order.max=1, aic=FALSE, method="ols")
+
+# Współczynniki
+coef.diff.yw   <- ar.fit.diff.yw$ar
+coef.diff.mle  <- ar.fit.diff.mle$ar
+coef.diff.burg <- ar.fit.diff.burg$ar
+coef.diff.ols  <- ar.fit.diff.ols$ar
+
+# Wariancje
+var.wn.diff.yw   <- ar.fit.diff.yw$var.pred
+var.wn.diff.mle  <- ar.fit.diff.mle$var.pred
+var.wn.diff.burg <- ar.fit.diff.burg$var.pred
+var.wn.diff.ols  <- ar.fit.diff.ols$var.pred
+
+fmt <- if (knitr::is_latex_output()) "latex" else "html"
+
+# =========================
+# 1) TABELA WARIANCJI
+# =========================
+var_df <- data.frame(
+  Metoda = c("yw", "mle", "burg", "ols"),
+  Wariancja = c(var.wn.diff.yw, var.wn.diff.mle, var.wn.diff.burg, var.wn.diff.ols)
+)
+
+i_min <- which.min(var_df$Wariancja)
+
+
+# =========================
+# 2) TABELA WSPÓŁCZYNNIKÓW
+# =========================
+coef_mat <- rbind(
+  yw   = coef.diff.yw,
+  mle  = coef.diff.mle,
+  burg = coef.diff.burg,
+  ols  = coef.diff.ols
+)
+
+coef_df <- data.frame(Metoda = rownames(coef_mat), coef_mat, check.names = FALSE)
+colnames(coef_df) <- c("Metoda", paste0("phi", 1:p))
+for (j in 2:ncol(coef_df)) coef_df[[j]] <- round(coef_df[[j]], 4)
+
+kable(coef_df, format = fmt, booktabs = TRUE,
+      caption = "Estymowane współczynniki AR(p) (porównanie metod)",
+      align = c("l", rep("r", ncol(coef_df) - 1)),
+  row.names = FALSE) |>
+  kable_styling(full_width = FALSE, latex_options = "hold_position")
+
+```
+
+
+Tutaj również w każdej metodzie otrzymujemy podobne współczynniki, lecz pojawiają się już wartości dodatnie.
+
+```{r tbwariancji}
+
+if (knitr::is_latex_output()) {
+  W <- sprintf("%.6f", var_df$Wariancja)
+  W[i_min] <- paste0("\\cellcolor{green!25}{", W[i_min], "}")
+  var_df$Wariancja <- W
+
+  kable(var_df, format = "latex", booktabs = TRUE, escape = FALSE,
+        caption = "Wariancja białego szumu (minimum na zielono)") |>
+    kable_styling(full_width = FALSE, latex_options = "hold_position")
+} else {
+  var_df$Wariancja <- cell_spec(
+    sprintf("%.6f", var_df$Wariancja),
+    background = ifelse(seq_len(nrow(var_df)) == i_min, "#b6f2b6", "")
+  )
+
+  kable(var_df, format = "html", escape = FALSE,
+        caption = "Wariancja białego szumu (minimum na zielono)") |>
+    kable_styling(full_width = FALSE)
+}
+
+```
+
+W tym przypadku metodą o najm niejszej wariancji okazał się model burga.
+
+# Zadanie 4
+
+**Dla danych różnicowanych**
+```{r zad4}
+p <- 5
+ar.fit.diff.yw   <- ar(df.diff.1, order.max = p, aic = FALSE, method = "yule-walker")
+ar.fit.diff.mle  <- ar(df.diff.1, order.max = p, aic = FALSE, method = "mle")
+ar.fit.diff.burg <- ar(df.diff.1, order.max = p, aic = FALSE, method = "burg")
+ar.fit.diff.ols  <- ar.ols(df.diff.1, order.max = p, aic = FALSE)
+alpha <- 0.05
+z <- qnorm(1 - alpha/2)
+fmt <- if (knitr::is_latex_output()) "latex" else "html"
+
+ci_TL_TU <- function(model) {
+  theta <- model$ar
+  p <- length(theta)
+  V <- model$asy.var.coef
+
+  if (is.null(V) || anyNA(V)) {
+    return(list(TL = rep(NA_real_, p), TU = rep(NA_real_, p), p = p))
+  }
+
+  se <- sqrt(diag(V))
+  TL <- theta - z * se
+  TU <- theta + z * se
+  list(TL = TL, TU = TU, p = p)
+}
+
+# --- licz CI dla każdej metody (zakładam, że masz te obiekty):
+# ar.fit.diff.yw, ar.fit.diff.mle, ar.fit.diff.burg, ar.fit.diff.ols
+
+ci_yw   <- ci_TL_TU(ar.fit.diff.yw)
+ci_mle  <- ci_TL_TU(ar.fit.diff.mle)
+ci_burg <- ci_TL_TU(ar.fit.diff.burg)
+ci_ols  <- ci_TL_TU(ar.fit.diff.ols)
+
+# rząd p bierzemy z pierwszej metody (powinien być ten sam dla wszystkich)
+p <- ci_yw$p
+phi_names <- paste0("phi", 1:p)
+
+# --- zbuduj tabelę szeroką: wiersze = phi_i, kolumny = (metoda_TL, metoda_TU)
+tab <- data.frame(
+  Wsp = phi_names,
+  yw_TL   = round(ci_yw$TL, 4),
+  yw_TU   = round(ci_yw$TU, 4),
+  mle_TL  = round(ci_mle$TL, 4),
+  mle_TU  = round(ci_mle$TU, 4),
+  burg_TL = round(ci_burg$TL, 4),
+  burg_TU = round(ci_burg$TU, 4),
+  ols_TL  = round(ci_ols$TL, 4),
+  ols_TU  = round(ci_ols$TU, 4),
+  check.names = FALSE
+)
+
+# --- 2-pozimowy nagłówek: 1) metody, 2) TL/TU
+# Ustaw nazwy kolumn drugiego poziomu:
+colnames(tab) <- c("Wsp", "TL", "TU", "TL", "TU", "TL", "TU", "TL", "TU")
+
+kable(tab, format = fmt, booktabs = TRUE, row.names = FALSE,
+      caption = "Przedziały ufności 95% dla współczynników AR(p) (TL, TU)",
+      align = c("l", rep("r", ncol(tab) - 1))) |>
+  add_header_above(c(" " = 1, "yw" = 2, "mle" = 2, "burg" = 2, "ols" = 2)) |>
+  kable_styling(full_width = FALSE, latex_options = "hold_position")
+
+
+```
+
+
+Z tabeli widać, że końce każdego przedziału są tego samego znaku, co oznacza istotność każdego współczynnika w każdej metodzie.
+
+
+**Dla danyhc po usunięciu trendu wielomianowego**
+
+```{r zad4_res}
+
+
+p <- 1
+ar.fit.diff.yw <- ar(res3, order.max=1, aic=FALSE, method="yule-walker")
+ar.fit.diff.mle <- ar(res3, order.max=1, aic=FALSE, method="mle")
+ar.fit.diff.burg <- ar(res3, order.max=1, aic=FALSE, method="burg")
+ar.fit.diff.ols <- ar(res3, order.max=1, aic=FALSE, method="ols")
+alpha <- 0.05
+z <- qnorm(1 - alpha/2)
+fmt <- if (knitr::is_latex_output()) "latex" else "html"
+
+ci_TL_TU <- function(model) {
+  theta <- model$ar
+  p <- length(theta)
+  V <- model$asy.var.coef
+
+  if (is.null(V) || anyNA(V)) {
+    return(list(TL = rep(NA_real_, p), TU = rep(NA_real_, p), p = p))
+  }
+
+  se <- sqrt(diag(V))
+  TL <- theta - z * se
+  TU <- theta + z * se
+  list(TL = TL, TU = TU, p = p)
+}
+
+# --- licz CI dla każdej metody (zakładam, że masz te obiekty):
+# ar.fit.diff.yw, ar.fit.diff.mle, ar.fit.diff.burg, ar.fit.diff.ols
+
+ci_yw   <- ci_TL_TU(ar.fit.diff.yw)
+ci_mle  <- ci_TL_TU(ar.fit.diff.mle)
+ci_burg <- ci_TL_TU(ar.fit.diff.burg)
+ci_ols  <- ci_TL_TU(ar.fit.diff.ols)
+
+# rząd p bierzemy z pierwszej metody (powinien być ten sam dla wszystkich)
+p <- ci_yw$p
+phi_names <- paste0("phi", 1:p)
+
+# --- zbuduj tabelę szeroką: wiersze = phi_i, kolumny = (metoda_TL, metoda_TU)
+tab <- data.frame(
+  Wsp = phi_names,
+  yw_TL   = round(ci_yw$TL, 4),
+  yw_TU   = round(ci_yw$TU, 4),
+  mle_TL  = round(ci_mle$TL, 4),
+  mle_TU  = round(ci_mle$TU, 4),
+  burg_TL = round(ci_burg$TL, 4),
+  burg_TU = round(ci_burg$TU, 4),
+  ols_TL  = round(ci_ols$TL, 4),
+  ols_TU  = round(ci_ols$TU, 4),
+  check.names = FALSE
+)
+
+# --- 2-pozimowy nagłówek: 1) metody, 2) TL/TU
+# Ustaw nazwy kolumn drugiego poziomu:
+colnames(tab) <- c("Wsp", "TL", "TU", "TL", "TU", "TL", "TU", "TL", "TU")
+
+kable(tab, format = fmt, booktabs = TRUE, row.names = FALSE,
+      caption = "Przedziały ufności 95% dla współczynników AR(p) (TL, TU)",
+      align = c("l", rep("r", ncol(tab) - 1))) |>
+  add_header_above(c(" " = 1, "yw" = 2, "mle" = 2, "burg" = 2, "ols" = 2)) |>
+  kable_styling(full_width = FALSE, latex_options = "hold_position")
+
+```
+
+# Zadanie 5
+
+```{r diag_4_models, message=FALSE, warning=FALSE}
+
+p <- 5
+x <- df.diff.1
+
+fit_yw   <- ar(x, order.max = p, aic = FALSE, method = "yule-walker")
+fit_mle  <- ar(x, order.max = p, aic = FALSE, method = "mle")
+fit_burg <- ar(x, order.max = p, aic = FALSE, method = "burg")
+fit_ols  <- ar.ols(x, order.max = p, aic = FALSE)
+
+diag_metrics2 <- function(mod, name, lag_lb = 12) {
+  
+  res <- na.omit(mod$resid)
+
+  lb <- Box.test(res, lag = lag_lb, fitdf = mod$order, type = "Ljung-Box")
+  
+  tp <- turning.point.test(res)[[3]]
+
+  sh <- shapiro.test(res)
+
+  jb <- jarque.bera.test(res)
+
+  data.frame(
+    Metoda = name,
+    `Ljung-Box p` = lb$p.value,
+    `Turning-points p` = tp,
+    `Shapiro p` = sh$p.value,
+    `Jarque-Bera p` = jb$p.value
+  )
+}
+
+tab2 <- bind_rows(
+  diag_metrics2(fit_yw, "yw"),
+  diag_metrics2(fit_mle, "mle"),
+  diag_metrics2(fit_burg, "burg"),
+  diag_metrics2(fit_ols, "ols")
+) |>
+  mutate(across(where(is.numeric), ~round(.x, 4)))
+
+fmt <- if (knitr::is_latex_output()) "latex" else "html"
+
+kable(tab2, format = fmt, booktabs = TRUE, row.names = FALSE,
+      caption = "Testy białoszumowości i normalności dla modeli AR(5) (dane zróżnicowane)",
+      align = c("l", "r", "r", "r", "r")) |>
+  add_header_above(c(" " = 1, "Białoszumowość" = 2, "Normalność" = 2)) |>
+  kable_styling(full_width = FALSE, latex_options = "hold_position")
+
+```
+Każda metoda cechuje się resztami białoszumowymi o rozkładzie normalnym. Potwierdzają to aż 4 testy.
+
+**Dokładną diagnostykę przeprowadzimy dla metody YW**
+
+```{r pełna_diagnostyka}
+
+
+library(forecast)
+
+model <- fit_yw          # <- wybierz: fit_yw / fit_mle / fit_burg / fit_ols
+res <- na.omit(model$resid)
+
+par(mfrow = c(2,2))
+plot(res, main = paste0("AR(", model$order, ") – reszty"), ylab = "reszty", xlab = "t")
+Acf(res, lag.max = 30, main = "ACF reszt")
+hist(res, main = "Histogram reszt", xlab = "reszty")
+qqnorm(res, main = "QQ-plot reszt"); qqline(res, col = "red")
+par(mfrow = c(1,1))
+
+
+```
+
+Dla metody YW widać , że reszty zachowują się bardzo białoszumowo. Wykres reszt oscyluje wokół jednego wartości bliskiej 0 . ACF ma tylko jedną niewiele odstającą obserwację . Histogram przypomina rozkład normalny, co potweirdza wykres kwantylowy.
