@@ -55,4 +55,4 @@ The repository may include:
 
 Overall, this course provides a solid introduction to the quantitative tools used in financial market analysis, especially in the area of **bond valuation**, **cash flow modelling**, and **investment decision-making**.
 
-![Me studying](Images/Rynki.png)
+![Me studying](../Images/Rynki.png)
