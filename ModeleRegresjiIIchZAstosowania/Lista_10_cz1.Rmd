@@ -1,0 +1,128 @@
+---
+title: "Kacper Szmigielski_282255"
+subtitle: "Generowanie zbioru danych do regresji logistycznej"
+author: "Lista_10_cz1"
+date: "2026-05-12"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Zad 1
+
+## Treść
+
+\begin{enumerate}
+\item Przyjąć, że jedynie zmienne $X_1, \ldots, X_{10}$ wpływają na $Y$, przypisując im
+(wybrane) niezerowe współczynniki $\beta_1, \ldots, \beta_{10}$. Pozostałym zmiennym
+przypisać współczynniki regresji równe zeru, tzn.
+$\beta_{11} = \cdots = \beta_{20} = 0$.
+\end{enumerate}
+
+## Rozwiązanie
+
+```{r zad1}
+
+beta_1do10 <- c(1, 2, 3, 4, 5, 6, 7, 8, 9 ,10)
+
+beta_11do20 <- rep(0,10)
+
+beta <- c(beta_1do10, beta_11do20)
+
+```
+
+
+# Zad 2
+
+## Treść
+
+\begin{enumerate}
+\setcounter{enumi}{1}
+\item Dla $i = 1,2,\ldots,n$ wykonać następujące kroki:
+\begin{enumerate}
+\item Przyjąć $x_{i1} = 1$ oraz wygenerować wartości
+$x_{i2}, x_{i3}, \ldots, x_{ip}$ pozostałych $p-1$ zmiennych
+objaśniających $X_2, \ldots, X_p$. Przyjąć, że każda z tych
+wartości pochodzi z rozkładu normalnego (np.\ \texttt{rnorm()}).
+    \item Wygenerować wartość $y_i$ binarnej zmiennej objaśnianej $Y$,
+    która przyjmuje wartości $0$ i $1$ z prawdopodobieństwami odpowiednio
+    $1 - \pi(\mathbf{x}_i)$ oraz $\pi(\mathbf{x}_i)$, gdzie
+    $\mathbf{x}_i = (x_{i1}, \ldots, x_{ip})$ oraz
+    \[
+    \pi(\mathbf{x}_i) := P(Y = 1 \mid X_1 = x_{i1}, \ldots, X_p = x_{ip})
+    = \frac{1}{1 + e^{-(\beta_1 x_{i1} + \cdots + \beta_p x_{ip})}}.
+    \]
+\end{enumerate}
+\end{enumerate}
+
+## Rozwiązanie
+
+```{r zad2}
+
+# a)
+
+p <- 20
+
+n <- 300
+
+x <- c()
+
+for (i in 1:n){
+  
+  x = rbind(x, c(1,rnorm(19,0,1)))
+  
+}
+colnames(x) <- paste0("x", 1:p)
+
+#b)
+
+prob <- function(x, beta){
+  
+  val <- 1/(1 + exp(-sum(x * beta)))
+  
+}
+
+generate_Y_val <- function(n, pi){
+  
+  values <- ifelse(runif(n) < pi, 1, 0)
+  
+  return (values)
+  
+}
+
+Y <- c()
+
+for (i in 1:n){
+  
+  Y <- c(Y, generate_Y_val(1, prob(x[i,] ,beta)))
+  
+}
+```
+
+# Zad 3
+
+## Treść
+
+\begin{enumerate}
+\setcounter{enumi}{2}
+\item Połączyć wszystkie dane w jedną ramkę danych (\texttt{data.frame}),
+zawierającą kolumny: $y, x_1, \ldots, x_p$, a następnie zapisać otrzymany
+zbiór danych do pliku.
+\end{enumerate}
+
+## Rozwiązanie
+
+```{r zad3}
+
+mtx <- cbind(Y,x)
+
+df <- data.frame(mtx)
+
+write.csv(df, "dane.csv", row.names = FALSE)
+
+```
+
+
+

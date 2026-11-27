@@ -1,0 +1,30 @@
+---
+title: "Lista_10_cz2"
+author: "Kacper Szmigielski_282255"
+date: "2026-05-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Zad 1
+
+## Treść
+
+## Rozwiązanie
+
+```{r a}
+
+library(caret)
+set.seed(420)
+
+df <- read.csv("dane.csv")
+
+idx_train <- createDataPartition(df$Y, p = 0.7, list = FALSE)
+
+train <- df[idx_train, ]
+test  <- df[-idx_train, ]
+
+```

@@ -1,0 +1,155 @@
+---
+title: "Lista 2 Modelowanie Ryzyka"
+author: "Kacper Szmigielski"
+date: "2026-04-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Zadanie 17
+
+Wygeneruj próbkę z rozkładu wykładniczego o parametrze $\lambda$ = 1. Oblicz
+dystrybuantę empiryczną oraz porównaj ją z dystrybuantą teoretyczną, przedstawiając
+obie funkcje na jednym wykresie.
+
+```{r zad17}
+
+library(ggplot2)
+
+# 1. Generowanie danych z rozkładu wykładniczego (rate = lambda)
+set.seed(123)
+lambda_param <- 1
+próbka_wyk <- rexp(1000, rate = lambda_param) # rexp z
+dane_wyk <- data.frame(wartosci = próbka_wyk)
+
+# 2. Wykres
+ggplot(dane_wyk, aes(x = wartosci)) +
+  # Dystrybuanta empiryczna
+  stat_ecdf(geom = "step", aes(color = "Empiryczna"), size = 1) +
+  
+  # Dystrybuanta teoretyczna 
+  stat_function(
+    fun = pexp, 
+    args = list(rate = lambda_param), 
+    aes(color = "Teoretyczna"),
+    size = 1,
+    alpha = 0.8
+  ) +
+  
+  # Estetyka
+  scale_color_manual(values = c("Empiryczna" = "blue", "Teoretyczna" = "red")) +
+  labs(
+    title = "Dystrybuanta: Empiryczna vs Teoretyczna",
+    subtitle = "Rozkład wykładniczy (lambda = 1)",
+    x = "x",
+    y = "F(x)",
+    color = "Legenda"
+  ) +
+  theme_minimal()
+
+
+
+
+```
+
+## Zadanie 18
+
+Wygeneruj próbkę z rozkładu Pareto o parametrach a = 3, c = 1. Oblicz
+dystrybuantę empiryczną oraz porównaj ją z dystrybuantą teoretyczną, przedstawiając
+obie funkcje na jednym wykresie.
+
+```{r zad18}
+
+# 1. Parametry
+alpha <- 3
+c_param <- 1
+n <- 100
+
+# 2. Generowanie próbki z rozkładu Pareto
+# Używamy metody transformacji odwrotnej: x = c / (1 - U)^(1/alpha)
+u <- runif(n)
+próbka_pareto <- c_param / (1 - u)^(1/alpha)
+dane_pareto <- data.frame(wartosci = próbka_pareto)
+
+# 3. Definicja funkcji dystrybuanty teoretycznej
+dystrybuanta_pareto <- function(x, a = alpha, c = c_param) {
+  ifelse(x < c, 0, 1 - (c / x)^a)
+}
+
+# 4. Wykres
+ggplot(dane_pareto, aes(x = wartosci)) +
+  # Dystrybuanta empiryczna
+  stat_ecdf(geom = "step", aes(color = "Empiryczna"), size = 1) +
+  
+  # Dystrybuanta teoretyczna
+  stat_function(
+    fun = dystrybuanta_pareto,
+    args = list(a = alpha, c = c_param),
+    aes(color = "Teoretyczna"),
+    size = 1
+  ) +
+
+  xlim(c_param, 5) + 
+  
+  scale_color_manual(values = c("Empiryczna" = "blue", "Teoretyczna" = "red")) +
+  labs(
+    title = "Dystrybuanta Rozkładu Pareto (alpha=3, c=1)",    x = "x",
+    y = "F(x)",
+    color = "Typ"
+  ) +
+  theme_minimal()
+```
+
+## Zadanie 19
+
+```{r zad19}
+
+# 1. Generowanie danych
+lambda <- 4
+n <- 1000
+próbka <- rpois(n, lambda)
+dane <- data.frame(wartosci = próbka)
+
+# 2. Tworzenie wykresu
+ggplot(dane, aes(x = wartosci)) +
+  
+  geom_bar(aes(y = after_stat(count/sum(count)), fill = "Próbka (Empiryczna)"), 
+           alpha = 0.6, width = 0.5) +
+  
+  # Teoretyczna funkcja masy prawdopodobieństwa (PMF)
+  # Używamy dpois (density Poisson)
+  stat_function(
+    fun = dpois,
+    args = list(lambda = lambda),
+    n = max(próbka) + 1,
+    geom = "point",
+    aes(color = "Teoretyczna (PMF)"),
+    size = 4
+  ) +
+  stat_function(
+    fun = dpois,
+    args = list(lambda = lambda),
+    n = max(próbka) + 1,
+    geom = "line",
+    aes(color = "Teoretyczna (PMF)"),
+    linetype = "dashed"
+  ) +
+  
+  # Estetyka
+  scale_fill_manual(values = c("Próbka (Empiryczna)" = "steelblue")) +
+  scale_color_manual(values = c("Teoretyczna (PMF)" = "red")) +
+  scale_x_continuous(breaks = 0:max(próbka)) +
+  labs(
+    title = "Porównanie Histogramu z Teoretycznym Rozkładem Poissona",
+    subtitle = paste("Lambda =", lambda, ", N =", n),
+    x = "Wartość (k)",
+    y = "P(X = k)",
+    fill = "",
+    color = ""
+  ) +
+  theme_minimal()
+
+```

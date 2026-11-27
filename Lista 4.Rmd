@@ -1,0 +1,171 @@
+---
+title: "Lista 4"
+output: html_document
+date: "2026-03-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+
+library(readxl)
+library(ggplot2)
+library(GGally)
+
+```
+
+```{r libraries}
+
+df <- read_excel("regresja-wielokrotna-2026.xlsx")
+
+```
+
+
+```{r head}
+
+head(df)
+
+```
+
+```{r pary}
+
+pairs(df)
+
+```
+
+```{r korelacje}
+
+M <- cor(df)
+which(M > 0.9, arr.ind = TRUE)
+
+```
+
+```{r zad 3}
+
+#Czy XTX jest odwracalne?
+
+X <-  df[,1:ncol(df)-1]
+Y <- df[, ncol(df)]
+
+```
+
+
+```{r headX}
+
+head(X)
+
+```
+
+
+
+
+```{r matrix}
+
+mX <- as.matrix(X)
+my <- as.matrix(Y)
+beta <-  solve(t(mX)%*%mX)%*%t(mX)%*%my 
+
+```
+
+
+
+
+H0 (Żadna ze zm. nie ma liniowego wpływu na Y)
+H1 - H0 jest fałszywa
+
+```{r F}
+
+X <- as.matrix(X)
+Y <- as.numeric(Y)
+
+beta_hat <- solve(t(X) %*% X) %*% t(X) %*% Y
+
+Y_hat <- X %*% beta_hat
+SSE <- sum((Y - Y_hat)^2)
+SST <- sum((Y - mean(Y))^2)
+
+
+n <- length(Y)
+p <- ncol(X)   # razem z interceptem
+
+F_obs <- ((SST - SSE) / (p - 1)) / (SSE / (n - p))
+F_obs
+
+p_value <- pf(F_obs, df1 = p - 1, df2 = n - p, lower.tail = FALSE)
+p_value
+
+```
+Więc pełny model statystyczny jest istostny cały
+Więc conajmniej jedna zmienna objaśniająca ma liniowy wpływ na Y
+
+```{r liczenie_y}
+Y <- df$Y
+X <- as.matrix(X)
+
+SSE <- sum((Y - X %*% beta)^2)
+SST <- sum((Y - mean(Y))^2)
+
+R2 <- 1 - SSE / SST
+
+n <- length(Y)
+p <- ncol(X)
+
+ADJR2 <- 1 - (SSE / (n - p)) / (SST / (n - 1))
+```
+
+ZADANIE4
+
+
+```{r zad}
+
+
+library(car)
+
+model <- lm(Y ~ ., data = df)
+v <- vif(model)
+v
+
+```
+
+
+```{r modl2}
+
+
+
+model2 <- lm(Y ~ . - X8, data = df)
+vif(model2)
+
+```
+```{r newdf}
+
+df <- df[,-8]
+head(df)
+```
+
+```{r modl3}
+
+
+
+model3 <- lm(Y ~ . - X9, data = df)
+vif(model3)
+
+```
+```{r dfdf}
+df <- df[,-8]
+
+```
+
+```{r model4}
+
+model4 <- lm(Y ~ . - X10, data = df)
+vif(model4)
+
+```
+
+```{r dfdfdf}
+
+df <- df[, -8]
+
+```

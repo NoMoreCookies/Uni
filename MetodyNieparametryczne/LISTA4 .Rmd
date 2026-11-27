@@ -1,0 +1,176 @@
+---
+title: "MetodyNieparametryczneLista4"
+author: "Kacper Szmigielski"
+date: "2026-11-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r  implementacje, echo = FALSE}
+
+# definicja parametrów
+
+set.seed(123)
+
+M <- 10000
+alfa <- 0.05
+liczebnosci <- c(20, 50, 100)
+delty <- c(0, 0.25, 0.5)
+
+# test.pearsona
+
+test.pearson <- function(X, Y, alfa = 0.05 ){
+  
+  n <- length(X)
+  rho <- cor(X, Y)
+  S <- rho * sqrt((n-2)/(1-rho^2))
+  
+  return (S > qt(1- alfa, df = n - 2))
+}
+
+
+# test.spearmana
+  
+test.spearman <- function(X, Y, alfa = 0.05) {
+
+  n <- length(X)
+  A <- 1:n
+  a <- mean(A)
+  
+  W <- sum(rank(X) * rank(Y))
+  E <- n * a^2
+  
+  sigma2 <- sum((A-a)^2/(n-1))
+  V <- (n - 1) * sigma2^2
+
+  S <- (W - E) / sqrt(V)
+  S >= qnorm(1 - alfa)
+}
+
+# test vpw
+test.vpw <- function(X, Y, alfa = 0.05) {
+  S.VWD <-  function(S, n){ return (qnorm(S/(n+1)))}
+  n <- length(X)
+  A <- S.VWD(1:n, n)
+  a <- mean(A)
+  
+  S <- sum(S.VWD(rank(X),n) * S.VWD(rank(Y), n))
+  E <- n * a^2
+  
+  sigma2 <- sum((A-a)^2/(n-1))
+  V <- (n - 1) * sigma2^2
+
+  S <- (S - E) / sqrt(V)
+  S >= qnorm(1 - alfa)
+}
+
+# rozkłady  
+
+rozkłady <- function(N, wariant) {
+  switch(
+    
+    wariant,
+    
+    list(X_gw = rnorm(N),
+         Y_gw = rnorm(N),
+         Z_gw = rnorm(N)),
+    
+    list(X_gw = rnorm(N),
+         Y_gw = rnorm(N, sd = 2),
+         Z_gw = rnorm(N)),
+    
+    list(
+      
+      X_gw = rgamma(N, shape = 2, scale = 1),
+      Y_gw = rgamma(N, shape = 2, scale = 1),
+      Z_gw  = rgamma(N, shape = 2, scale = 1)
+      
+    ),
+    list(
+      
+      X_gw = rgamma(N, shape = 0.2, scale = 1),
+      Y_gw = rgamma(N, shape = 2, scale = 1),
+      Z_gw  = rgamma(N, shape = 0.5, scale = 1)
+      
+    )
+  )
+}
+
+
+# Pojedyncza próba
+jedna_proba <- function(N, delta, wariant, alfa) {
+  skladniki <- rozkłady(N, wariant)
+
+  X <- skladniki$X_gw + delta * skladniki$Z_gw
+  Y <- skladniki$Y_gw + delta * skladniki$Z_gw
+
+  c(
+    Pe  = test.pearson(X, Y, alfa = alfa),
+    vdW = test.vpw(X, Y, alfa = alfa),
+    Sp  = test.spearman(X, Y, alfa = alfa)
+  )
+}
+
+moc_mc <- function(N, delta, wariant, M, alfa) {
+  odrzucenia <- replicate(
+    M,
+    jedna_proba(N, delta, wariant, alfa = alfa)
+  )
+
+  rowMeans(odrzucenia)
+}
+
+
+
+rozklady <- data.frame(
+  f = c("N(0, 1)", "N(0, 1)", "G(2, 1)", "G(0.2, 1)"),
+  g = c("N(0, 1)", "N(0, 4)", "G(2, 1)", "G(2, 1)"),
+  h = c("N(0, 1)", "N(0, 1)", "G(2, 1)", "G(0.5, 1)")
+)
+
+```
+
+
+```{r wyświetlanie}
+
+
+
+for (N in liczebnosci) {
+  
+  tabela <- rozklady
+
+  for (delta in delty) {
+
+  wyniki <- t(sapply(
+    
+    seq_len(nrow(rozklady)),
+    
+    function(wariant) moc_mc(N, delta, wariant, M = M, alfa = alfa)
+    
+  ))
+
+    nazwy_kolumn <- paste0(c("Pe", "vdW", "Sp"), "_", delta)
+    
+    tabela[nazwy_kolumn] <- as.data.frame(round(wyniki, 4))
+  }
+
+  cat("\nN =", N, "| M =", M, "\n")
+  print(tabela, row.names = FALSE)
+  
+}
+```
+
+odp1 :  Tak, zachowują nominalny poziom istotności, przy delta = 0 , moce testów są bliskie 0.05, największa różnica jest przy ostatnim rozkładzie, jest 0.07 ,czyliróżnica aż o 0.02
+
+odp2 : Imo większa zależność (większa delta) tym większa jest moc testu
+
+odp3 : N = 20 , [2 wiersz, delta = 0] [ 3 wiersz, delta = 0.25] [ 3 wiersz, delta = 0.5]
+
+odp4 : średnio test vdW, ale to zależy od wiersza tabeli

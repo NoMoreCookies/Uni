@@ -1,0 +1,480 @@
+---
+title: "AnalizaDanychAnkietowych"
+author: "Kacper Szmigielski"
+date: "2026-10-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      warninrgs = FALSE,
+                      messages = FALSE)
+
+my_palette <- c(
+  "#9A342D", # ceglasty
+  "#57423E", # brązowy
+  "#BFA6A2", # beżoworóżowy
+  "#3053A4", # niebieski
+  "#6C84DC", # jasny indygo
+  "#4D8275", # zgaszona zieleń
+  "#D5AD54"
+)
+```
+
+```{r biblioteki}
+
+library(ggplot2)
+library(openintro)
+library(dplyr)
+library(janitor)
+library(knitr)
+library(kableExtra)
+library(binom)
+```
+
+```{r data_import}
+
+data(reddit_finance)
+
+```
+
+# Lista 1
+
+## Zbiór danych
+
+Zbiór **reddit_finance**, dostępny w pakiecie openintro w R, zawiera wybrane wyniki ankiety dotyczącej niezależności finansowej, przeprowadzonej w 2020 roku wśród użytkowników społeczności r/financialindependence na platformie Reddit. 
+Zbiór obejmuje 1998 obserwacji i 65 zmiennych. 
+Jednostką obserwacji jest respondent, choć część pytań dotyczy całego gospodarstwa domowego.
+W zbiorze **pominięto osoby będące na emeryturze**.
+
+## Źródło i sposób zebrania danych 
+
+Zbiór reddit_finance pochodzi z pakietu openintro w R i zawiera część wyników ankiety 2020 Financial Independence Survey. Kwestionariusz udostępniono w społeczności r/financialindependence na platformie Reddit. Uczestnicy dobrowolnie wypełniali ankietę online w Google Forms. Edycja dotyczyła 2020 roku, a odpowiedzi zbierano do 28 lutego 2021 roku. Wyniki opublikowano w marcu 2021 roku w tej samej społeczności, w poście Official 2020 FI Survey Results. reddit.com
+
+Zbiór zawiera 1998 obserwacji i 65 zmiennych. Jeden wiersz odpowiada jednemu respondentowi. W wersji udostępnionej w R zachowano odpowiedzi odnoszące się do samych respondentów i pominięto osoby, które były już na emeryturze. Część pytań dotyczyła jednak sytuacji całego gospodarstwa domowego, na przykład jego rocznego dochodu brutto. Dane mają charakter przekrojowy i deklaratywny. Ze względu na dobrowolny udział członków jednej społeczności internetowej możliwość uogólniania wyników na całą populację jest ograniczona. Kwoty podawano w lokalnych walutach respondentów, więc ich bezpośrednie porównywanie między walutami wymaga przeliczenia na wspólną jednostkę.
+
+Na potrzeby tabel liczności odpowiedzi oznaczone jako „N/A” oraz brakujące wartości NA ujęto wspólnie w kategorii „Brak danych”. Deklaracje odmowy odpowiedzi zachowano jako osobną kategorię.
+
+```{r tabele_zmiennych_reddit, results='asis', echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+
+opisy_zmiennych <- list(
+  "Dane demograficzne i gospodarstwo domowe" = "
+num_incomes | Liczba osób wnoszących dochód do gospodarstwa domowego.
+political | Partia polityczna, z którą respondent najbardziej się utożsamia.
+race_eth | Deklarowana przynależność rasowa lub etniczna. Można było wybrać kilka odpowiedzi.
+gender | Deklarowana płeć respondenta.
+age | Przedział wiekowy respondenta.
+edu | Najwyższy ukończony poziom wykształcenia.
+rel_status | Status związku respondenta.
+children | Informacja o posiadaniu dzieci.
+country | Kraj, w którym przebywa respondent.",
+
+  "Wpływ pandemii na finanse" = "
+pan_inc_chg | Kierunek zmiany dochodu z pracy w związku z pandemią.
+pan_inc_chg_pct | Deklarowana wielkość procentowej zmiany dochodu z pracy.
+pan_exp_chg | Kierunek zmiany wydatków w związku z pandemią.
+pan_exp_chg_pct | Deklarowana wielkość procentowej zmiany wydatków.
+pan_fi_chg | Kierunek zmiany kwoty inwestycji uznawanej za wystarczającą do osiągnięcia niezależności finansowej.
+pan_ret_date_chg | Zmiana planowanego terminu przejścia na emeryturę.
+pan_financial_impact | Ogólna ocena wpływu pandemii na finanse respondenta.",
+
+  "Niezależność finansowa i plany emerytalne" = "
+fin_indy | Deklaracja, czy respondent osiągnął niezależność finansową.
+fin_indy_num | Kwota zainwestowanych środków uznawana za wystarczającą do osiągnięcia niezależności finansowej.
+fin_indy_pct | Odsetek docelowej kwoty potrzebnej do osiągnięcia niezależności finansowej, który respondent już zgromadził.
+retire_invst_num | Kwota zainwestowanych środków, przy której respondent zamierza przejść na emeryturę.
+tgt_sf_wthdrw_rt | Docelowa bezpieczna stopa wypłat z portfela inwestycyjnego, wyrażona w procentach.
+max_retire_sup | Oczekiwany roczny dochód po uruchomieniu wszystkich lub większości wskazanych źródeł dochodu emerytalnego.
+retire_exp | Planowana roczna kwota wydatków na emeryturze.
+whn_fin_indy_num | Kwota zainwestowanych środków, przy której respondent uznał się za niezależnego finansowo.
+fin_indy_lvl | Kategoria niezależności finansowej, do której respondent zaliczyłby się w momencie jej osiągnięcia.
+retire_age | Przedział wiekowy, w którym respondent planuje przejść na emeryturę.
+stp_whn_fin_indy | Deklaracja, czy respondent zamierza zakończyć pracę zarobkową po osiągnięciu niezależności finansowej.",
+
+  "Sytuacja zawodowa, edukacyjna i mieszkaniowa" = "
+industry | Branża, w której respondent pracuje obecnie lub pracował ostatnio.
+employer | Typ obecnego lub ostatniego pracodawcy.
+role | Rodzaj obecnie lub ostatnio wykonywanej pracy.
+ft_status | Status dotyczący pracy w pełnym wymiarze.
+pt_status | Status dotyczący regularnej pracy w niepełnym wymiarze.
+gig_status | Status dotyczący dodatkowej lub dorywczej pracy.
+ne_status | Kategoria statusu respondenta w przypadku braku zatrudnienia.
+edu_status | Aktualny status respondenta w zakresie nauki.
+housing | Aktualna sytuacja mieszkaniowa respondenta.",
+
+  "Majątek i zadłużenie" = "
+home_value | Wartość nieruchomości będącej głównym miejscem zamieszkania.
+brokerage_accts_tax | Wartość środków na rachunkach maklerskich podlegających opodatkowaniu.
+retirement_accts_tax | Wartość środków na rachunkach emerytalnych objętych preferencjami podatkowymi.
+cash | Wartość gotówki i jej ekwiwalentów, w tym środków na rachunkach bankowych i lokatach.
+invst_accts | Wartość środków na rachunkach przeznaczonych na określone cele, np. edukację lub opiekę zdrowotną.
+spec_crypto | Wartość inwestycji spekulacyjnych, np. w kryptowaluty, złoto lub pożyczki P2P.
+invst_prop_bus_own | Wartość nieruchomości inwestycyjnych lub posiadanych przedsiębiorstw.
+other_val | Wartość pozostałych składników majątku.
+student_loans | Pozostała do spłaty kwota kredytów lub pożyczek studenckich.
+mortgage | Zadłużenie z tytułu kredytu hipotecznego lub linii kredytowej zabezpieczonej nieruchomością.
+auto_loan | Pozostała do spłaty kwota kredytów samochodowych.
+credit_personal_loan | Zadłużenie na kartach kredytowych lub z tytułu pożyczek osobistych.
+medical_debt | Niespłacone zobowiązania związane z kosztami leczenia.
+invst_prop_bus_own_debt | Zadłużenie związane z nieruchomościami inwestycyjnymi lub własną działalnością gospodarczą.
+other_debt | Zadłużenie z pozostałych źródeł.",
+
+  "Dochody, wydatki i oszczędności w 2020 roku" = "
+2020_gross_inc | Roczny dochód brutto gospodarstwa domowego przed opodatkowaniem i potrąceniami.
+2020_housing_exp | Wydatki mieszkaniowe, np. czynsz, raty kredytu hipotecznego, ubezpieczenie i utrzymanie mieszkania.
+2020_utilities_exp | Wydatki na media i usługi, np. prąd, gaz, wodę, telefon i internet.
+2020_transp_exp | Wydatki na transport, np. paliwo, bilety, raty i utrzymanie samochodu.
+2020_necessities_exp | Wydatki na podstawowe potrzeby, np. żywność, odzież i środki higieniczne.
+2020_lux_exp | Wydatki dodatkowe, np. na restauracje, rozrywkę, podróże i hobby.
+2020_child_exp | Wydatki związane z dziećmi, np. na opiekę i zajęcia dodatkowe.
+2020_debt_repay | Kwota przeznaczona na spłatę zadłużenia z wyłączeniem kredytów hipotecznych i samochodowych.
+2020_invst_save | Kwota przeznaczona na inwestycje i oszczędności.
+2020_charity | Kwota przeznaczona na cele charytatywne lub składki religijne.
+2020_healthcare_exp | Wydatki na opiekę zdrowotną, np. koszty leczenia, dopłaty i składki ubezpieczeniowe.
+2020_taxes | Łączna kwota zapłaconych podatków, w tym potrąconych z wynagrodzenia.
+2020_edu_exp | Wydatki na edukację.
+2020_other_exp | Pozostałe wydatki."
+)
+
+for (tytul in names(opisy_zmiennych)) {
+  tabela <- read.delim(
+    text = opisy_zmiennych[[tytul]],
+    sep = "|",
+    header = FALSE,
+    col.names = c("Zmienna", "Opis"),
+    colClasses = "character",
+    strip.white = TRUE,
+    quote = "",
+    comment.char = ""
+  )
+
+  tabela_latex <- kable(
+    tabela,
+    format = "latex",
+    booktabs = TRUE,
+    row.names = FALSE,
+    caption = paste0(tytul, "."),
+    align = c("l", "l")
+  ) %>%
+    kable_styling(
+      latex_options = c("striped", "hold_position", "scale_down"),
+      position = "center",
+      font_size = 9
+    ) %>%
+    column_spec(2, width = "9cm") %>%
+    row_spec(
+      0,
+      bold = TRUE,
+      color = "white",
+      background = "#9A342D"
+    )
+
+  print(tabela_latex)
+  cat("\n\n")
+}
+```
+
+# Lista 2
+
+## Tablice liczności i częstości dla zmiennych nominalnych i porządkowych.
+
+```{r cols_selection}
+
+selectedCols = c("fin_indy", # binarna/objaśniana
+                 "age", # porządkowa
+                 "edu", # porządkowa
+                 "gender", # nominalna
+                 "rel_status", # nominalna
+                 "children", # nominalna
+                 "housing", # nominalna
+                 "industry", # nominalna
+                 "num_incomes", # dyskretna
+                 "pan_financial_impact" # porządkowa
+                 )
+
+```
+
+```{r data_preparation}
+
+# Twoje wybrane kolumny:
+selectedCols <- c("fin_indy", "age", "edu", "gender", "rel_status", 
+                  "children", "housing", "industry", "num_incomes", "pan_financial_impact")
+
+# Przekształcenie zmiennych kategorycznych na czynniki (jeśli jeszcze nimi nie są)
+df <- reddit_finance %>%
+  mutate(across(all_of(selectedCols), as.factor))
+
+```
+
+```{r tablice_licznosci, results='asis', echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+
+for (col in selectedCols) {
+  wartosci <- as.character(df[[col]])
+  wartosci[!is.na(wartosci) & trimws(wartosci) == "N/A"] <- NA_character_
+
+  tablica <- as.data.frame(table(wartosci, useNA = "ifany"))
+  names(tablica) <- c("Kategoria", "Liczność")
+
+  tablica$Kategoria <- as.character(tablica$Kategoria)
+  tablica$Kategoria[is.na(tablica$Kategoria)] <- "Brak danych"
+
+  tabela <- kable(
+    tablica,
+    format = "latex",
+    caption = paste(
+      "Tablica liczności dla zmiennej",
+      gsub("_", " ", col, fixed = TRUE)
+    ),
+    align = c("l", "r"),
+    row.names = FALSE
+  ) %>%
+    kable_styling(
+      latex_options = c("striped", "hold_position"),
+      full_width = FALSE,
+      position = "center"
+    ) %>%
+    row_spec(
+      0,
+      bold = TRUE,
+      color = "white",
+      background = "#9A342D"
+    )
+
+  print(tabela)
+  cat("\n\n")
+}
+```
+
+```{r testy}
+
+
+
+set.seed(123)
+
+B <- 100000
+poziom <- 0.95
+
+scenariusze <- expand.grid(
+  n = c(30, 50, 100, 500),
+  p = c(0.1, 0.5, 0.9)
+)
+
+metody <- c("exact", "asymptotic", "wilson")
+
+nazwy_metod <- c(
+  exact = "Clopper-Pearson",
+  asymptotic = "Wald",
+  wilson = "Wilson"
+)
+
+lista_wynikow <- list()
+k <- 1
+
+for (i in seq_len(nrow(scenariusze))) {
+
+  n <- scenariusze$n[i]
+  p <- scenariusze$p[i]
+
+  # Te same losowania dla wszystkich trzech metod
+  x <- rbinom(B, size = n, prob = p)
+
+  for (metoda in metody) {
+
+    # Przedziały dla każdej możliwej liczby sukcesów: 0, 1, ..., n
+    przedzialy <- binom.confint(
+      x = 0:n,
+      n = rep(n, n + 1),
+      conf.level = poziom,
+      methods = metoda
+    )
+
+    # W R indeksowanie zaczyna się od 1:
+    # liczbie sukcesów x odpowiada wiersz x + 1
+    dolna <- przedzialy$lower[x + 1]
+    gorna <- przedzialy$upper[x + 1]
+
+    pokryty <- dolna <= p & p <= gorna
+    dlugosc <- gorna - dolna
+
+    pokrycie_sym <- mean(pokryty)
+    dlugosc_sym <- mean(dlugosc)
+
+    # Pokrycie obliczone przez binom.coverage
+    odniesienie <- binom.coverage(
+      p = p,
+      n = n,
+      conf.level = poziom,
+      method = metoda
+    )
+
+    pokrycie_dok <- odniesienie$coverage[1]
+
+    # Dokładna oczekiwana długość:
+    # suma długości ważonych prawdopodobieństwami X = 0, ..., n
+    dlugosc_dok <- sum(
+      (przedzialy$upper - przedzialy$lower) *
+        dbinom(0:n, size = n, prob = p)
+    )
+
+    lista_wynikow[[k]] <- data.frame(
+      n = n,
+      p = p,
+      Metoda = unname(nazwy_metod[metoda]),
+      Pokrycie_sym = pokrycie_sym,
+      Pokrycie_dok = pokrycie_dok,
+      Roznica_pp = 100 * (pokrycie_sym - pokrycie_dok),
+      Dlugosc_sym = dlugosc_sym,
+      Dlugosc_dok = dlugosc_dok,
+      MCSE_pokrycia = sqrt(pokrycie_sym * (1 - pokrycie_sym) / B),
+      MCSE_dlugosci = sd(dlugosc) / sqrt(B)
+    )
+
+    k <- k + 1
+  }
+}
+
+wyniki <- bind_rows(lista_wynikow)
+
+wyniki$Metoda <- factor(
+  wyniki$Metoda,
+  levels = unname(nazwy_metod)
+)
+
+wyniki <- wyniki %>%
+  arrange(p, n, Metoda)
+
+```
+
+```{r tabele_symulacji, results='asis', echo=FALSE, message=FALSE, warning=FALSE}
+for (p0 in sort(unique(wyniki$p))) {
+
+  tabela <- wyniki %>%
+    filter(p == p0) %>%
+    transmute(
+      n,
+      Metoda,
+      Pokrycie_sym = 100 * Pokrycie_sym,
+      Pokrycie_dok = 100 * Pokrycie_dok,
+      Roznica_pp,
+      Dlugosc_sym,
+      Dlugosc_dok
+    )
+
+  tabela_latex <- kable(
+    tabela,
+    format = "latex",
+    booktabs = TRUE,
+    row.names = FALSE,
+    digits = c(0, 0, 2, 2, 2, 4, 4),
+    col.names = c(
+      "n", "Metoda",
+      "Sym. (%)", "Dokł. (%)", "Różnica (p.p.)",
+      "Sym.", "Dokł."
+    ),
+    caption = paste0(
+      "Pokrycie i oczekiwana długość przedziałów dla p = ",
+      p0, " (B = ", B, ")."
+    ),
+    align = c("r", "l", rep("r", 5))
+  ) %>%
+    add_header_above(c(
+      " " = 2,
+      "Pokrycie" = 3,
+      "Długość" = 2
+    )) %>%
+    kable_styling(
+      latex_options = c("striped", "hold_position", "scale_down"),
+      position = "center",
+      font_size = 9
+    ) %>%
+    row_spec(
+      0,
+      bold = TRUE,
+      color = "white",
+      background = "#3053A4"
+    )
+
+  print(tabela_latex)
+  cat("\n\n")
+}
+```
+
+## Wykresy kołowe lub słupkowe ilustrujące zmienne z punktu (a)
+
+```{r wykresy_slupkowe, echo=FALSE, fig.width=7, fig.height=5}
+
+
+tablica_licznosci <- function(zmienna) {
+  dane <- as.data.frame(table(zmienna, useNA = "ifany"))
+  names(dane) <- c("Kategoria", "Liczność")
+
+  dane$Kategoria <- as.character(dane$Kategoria)
+  dane$Kategoria[is.na(dane$Kategoria)] <- "Brak danych"
+
+  # Pomijamy kategorie bez obserwacji
+  dane <- dane[dane$Liczność > 0, ]
+  dane$Procent <- 100 * dane$Liczność / sum(dane$Liczność)
+
+  dane
+}
+
+for (col in selectedCols) {
+
+  dane <- tablica_licznosci(df[[col]])
+
+  wykres <- ggplot(dane, aes(x = Kategoria, y = Liczność)) +
+    geom_col(fill = my_palette[4], width = 0.7) +
+    geom_text(aes(label = Liczność), vjust = -0.4) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.12))) +
+    labs(
+      title = paste("Rozkład zmiennej:", gsub("_", " ", col)),
+      x = NULL,
+      y = "Liczność"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(face = "bold"),
+      panel.grid.major.x = element_blank(),
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+
+  print(wykres)
+}
+```
+
+```{r wykresy_kolowe, echo=FALSE, fig.width=7, fig.height=5}
+for (col in selectedCols) {
+
+  dane <- tablica_licznosci(df[[col]])
+
+  wykres <- ggplot(
+    dane,
+    aes(x = "", y = Liczność, fill = Kategoria)
+  ) +
+    geom_col(width = 1, color = "white") +
+    coord_polar(theta = "y") +
+    geom_text(
+      aes(label = sprintf("%.1f%%", Procent)),
+      position = position_stack(vjust = 0.5),
+      size = 4
+    ) +
+    labs(
+      title = paste("Rozkład zmiennej:", gsub("_", " ", col)),
+      fill = "Kategoria"
+    ) +
+    theme_void(base_size = 12) +
+    theme(
+      plot.title = element_text(face = "bold", hjust = 0.5)
+    )
+
+  print(wykres)
+}
+```
+
+## Wykresy mozaikowe odpowiadające parom zmiennych z punktu (a)
+
+# Lista 3 

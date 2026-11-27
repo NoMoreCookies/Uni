@@ -1,0 +1,48 @@
+---
+title: "AnalizaDanychAnkietowych"
+author: "Kacper Szmigielski"
+date: "2026-10-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r data_import}
+
+library(openintro)
+
+data(reddit_finance)
+```
+
+```{r cols_selection}
+
+selectedCols = c("fin_indy", # binarna/objaśniana
+                 "age", # porządkowa
+                 "edu", # porządkowa
+                 "gender", # nominalna
+                 "rel_status", # nominalna
+                 "children", # nominalna
+                 "housing", # nominalna
+                 "industry", # nominalna
+                 "num_incomes", # dyskretna
+                 "pan_financial_impact" # porządkowa
+                 )
+
+```
+
+```{r selecting_columns}
+
+sort(colSums(is.na(reddit_finance)), decreasing = TRUE)
+```
+
+```{r summary_statistics}
+
+sum(complete.cases(reddit_finance[, selectedCols]))
+
+```
+
+```{r checking_data}
+lapply(reddit_finance[selectedCols], unique)
+```

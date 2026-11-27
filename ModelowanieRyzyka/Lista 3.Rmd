@@ -1,0 +1,528 @@
+---
+title: "Modelowanie Ryzyka Lista 4"
+output: pdf_document
+date: "2026-03-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Zadanie 1
+
+## Treść
+
+$X$ i $Y$ to dwa niezależne ryzyka o zbiorze możliwych wartości $\{0,1,2\}$.
+Wartości $P(X=i)$ oraz $P(Y=i)$ są podane w tabeli:
+
+| $i$        | 0   | 1   | 2   |
+|------------|-----|-----|-----|
+| $P(X=i)$   | 0.3 | 0.6 | 0.1 |
+| $P(Y=i)$   | 0.1 | 0.2 | 0.7 |
+
+Oblicz funkcje tworzące prawdopodobieństwa dla $X$, $Y$, $X+Y$.
+
+## Rozwiązanie 
+
+Definiujemy funkcję tworzącą prawdopodobieństwa X jako:
+  $P_x(t) = E(t^x)$
+  
+Więc rozwiazanie ma postać:
+  $P_x(t) = E(t^x) = t^0 * 0.3 + t^1 * 0.6 + t^2 * 0.1 = 0.1 *t^2 + 0.6t + 0.3$
+  $P_y(t) = E(t^y) = t^0 * 0.1 + t^1 * 0.2 + t^2 * 0.7 = 0.7 *t^2 + 0.2t + 0.1$
+  $P_{X+Y}(t) = E(t^{X+Y}) = E(t^xt^y) \stackrel{\mathrm{niezależność}}{=}E(t^x)E(t^y) = (0.1t^2+0.6t+0.3)(0.7t^2+0.2t+0.1) = 0.07t^4+0.44t^3+0.34t^2+0.12t+0.03$
+
+# Zadanie 2
+
+## Treść
+
+Niech $X_1, X_2, \dots$ będzie ciągiem niezależnych zmiennych losowych
+o jednakowym rozkładzie, o wartościach nieujemnych. Niech $N$ będzie
+zmienną losową niezależną od ciągu $(X_n)_{n \geq 1}$, o wartościach naturalnych.
+Oznaczmy
+$$
+S = X_1 + \dots + X_N.
+$$
+
+Zakładając, że $E X_1^2 < \infty$ i $E N^2 < \infty$, uzasadnij, że
+$$
+\operatorname{Var}(S) = E N \operatorname{Var}(X_1) + (E X_1)^2 \operatorname{Var}(N).
+$$
+
+## Rozwiązanie
+
+Z wykłądu wiemy, że 
+$$E(S) = E(X)E(N)$$
+
+$$Var(S) = E(S^2)-(E(S))^2$$
+
+$$E(S^2) = \sum^{\infty}_{n = 1}{E((X_1+...+X_n)^2)|N = n)P(N=n)} = $$
+$$\sum^{\infty}_{n = 1}{E((X_1+...+X_n)^2))P(N=n)}$$
+
+$$
+(X_1+\cdots+X_n)^2=\sum_{i=1}^n X_i^2+2\sum_{1\le i<j\le n}X_iX_j
+$$
+
+$$
+E\left((X_1+\cdots+X_n)^2\right)
+=
+\sum_{i=1}^n E(X_i^2)+2\sum_{1\le i<j\le n}E(X_iX_j)
+$$
+
+$$
+\text{przy niezależności: }\;
+E(X_iX_j)=E(X_i)E(X_j)
+$$
+
+$$
+E\left((X_1+\cdots+X_n)^2\right)
+=
+n\,EX_1^2+n(n-1)(EX_1)^2
+$$
+
+$$\sum^{\infty}_{n = 1}{E((X_1+...+X_n)^2))P(N=n)} = \sum^{\infty}_{n = 1}{(n\,EX_1^2+n(n-1)(EX_1)^2)P(N=n)}$$
+
+
+$$
+=EX_1^2\sum_{n=1}^{\infty} nP(N=n)
++(EX_1)^2\sum_{n=1}^{\infty} n(n-1)P(N=n)
+$$
+
+$$
+=EX_1^2\,EN+(EX_1)^2E(N(N-1))
+$$
+
+$$
+Var(S)=EX_1^2\,EN+(EX_1)^2E(N(N-1))-(EX_1)^2(EN)^2
+$$
+
+$$
+=EN\,\operatorname{Var}(X_1)+(EX_1)^2\operatorname{Var}(N)
+$$
+
+c.b.d.o
+
+# Zadanie 3
+
+## Treść
+
+Łączna wartość szkód $S$ ma złożony rozkład Poissona z oczekiwaną liczbą szkód równą
+$E[N]=4$ oraz z rozkładem wartości pojedynczej szkody $Y$ danym gęstością:
+$$
+f_Y(y)=
+\begin{cases}
+\frac{3}{8}, & \text{dla } y \in (0,2),\\[4pt]
+\frac{1}{24}, & \text{dla } y \in (2,5),
+\end{cases}
+$$
+oraz masą prawdopodobieństwa równą $0.125$ w punkcie $y=5$.
+Wylicz wariancję zmiennej $S$.
+
+## Rozwiązanie
+
+$$
+S=\sum_{i=1}^N Y_i, \qquad N\sim \mathrm{Poisson}(4).
+$$
+
+Dla złożonego rozkładu Poissona zachodzi wzór
+$$
+\operatorname{Var}(S)=E[N]\operatorname{Var}(Y)+(EY)^2\operatorname{Var}(N).
+$$
+
+Ponieważ dla rozkładu Poissona
+$$
+E[N]=\operatorname{Var}(N)=4,
+$$
+to
+$$
+\operatorname{Var}(S)=4\operatorname{Var}(Y)+4(EY)^2.
+$$
+
+Najpierw liczymy $EY$:
+$$
+EY=\int_0^2 y\cdot \frac{3}{8}\,dy+\int_2^5 y\cdot \frac{1}{24}\,dy+5\cdot 0.125.
+$$
+
+Mamy
+$$
+\int_0^2 y\cdot \frac{3}{8}\,dy
+=
+\frac{3}{8}\left[\frac{y^2}{2}\right]_0^2
+=
+\frac{3}{8}\cdot 2
+=
+\frac{3}{4},
+$$
+
+$$
+\int_2^5 y\cdot \frac{1}{24}\,dy
+=
+\frac{1}{24}\left[\frac{y^2}{2}\right]_2^5
+=
+\frac{1}{24}\cdot \frac{25-4}{2}
+=
+\frac{21}{48}
+=
+\frac{7}{16},
+$$
+
+oraz
+$$
+5\cdot 0.125=5\cdot \frac18=\frac58.
+$$
+
+Zatem
+$$
+EY=\frac34+\frac{7}{16}+\frac58
+=\frac{12}{16}+\frac{7}{16}+\frac{10}{16}
+=\frac{29}{16}.
+$$
+
+Teraz liczymy $E(Y^2)$:
+$$
+E(Y^2)=\int_0^2 y^2\cdot \frac{3}{8}\,dy+\int_2^5 y^2\cdot \frac{1}{24}\,dy+5^2\cdot 0.125.
+$$
+
+Mamy
+$$
+\int_0^2 y^2\cdot \frac{3}{8}\,dy
+=
+\frac{3}{8}\left[\frac{y^3}{3}\right]_0^2
+=
+\frac{3}{8}\cdot \frac{8}{3}
+=1,
+$$
+
+$$
+\int_2^5 y^2\cdot \frac{1}{24}\,dy
+=
+\frac{1}{24}\left[\frac{y^3}{3}\right]_2^5
+=
+\frac{1}{24}\cdot \frac{125-8}{3}
+=
+\frac{117}{72}
+=
+\frac{13}{8},
+$$
+
+oraz
+$$
+25\cdot 0.125=25\cdot \frac18=\frac{25}{8}.
+$$
+
+Stąd
+$$
+E(Y^2)=1+\frac{13}{8}+\frac{25}{8}
+=\frac{8}{8}+\frac{13}{8}+\frac{25}{8}
+=\frac{46}{8}
+=\frac{23}{4}.
+$$
+
+Zatem
+$$
+\operatorname{Var}(Y)=E(Y^2)-(EY)^2
+=\frac{23}{4}-\left(\frac{29}{16}\right)^2.
+$$
+
+Podstawiając do wzoru na wariancję $S$, dostajemy
+$$
+\operatorname{Var}(S)
+=4\left(\frac{23}{4}-\left(\frac{29}{16}\right)^2\right)
++4\left(\frac{29}{16}\right)^2
+=23.
+$$
+
+Ostatecznie
+$$
+\boxed{\operatorname{Var}(S)=23.}
+$$
+
+# Zadanie 4
+
+## Treść
+
+Łączna wartość szkód $S$ ma złożony rozkład Poissona. Wartość szkody $Y$ jest zawsze
+liczbą naturalną, a jej rozkład jest postaci:
+
+| $i$ | 1 | 2 | 3 | 4 | 5 | $i \geq 6$ |
+|---|---:|---:|---:|---:|---:|---:|
+| $P(Y=i)$ | 0.30 | 0.20 | 0.15 | 0.05 | 0.05 | 0.25 |
+
+O rozkładzie prawdopodobieństwa wartości zagregowanych szkód $f_S(y)$ wiemy, że
+w przybliżeniu $f_S(0)=0.05$ (dokładniej $0.04978706837$).
+Wylicz przybliżone prawdopodobieństwo, iż zagregowana wartość szkód przekroczy 2,
+tj. $P(S>2)$.
+
+## Rozwiązanie
+
+$$
+f_S(0)\approx 0.05=e^{-\lambda},
+$$
+zatem
+$$
+\lambda \approx -\ln(0.05).
+$$
+
+Szukamy
+$$
+P(S>2)=1-f_S(0)-f_S(1)-f_S(2).
+$$
+
+Mamy
+$$
+f_S(0)\approx 0.05.
+$$
+
+Ponieważ $P(Y=1)=0.30$, to
+$$
+f_S(1)\approx P(N=1)P(Y=1)
+= e^{-\lambda}\lambda \cdot 0.30
+\approx 0.05\cdot (-\ln(0.05))\cdot 0.30.
+$$
+
+Dalej, aby $S=2$, mamy dwie możliwości:
+$$
+Y=2
+\qquad \text{lub} \qquad
+Y_1=1,\; Y_2=1.
+$$
+
+Zatem
+$$
+f_S(2)\approx P(N=1)P(Y=2)+P(N=2)P(Y_1=1,Y_2=1),
+$$
+czyli
+$$
+f_S(2)\approx e^{-\lambda}\lambda \cdot 0.20
++ e^{-\lambda}\frac{\lambda^2}{2}\cdot (0.30)^2.
+$$
+
+Po podstawieniu $e^{-\lambda}\approx 0.05$ oraz $\lambda\approx -\ln(0.05)$ dostajemy
+$$
+f_S(2)\approx 0.05\cdot (-\ln(0.05))\cdot 0.20
++0.05\cdot \frac{(-\ln(0.05))^2}{2}\cdot (0.30)^2.
+$$
+
+Wobec tego
+$$
+P(S>2)\approx 1-0.05-0.05\cdot (-\ln(0.05))\cdot 0.30
+-\left[
+0.05\cdot (-\ln(0.05))\cdot 0.20
++0.05\cdot \frac{(-\ln(0.05))^2}{2}\cdot (0.30)^2
+\right].
+$$
+
+# Zadanie 5
+
+## Treść
+
+5. Łączna wartość szkód $S$ wyraża się wzorem:
+$$
+S = Y_1 + \cdots + Y_N,
+$$
+gdzie wartości poszczególnych szkód są zmiennymi iid, niezależnymi od zmiennej $N$ (liczby szkód).
+Każda ze zmiennych $Y_i$ ma rozkład wykładniczy o wartości oczekiwanej $2$, zaś $N$ ma rozkład geometryczny
+($k = 0, 1, \ldots$) z parametrem $p = 0.5$. Wylicz
+$$
+P(S \leq 4\ln 5).
+$$
+
+
+## Rozwiązanie
+
+$$
+S=Y_1+\cdots+Y_N,
+$$
+gdzie zmienne $Y_i$ są niezależne, mają rozkład wykładniczy o wartości oczekiwanej $2$,
+a $N$ ma rozkład geometryczny na zbiorze $\{1,2,3,\dots\}$ z parametrem $p=0.5$.
+
+Ponieważ
+$$
+EY_i=2,
+$$
+to parametr rozkładu wykładniczego wynosi
+$$
+\lambda=\frac12.
+$$
+
+Zatem dla $n\ge 1$ zmienna
+$$
+S\mid (N=n)=Y_1+\cdots+Y_n
+$$
+ma rozkład gamma (Erlanga) z dystrybuantą
+$$
+P(S\le x\mid N=n)
+=
+1-e^{-x/2}\sum_{k=0}^{n-1}\frac{(x/2)^k}{k!}.
+$$
+
+Ponieważ
+$$
+P(N=n)=\left(\frac12\right)^n,
+$$
+to
+$$
+P(S\le x)=\sum_{n=1}^{\infty}P(S\le x\mid N=n)P(N=n).
+$$
+
+Stąd
+$$
+P(S\le x)
+=
+\sum_{n=1}^{\infty}
+\left(
+1-e^{-x/2}\sum_{k=0}^{n-1}\frac{(x/2)^k}{k!}
+\right)\frac1{2^n}.
+$$
+
+Rozbijamy sumę:
+$$
+P(S\le x)
+=
+\sum_{n=1}^{\infty}\frac1{2^n}
+-
+e^{-x/2}
+\sum_{n=1}^{\infty}\frac1{2^n}\sum_{k=0}^{n-1}\frac{(x/2)^k}{k!}.
+$$
+
+Ponieważ
+$$
+\sum_{n=1}^{\infty}\frac1{2^n}=1,
+$$
+otrzymujemy
+$$
+P(S\le x)
+=
+1-
+e^{-x/2}
+\sum_{n=1}^{\infty}\frac1{2^n}\sum_{k=0}^{n-1}\frac{(x/2)^k}{k!}.
+$$
+
+Zamieniamy kolejność sumowania:
+$$
+\sum_{n=1}^{\infty}\frac1{2^n}\sum_{k=0}^{n-1}\frac{(x/2)^k}{k!}
+=
+\sum_{k=0}^{\infty}\frac{(x/2)^k}{k!}\sum_{n=k+1}^{\infty}\frac1{2^n}.
+$$
+
+Ale
+$$
+\sum_{n=k+1}^{\infty}\frac1{2^n}=\frac1{2^k},
+$$
+więc
+$$
+\sum_{n=1}^{\infty}\frac1{2^n}\sum_{k=0}^{n-1}\frac{(x/2)^k}{k!}
+=
+\sum_{k=0}^{\infty}\frac{(x/2)^k}{k!}\cdot \frac1{2^k}
+=
+\sum_{k=0}^{\infty}\frac{(x/4)^k}{k!}
+=
+e^{x/4}.
+$$
+
+Wobec tego
+$$
+P(S\le x)=1-e^{-x/2}e^{x/4}=1-e^{-x/4}.
+$$
+
+Podstawiając $x=4\ln 5$, dostajemy
+$$
+P(S\le 4\ln 5)=1-e^{-(4\ln 5)/4}=1-e^{-\ln 5}.
+$$
+
+Ponieważ
+$$
+e^{-\ln 5}=\frac15,
+$$
+to
+$$
+P(S\le 4\ln 5)=1-\frac15=\frac45.
+$$
+
+Ostatecznie
+$$
+\boxed{P(S\le 4\ln 5)=\frac45.}
+$$
+
+# Zadanie 6
+
+## Treść
+6. Znajdź $P(S=3)$, gdzie $S$ ma złożony rozkład Poissona o parametrze częstości
+$\lambda=2$ i gdzie rozkład wartości pojedynczej szkody dany jest funkcją
+prawdopodobieństwa $f_Y(y)$:
+
+| $y$ | 1 | 2 | 3 | 4 |
+|---|---:|---:|---:|---:|
+| $f_Y(y)$ | 0.5 | 0.2 | 0.2 | 0.1 |
+## Rozwiązanie
+
+$$
+S=Y_1+\cdots+Y_N, \qquad N\sim \mathrm{Poisson}(2).
+$$
+
+Szukamy
+$$
+P(S=3).
+$$
+
+Aby zaszło $S=3$, możliwe są tylko następujące przypadki:
+$$
+N=1 \text{ i } Y_1=3,
+$$
+
+$$
+N=2 \text{ i } (Y_1,Y_2)=(1,2)\text{ lub }(2,1),
+$$
+
+$$
+N=3 \text{ i } Y_1=Y_2=Y_3=1.
+$$
+
+Zatem
+$$
+P(S=3)=P(N=1)P(Y=3)+P(N=2)P(Y_1+Y_2=3)+P(N=3)P(Y_1=Y_2=Y_3=1).
+$$
+
+Ponieważ
+$$
+P(N=n)=e^{-2}\frac{2^n}{n!},
+$$
+to mamy
+$$
+P(N=1)=2e^{-2}, \qquad P(N=2)=2e^{-2}, \qquad P(N=3)=\frac{4}{3}e^{-2}.
+$$
+
+Dalej
+$$
+P(Y=3)=0.2,
+$$
+
+$$
+P(Y_1+Y_2=3)=P((1,2)\text{ lub }(2,1))
+=2\cdot 0.5\cdot 0.2=0.2,
+$$
+
+oraz
+$$
+P(Y_1=Y_2=Y_3=1)=(0.5)^3=0.125.
+$$
+
+Stąd
+$$
+P(S=3)=2e^{-2}\cdot 0.2+2e^{-2}\cdot 0.2+\frac{4}{3}e^{-2}\cdot 0.125.
+$$
+
+$$
+P(S=3)=0.4e^{-2}+0.4e^{-2}+\frac{1}{6}e^{-2}.
+$$
+
+$$
+P(S=3)=\left(0.8+\frac{1}{6}\right)e^{-2}
+=\frac{29}{30}e^{-2}.
+$$
+
+Ostatecznie
+$$
+\boxed{P(S=3)=\frac{29}{30}e^{-2}.}
+$$
+

@@ -1,0 +1,726 @@
+---
+title: "Podstawy Optymalziacji LIsta 4"
+author: "Kacper Szmigielski"
+date: "2026-03-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+```
+
+# Lista 4
+```{r listy}
+#BIBLIOTEKI
+library(ggplot2)
+library(knitr)
+library(grid)
+library(plotly)
+library(dplyr)
+library(tidyr)
+```
+
+## Zadanie 3
+
+### Treść
+
+Zastosuj algorytm Hooke’a-Jeevesa dla funkcji $f(x)=x^4-x^2+x$,\
+punktu startowego $x_0=10$, $\varepsilon=0.1$.\
+Wektory bazowe w przestrzeni oraz startową $\delta$ możesz wybrać dowolnie.
+
+**Metoda Hooke’a-Jeevesa**
+
+1. Zaczynamy w jakimś $x_0$ z ustalonym $\delta > 0$. Szukamy minimum z dokładnością do $\varepsilon$, a wektory $b_1, b_2, \dots, b_n$ stanowią bazę (najlepiej ortonormalną) przestrzeni $\mathbb{R}^n$.
+
+2. Próbujemy poruszać się w kierunkach wyznaczonych przez wektory bazowe o $\pm \delta$ tak, aby wartość funkcji zmalała (czyli aby $f(x_0 \pm \delta b_k) < f(x_0)$). Jeśli się uda, to poprawiamy $x_0$ i próbujemy jeszcze raz.
+
+3. Jeśli nie da się już poprawić wartości funkcji i $\delta < \varepsilon$, to mamy rozwiązanie, koniec.
+
+4. Zmniejszamy deltę o połowę i wracamy do punktu drugiego.
+
+### Rozwiązanie
+
+W rozwiązaniu zastosowano $x_0=10$ oraz $\varepsilon=0.1$. Ponieważ zadanie rozpatrywane jest w przestrzeni $\mathbb{R}^1$, \
+bazę ortonormalną tworzy wektor $b_1=1$, natomiast za początkową wartość kroku przyjęto $\delta=1$.
+```{r funkcja3, echo = FALSE}
+
+f <- function(x) {
+  x^4 - x^2 + x
+}
+
+```
+
+```{r z3_rozw, echo = FALSE}
+delta <- 1
+x_0 <- 10
+eps <- 0.1
+
+historia <- data.frame(
+  krok = integer(),
+  x_start = numeric(),
+  delta_start = numeric(),
+  fx_start = numeric(),
+  decyzja = character(),
+  x_new = numeric(),
+  fx_new = numeric(),
+  delta_new = numeric(),
+  stringsAsFactors = FALSE
+)
+
+krok <- 1
+
+while (delta >= eps) {
+  # zapamiętanie stanu na początku kroku
+  x_start <- x_0
+  delta_start <- delta
+  fx_0 <- f(x_0)
+
+  f_prawo <- f(x_0 + delta)
+  f_lewo  <- f(x_0 - delta)
+
+  if (f_prawo < fx_0 || f_lewo < fx_0) {
+    if (f_prawo < f_lewo) {
+      x_0 <- x_0 + delta
+      decyzja <- "ruch w prawo"
+    } else {
+      x_0 <- x_0 - delta
+      decyzja <- "ruch w lewo"
+    }
+  } else {
+    decyzja <- "zmniejszam delta"
+    delta <- delta / 2
+  }
+
+  historia <- rbind(
+    historia,
+    data.frame(
+      krok = krok,
+      x_start = x_start,
+      delta_start = delta_start,
+      fx_start = fx_0,
+      decyzja = decyzja,
+      x_new = x_0,
+      fx_new = f(x_0)
+    )
+  )
+
+  krok <- krok + 1
+}
+
+
+```
+\newpage
+```{r zad4 tabela, echo = FALSE}
+
+kable(historia, digits = 4, caption = "Kolejne kroki metody Hooke’a-Jeevesa")
+
+```
+```{r wykreszad4, echo = FALSE}
+
+# zakres wykresu
+
+x_vals <- seq(
+  min(c(historia$x_start, historia$x_new)) - 0.5,
+  max(c(historia$x_start, historia$x_new)) + 0.5,
+  length.out = 2000
+)
+
+df_fun <- data.frame(
+  x = x_vals,
+  y = f(x_vals)
+)
+
+# tylko rzeczywiste ruchy
+ruchy <- historia[historia$x_start != historia$x_new, ]
+
+ggplot(df_fun, aes(x, y)) +
+  geom_line(color = "steelblue", linewidth = 1.2) +
+  geom_segment(
+    data = ruchy,
+    aes(
+      x = x_start, y = fx_start,
+      xend = x_new, yend = fx_new
+    ),
+    color = "firebrick",
+    linewidth = 0.9,
+    arrow = arrow(length = unit(0.18, "cm"))
+  ) +
+  geom_point(
+    data = ruchy,
+    aes(x = x_new, y = fx_new),
+    color = "firebrick",
+    size = 2.5
+  ) +
+  geom_text(
+    data = ruchy,
+    aes(x = x_new, y = fx_new, label = krok),
+    color = "firebrick",
+    vjust = -0.8,
+    size = 3.5
+  ) +
+  labs(
+    title = "Metoda Hooke’a-Jeevesa",
+    x = "x",
+    y = "f(x)"
+  ) +
+  theme_minimal()
+
+```
+
+
+## Zadanie 4
+
+### Treść
+
+Zoptymalizuj metodę Hooke’a-Jeevesa w przypadku $n=1$ (również wtedy, gdy zaczynamy straszliwie daleko od rozwiązania).
+
+### Rozwiązanie
+
+W przypadku 
+n=1
+n=1 metodę Hooke’a-Jeevesa można zoptymalizować przez zastosowanie adaptacyjnego kroku. Jeśli przesunięcie w danym kierunku zmniejsza wartość\ funkcji, zamiast wykonywać kolejne kroki o tej samej długości, zwiększamy krok, np. dwukrotnie. Pozwala to szybciej zbliżyć się do minimum,\ zwłaszcza gdy punkt startowy leży bardzo daleko od rozwiązania. Po znalezieniu obszaru, w którym dalsze zwiększanie kroku przestaje poprawiać\ wartość funkcji, można zmniejszać krok i przejść do dokładniejszego wyznaczania minimum.\
+```{r zad4_rozwiązanie}
+
+delta <- 1
+x_0 <- 10
+eps <- 0.1
+
+historia <- data.frame(
+  krok = integer(),
+  x_start = numeric(),
+  delta = numeric(),
+  fx_start = numeric(),
+  decyzja = character(),
+  x_new = numeric(),
+  fx_new = numeric(),
+  stringsAsFactors = FALSE
+)
+
+krok <- 1
+
+while (delta >= eps) {
+  x_start <- x_0
+  delta_start <- delta
+  fx_0 <- f(x_0)
+
+  fx_0 <- f(x_0)
+  f_prawo <- f(x_0 + delta)
+  f_lewo  <- f(x_0 - delta)
+  if (f_prawo < fx_0 || f_lewo < fx_0) {
+    if (f_prawo < f_lewo) {
+      x_0 <- x_0 + delta
+      decyzja <- "ruch w prawo"
+    } else {
+      x_0 <- x_0 - delta
+      decyzja <- "ruch w lewo"
+    }
+    delta <- 2 * delta
+  } else {
+    decyzja <- "zmniejszam delta"
+    delta <- delta / 2
+  }
+
+  historia <- rbind(
+    historia,
+    data.frame(
+      krok = krok,
+      x_start = x_start,
+      delta = delta_start,
+      fx_start = fx_0,
+      decyzja = decyzja,
+      x_new = x_0,
+      fx_new = f(x_0),
+      new_delta <- delta
+    )
+  )
+
+  krok <- krok + 1
+}
+
+kable(historia, digits = 4, caption = "Kolejne kroki zoptymalizowanej metody Hooke’a-Jeevesa")
+```
+```{r zad4_wykres}
+
+
+
+# zakres wykresu
+x_vals <- seq(
+  min(c(historia$x_start, historia$x_new)) - 0.5,
+  max(c(historia$x_start, historia$x_new)) + 0.5,
+  length.out = 2000
+)
+
+df_fun <- data.frame(
+  x = x_vals,
+  y = f(x_vals)
+)
+
+# tylko rzeczywiste ruchy
+ruchy <- historia[historia$x_start != historia$x_new, ]
+
+ggplot(df_fun, aes(x, y)) +
+  geom_line(color = "steelblue", linewidth = 1.2) +
+  geom_segment(
+    data = ruchy,
+    aes(
+      x = x_start, y = fx_start,
+      xend = x_new, yend = fx_new
+    ),
+    color = "firebrick",
+    linewidth = 0.9,
+    arrow = arrow(length = unit(0.18, "cm"))
+  ) +
+  geom_point(
+    data = ruchy,
+    aes(x = x_new, y = fx_new),
+    color = "firebrick",
+    size = 2.5
+  ) +
+  geom_text(
+    data = ruchy,
+    aes(x = x_new, y = fx_new, label = krok),
+    color = "firebrick",
+    vjust = -0.8,
+    size = 3.5
+  ) +
+  labs(
+    title = "Metoda Hooke’a-Jeevesa",
+    x = "x",
+    y = "f(x)"
+  ) +
+  theme_minimal()
+
+```
+
+## Zadanie 5
+
+### Treść
+
+Zastosuj algorytm Hooke’a-Jeevesa dla funkcji $f(x,y)=\sin(\pi x)\cdot\cos(2\pi y)$, punktu startowego $(x_0,y_0)=\left(2,\frac{5}{4}\right)$,\ $\varepsilon=0.2$. Wektory bazowe w przestrzeni oraz startową $\delta$ możesz wybrać dowolnie.
+
+### Rozwiązanie
+
+```{r z5_f}
+f <- function(x, y){
+  sin(pi * x) * cos(2*pi*y)
+}
+```
+
+```{r wykres3d, echo=FALSE, fig.width=8, fig.height=6}
+
+x <- seq(0, 3, length.out = 120)
+y <- seq(0, 2, length.out = 120)
+z <- outer(x, y, f)
+
+cols <- colorRampPalette(c("navy", "royalblue", "skyblue", "lightyellow", "orange", "red"))(100)
+
+z_fac <- cut(z, breaks = 100)
+surf_cols <- cols[z_fac]
+
+persp(
+  x, y, z,
+  theta = 45,
+  phi = 28,
+  expand = 0.7,
+  col = surf_cols,
+  border = NA,
+  shade = 0.35,
+  ticktype = "detailed",
+  xlab = "x",
+  ylab = "y",
+  zlab = "f(x,y)",
+  main = expression(f(x,y) == sin(pi*x) * cos(2*pi*y))
+)
+
+```
+
+```{r rozwiązanie_zad5}
+
+f <- function(x, y) {
+  sin(pi * x) * cos(2 * pi * y)
+}
+
+# Parametry zadania
+x <- c(2, 5/4)
+eps <- 0.05
+delta <- 1
+
+# baza ortonormalna
+b1 <- c(1, 0)
+b2 <- c(0, 1)
+
+# funkcja do normalizacji wektora
+normuj <- function(v) {
+  v / sqrt(sum(v^2))
+}
+
+# kierunki bazowe + kombinacje liniowe
+kierunki <- list(
+  b1 = b1,
+  b2 = b2,
+  b1_plus_b2 = normuj(b1 + b2),
+  b1_minus_b2 = normuj(b1 - b2),
+  minus_b1_plus_b2 = normuj(-b1 + b2),
+  minus_b1_minus_b2 = normuj(-b1 - b2)
+)
+
+historia <- data.frame(
+  krok = integer(),
+  delta = numeric(),
+  x_start = numeric(),
+  y_start = numeric(),
+  f_start = numeric(),
+  decyzja = character(),
+  x_new = numeric(),
+  y_new = numeric(),
+  f_new = numeric(),
+  stringsAsFactors = FALSE
+)
+
+krok <- 1
+
+while (delta >= eps) {
+  
+  x_start <- x
+  f_start <- f(x[1], x[2])
+
+  kandydaci <- data.frame(
+    kierunek = character(),
+    x = numeric(),
+    y = numeric(),
+    f = numeric(),
+    stringsAsFactors = FALSE
+  )
+
+  for (nm in names(kierunki)) {
+    b <- kierunki[[nm]]
+
+    for (sgn in c(1, -1)) {
+      x_try <- x + sgn * delta * b
+
+      kandydaci <- rbind(
+        kandydaci,
+        data.frame(
+          kierunek = paste0(ifelse(sgn == 1, "+", "-"), nm),
+          x = x_try[1],
+          y = x_try[2],
+          f = f(x_try[1], x_try[2]),
+          stringsAsFactors = FALSE
+        )
+      )
+    }
+  }
+
+  tol <- 1e-10
+  lepsze <- kandydaci[kandydaci$f < f_start - tol, ]
+
+  if (nrow(lepsze) > 0) {
+    najlepszy <- lepsze[which.min(lepsze$f), ]
+    x <- c(najlepszy$x, najlepszy$y)
+    decyzja <- as.character(najlepszy$kierunek)
+  } else {
+    decyzja <- "delta <- delta/2"
+  }
+
+  historia <- rbind(
+    historia,
+    data.frame(
+      krok = krok,
+      delta = delta,
+      x_start = x_start[1],
+      y_start = x_start[2],
+      f_start = f_start,
+      decyzja = decyzja,
+      x_new = x[1],
+      y_new = x[2],
+      f_new = f(x[1], x[2]),
+      stringsAsFactors = FALSE
+    )
+  )
+
+  if (decyzja == "delta <- delta/2") {
+    delta <- delta / 2
+  }
+
+  krok <- krok + 1
+}
+
+kable(
+  historia,
+  digits = 4,
+  caption = "Kolejne kroki metody Hooke’a-Jeevesa dla zadania 5"
+)
+
+cat(
+  "\nPunkt końcowy: (",
+  round(tail(historia$x_new, 1), 4), ", ",
+  round(tail(historia$y_new, 1), 4), "),  f = ",
+  round(tail(historia$f_new, 1), 4),
+  sep = ""
+)
+
+```
+
+A teraz wykres 3D z zaznaczoną ścieżką:
+
+```{r zad5_wykres_3d, echo=FALSE, fig.width=9, fig.height=7, message=FALSE, warning=FALSE}
+f <- function(x, y) {
+  sin(pi * x) * cos(2 * pi * y)
+}
+
+# Zakres wykresu - tak dobrany, żeby było widać punkt startowy i kolejne kroki
+x_seq <- seq(1.4, 3.0, length.out = 140)
+y_seq <- seq(0.4, 1.8, length.out = 140)
+z_mat <- outer(x_seq, y_seq, f)
+
+# Rysujemy powierzchnię jednym kolorem
+pmat <- persp(
+  x_seq, y_seq, z_mat,
+  theta = 50,
+  phi = 28,
+  expand = 0.8,
+  col = "lightblue",
+  border = NA,
+  shade = 0.3,
+  ticktype = "detailed",
+  xlab = "x",
+  ylab = "y",
+  zlab = "f(x,y)",
+  main = expression(f(x,y) == sin(pi*x) * cos(2*pi*y))
+)
+
+# Tylko rzeczywiste ruchy (bez samych zmniejszeń delta)
+ruchy <- historia[historia$x_start != historia$x_new | historia$y_start != historia$y_new, ]
+
+# Lekko unosimy ścieżkę nad powierzchnię, żeby była dobrze widoczna
+z_offset <- 0.08 * diff(range(z_mat))
+
+# Strzałki - drugi kolor
+if (nrow(ruchy) > 0) {
+  for (i in 1:nrow(ruchy)) {
+    p0 <- trans3d(
+      x = ruchy$x_start[i],
+      y = ruchy$y_start[i],
+      z = ruchy$f_start[i] + z_offset,
+      pmat = pmat
+    )
+
+    p1 <- trans3d(
+      x = ruchy$x_new[i],
+      y = ruchy$y_new[i],
+      z = ruchy$f_new[i] + z_offset,
+      pmat = pmat
+    )
+
+    arrows(
+      p0$x, p0$y, p1$x, p1$y,
+      col = "firebrick",
+      lwd = 2,
+      length = 0.08
+    )
+  }
+}
+
+# Punkt startowy
+p_start <- trans3d(
+  x = historia$x_start[1],
+  y = historia$y_start[1],
+  z = historia$f_start[1] + z_offset,
+  pmat = pmat
+)
+points(p_start$x, p_start$y, pch = 19, cex = 1.4, col = "black")
+text(p_start$x, p_start$y, labels = "0", pos = 3, cex = 0.9, col = "black")
+
+# Kolejne punkty po ruchach
+if (nrow(ruchy) > 0) {
+  for (i in 1:nrow(ruchy)) {
+    p <- trans3d(
+      x = ruchy$x_new[i],
+      y = ruchy$y_new[i],
+      z = ruchy$f_new[i] + z_offset,
+      pmat = pmat
+    )
+
+    points(p$x, p$y, pch = 19, cex = 1.2, col = "firebrick")
+    text(p$x, p$y, labels = as.character(i), pos = 3, cex = 0.9, col = "firebrick")
+  }
+}
+
+legend(
+  "topright",
+  legend = c("powierzchnia funkcji", "kolejne kroki", "punkt startowy"),
+  col = c("lightblue", "firebrick", "black"),
+  pch = c(15, NA, 19),
+  lty = c(0, 1, 0),
+  lwd = c(0, 2, 0),
+  bty = "n",
+  cex = 0.9
+)
+```
+## Zadanie 6
+
+### Treść
+
+Zastosuj metodę najszybszego spadku dla funkcji $f(x,y)=4x^2-4x+y^2+4y+5$ z punktem startowym $(x_0,y_0)=(0,0)$. Minima funkcji jednej zmiennej wyznaczaj analitycznie.
+
+**Metoda najszybszego spadku**
+
+## Metoda najszybszego spadku
+
+Metoda najszybszego spadku jest jedną z metod gradientowych. W metodach gradientowych w każdym kroku wyznacza się kierunek spadku funkcji, a następnie minimalizuje funkcję jednej zmiennej wzdłuż tego kierunku.
+
+W metodzie najszybszego spadku kierunek spadku w punkcie $x_0$ ma postać
+$$
+\vec{v} = - \nabla f(x_0).
+$$
+
+Następnie rozpatruje się funkcję jednej zmiennej
+$$
+g(t) = f(x_0 + t\vec{v}),
+\qquad t>0,
+$$
+i wyznacza takie $t$, dla którego funkcja $g(t)$ osiąga minimum.
+
+Otrzymany punkt
+$$
+x_1 = x_0 + t\vec{v}
+$$
+przyjmujemy jako kolejny punkt iteracji. Procedurę tę powtarzamy aż do osiągnięcia zadanego przybliżenia rozwiązania.
+### Rozwiązanie
+
+Dla funkcji
+$$
+f(x,y)=4x^2-4x+y^2+4y+5
+$$
+
+```{r zad63d, echo=FALSE, fig.width=9, fig.height=7, message=FALSE, warning=FALSE}
+f <- function(x, y) {
+  4*x^2 -4*x+y^2+4*y
+}
+x <- seq(-3, 3, length.out = 120)
+y <- seq(-4, 4, length.out = 120)
+z <- outer(x, y, f)
+
+cols <- colorRampPalette(c("navy", "royalblue", "skyblue", "lightyellow", "orange", "red"))(100)
+
+z_fac <- cut(z, breaks = 100)
+surf_cols <- cols[z_fac]
+
+persp(
+  x, y, z,
+  theta = 0,
+  phi = 90,
+  expand = 0.7,
+  col = surf_cols,
+  border = NA,
+  shade = 0.35,
+  ticktype = "detailed",
+  xlab = "x",
+  ylab = "y",
+  zlab = "f(x,y)",
+  main = expression(f(x,y) == 4*x^2 -4*x+y^2+4*y)
+)
+```
+
+gradient ma postać
+$$
+\nabla f(x,y)=\left(\frac{\partial f}{\partial x},\frac{\partial f}{\partial y}\right).
+$$
+
+Obliczamy pochodne cząstkowe:
+$$
+\frac{\partial f}{\partial x}=8x-4,
+$$
+$$
+\frac{\partial f}{\partial y}=2y+4.
+$$
+
+Zatem
+$$
+\nabla f(x,y)=(8x-4,\;2y+4).
+$$
+
+```{r rozwiązanie}
+
+t <- 0.1
+
+grad_f <- function(x, y) {
+  c(8 * x - 4, 2 * y + 4)
+}
+
+x_0 <- 0
+y_0 <- 0
+
+historia <- data.frame(
+  krok = integer(),
+  x = numeric(),
+  y = numeric(),
+  grad_x = numeric(),
+  grad_y = numeric(),
+  norma_grad = numeric()
+)
+
+krok <- 0
+
+# zapis punktu startowego
+g <- grad_f(x_0, y_0)
+historia <- rbind(
+  historia,
+  data.frame(
+    krok = krok,
+    x = x_0,
+    y = y_0,
+    grad_x = g[1],
+    grad_y = g[2],
+    norma_grad = sqrt(sum(g^2))
+  )
+)
+
+while (sqrt(sum(grad_f(x_0, y_0)^2)) > 0.01) {
+  g <- grad_f(x_0, y_0)
+
+  x_0 <- x_0 - t * g[1]
+  y_0 <- y_0 - t * g[2]
+
+  krok <- krok + 1
+  g_new <- grad_f(x_0, y_0)
+
+  historia <- rbind(
+    historia,
+    data.frame(
+      krok = krok,
+      x = x_0,
+      y = y_0,
+      grad_x = g_new[1],
+      grad_y = g_new[2],
+      norma_grad = sqrt(sum(g_new^2))
+    )
+  )
+}
+
+c(x_0, y_0)
+kable(
+  historia,
+  digits = 6,
+  caption = "Kolejne kroki metody gradientowej"
+)
+
+```
+
+## Zadanie 7
+
+### Treść
+
+### Rozwiązanie
+
+## Zadanie 8
+
+### Treść
+
+### Rozwiązanie
+
+## Zadanie 9
+
+### Treść
+
+### Rozwiązanie

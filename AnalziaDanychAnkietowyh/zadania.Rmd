@@ -1,0 +1,140 @@
+---
+title: "Lista 4"
+author: "Kacper Szmigielski"
+date: "2026-11-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r kody}
+# Laboratorium 4. Badanie własności testów niezależności
+
+set.seed(123)
+
+M <- 10000
+alfa <- 0.05
+liczebnosci <- c(20, 50, 100)
+delty <- c(0, 0.25, 0.5)
+
+# 1. Losowanie niezależnych składników X*, Y* i Z.
+# Warianty 1–4 odpowiadają kolejnym wierszom tabeli z zadania.
+losuj_skladniki <- function(N, wariant) {
+  switch(
+    wariant,
+    list(X0 = rnorm(N), Y0 = rnorm(N), Z = rnorm(N)),
+    list(X0 = rnorm(N), Y0 = rnorm(N, sd = 2), Z = rnorm(N)),
+    list(
+      X0 = rgamma(N, shape = 2, scale = 1),
+      Y0 = rgamma(N, shape = 2, scale = 1),
+      Z  = rgamma(N, shape = 2, scale = 1)
+    ),
+    list(
+      X0 = rgamma(N, shape = 0.2, scale = 1),
+      Y0 = rgamma(N, shape = 2, scale = 1),
+      Z  = rgamma(N, shape = 0.5, scale = 1)
+    )
+  )
+}
+
+# 2. Jedna próba N par i trzy decyzje o odrzuceniu H0.
+jedna_proba <- function(N, delta, wariant, wagi_vdw, prog_z, prog_t) {
+  skladniki <- losuj_skladniki(N, wariant)
+
+  # Ten sam wektor Z w obu równaniach daje zależność dla delta != 0.
+  X <- skladniki$X0 + delta * skladniki$Z
+  Y <- skladniki$Y0 + delta * skladniki$Z
+
+  # Pearson
+  r <- cor(X, Y)
+  stat_pe <- r * sqrt((N - 2) / (1 - r^2))
+
+  # Rangi potrzebne w obu testach rangowych
+  R <- rank(X)
+  Q <- rank(Y)
+
+  # Po standaryzacji statystyka rangowa to sqrt(N - 1)
+  # razy korelacja wag przypisanych do rang.
+  stat_vdw <- sqrt(N - 1) * cor(wagi_vdw[R], wagi_vdw[Q])
+  stat_sp  <- sqrt(N - 1) * cor(R, Q)
+
+  # Testy jednostronne. Odrzucamy H0 dla dużych dodatnich statystyk.
+  c(
+    Pe  = stat_pe >= prog_t,
+    vdW = stat_vdw >= prog_z,
+    Sp  = stat_sp >= prog_z
+  )
+}
+
+
+# 3. M niezależnych prób dla ustalonych N, delta i rozkładów.
+moc_mc <- function(N, delta, wariant, M, alfa) {
+  wagi_vdw <- qnorm(seq_len(N) / (N + 1))
+  prog_z <- qnorm(1 - alfa)
+  prog_t <- qt(1 - alfa, df = N - 2)
+
+  odrzucenia <- replicate(
+    M,
+    jedna_proba(N, delta, wariant, wagi_vdw, prog_z, prog_t)
+  )
+
+  # Macierz ma 3 wiersze (testy) i M kolumn (próby).
+  # Średnia z TRUE i FALSE to odsetek odrzuceń H0.
+  rowMeans(odrzucenia)
+}
+
+# 4. Szablon tabeli. W N(0, 4) liczba 4 oznacza wariancję.
+rozklady <- data.frame(
+  f = c("N(0, 1)", "N(0, 1)", "G(2, 1)", "G(0.2, 1)"),
+  g = c("N(0, 1)", "N(0, 4)", "G(2, 1)", "G(2, 1)"),
+  h = c("N(0, 1)", "N(0, 1)", "G(2, 1)", "G(0.5, 1)")
+)
+
+# 5. Dla każdego N uzupełniamy trzy kolumny testów dla każdej delty.
+for (N in liczebnosci) {
+  tabela <- rozklady
+
+  for (delta in delty) {
+    # Po transpozycji: 4 wiersze rozkładów i 3 kolumny testów.
+    wyniki <- t(vapply(
+      seq_len(nrow(rozklady)),
+      function(wariant) moc_mc(N, delta, wariant, M = M, alfa = alfa),
+      FUN.VALUE = numeric(3)
+    ))
+
+    nazwy_kolumn <- paste0(c("Pe", "vdW", "Sp"), "_", delta)
+    tabela[nazwy_kolumn] <- as.data.frame(round(wyniki, 4))
+  }
+
+  cat("\nN =", N, "| M =", M, "\n")
+  print(tabela, row.names = FALSE, width = 140)
+}
+```
+
+1. Poziom istotności. Testy rangowe dają częstości bliskie \(0{,}05\). Dla ustalonego \(N\) ich teoretyczny poziom przy \(H_0\) jest taki sam dla wszystkich ciągłych rozkładów brzegowych, ponieważ zależy od rozkładu permutacji rang. Użyty próg normalny daje poziom przybliżony. Pearson w czwartym wariancie odrzuca za często, np. w \(7{,}16\%\) prób dla \(N=20\).
+2. Siła zależności i liczebność. W tabeli moc rośnie zarówno po zwiększeniu \(\Delta\) z \(0{,}25\) do \(0{,}5\), jak i po zwiększeniu \(N\) przy ustalonym dodatnim \(\Delta\). Przykładowo dla Pearsona w pierwszym wariancie przy \(\Delta=0{,}5\) rośnie z \(21{,}86\%\) do \(64{,}60\%\).
+3. Kiedy Spearman wyprzedza Pearsona? W tej symulacji dla rozkładów gamma, zwłaszcza przy \(N=50\) i \(N=100\). W czwartym wariancie dla \(N=100\), \(\Delta=0{,}5\), Spearman osiąga \(53{,}93\%\), a Pearson \(45{,}04\%\).
+4. Który test ma największą moc? W wariantach normalnych najczęściej wygrywa Pearson, a w wariantach gamma najczęściej van der Waerden. Najwyższy wynik w całej tabeli to \(72{,}24\%\) dla van der Waerdena przy \(N=100\), \(\Delta=0{,}5\) i trzech rozkładach \(G(2,1)\). Przy \(M=10\,000\) różnice rzędu kilku setnych punktu procentowego, np. \(19{,}70\%\) wobec \(19{,}66\%\), są zbyt małe, by rozstrzygać na ich podstawie kolejność testów.
+5. Zadania teoretyczne
